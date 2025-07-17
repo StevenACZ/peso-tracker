@@ -1,0 +1,17 @@
+//
+//  Config.xcconfig.example
+//  PesoTracker
+//
+//  Configuration file example for sensitive data
+//  Copy this file to Config.xcconfig and fill in your actual values
+//
+
+// API Configuration
+API_BASE_URL = http:/$()/localhost:3000
+API_TIMEOUT = 30.0
+
+// Development vs Production
+ENVIRONMENT = development
+
+// Copy this file to Config.xcconfig and update with your actual values
+// The Config.xcconfig file will be ignored by git
