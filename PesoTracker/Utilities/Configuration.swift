@@ -59,8 +59,8 @@ extension Bundle {
     }
     
     /// Get API base URL from configuration
-    var apiBaseURL: String {
-        return configurationValue(for: "API_BASE_URL") ?? Configuration.API.baseURL
+    var apiBaseURL: String? {
+        return configurationValue(for: "API_BASE_URL")
     }
     
     /// Get environment from configuration

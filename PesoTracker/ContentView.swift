@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Legacy ContentView - now replaced by RootView in the main app
 struct ContentView: View {
     var body: some View {
         VStack {
