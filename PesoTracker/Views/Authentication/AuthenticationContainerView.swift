@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// MARK: - Main Container View
 struct AuthenticationContainerView: View {
     @StateObject private var viewModel = AuthenticationViewModel()
 
@@ -15,12 +14,27 @@ struct AuthenticationContainerView: View {
         VStack(spacing: 0) {
             // Navigation bar
             if viewModel.currentFlow != .welcome {
-                NavigationBar(viewModel: viewModel)
+                HStack {
+                    Button("← Back") {
+                        viewModel.switchToWelcome()
+                    }
+                    .foregroundColor(.accentColor)
+
+                    Spacer()
+
+                    Button(viewModel.currentFlow == .login ? "Create Account" : "Sign In") {
+                        if viewModel.currentFlow == .login {
+                            viewModel.switchToRegister()
+                        } else {
+                            viewModel.switchToLogin()
+                        }
+                    }
+                    .foregroundColor(.accentColor)
+                }
+                .padding()
             }
 
             // Main content
-            Spacer()
-
             switch viewModel.currentFlow {
             case .welcome:
                 WelcomeView(viewModel: viewModel)
@@ -29,11 +43,7 @@ struct AuthenticationContainerView: View {
             case .register:
                 RegisterView(viewModel: viewModel)
             }
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(NSColor.windowBackgroundColor))
         .alert("Error", isPresented: $viewModel.showErrorAlert) {
             Button("OK") {
                 viewModel.dismissErrorAlert()
@@ -43,31 +53,5 @@ struct AuthenticationContainerView: View {
                 Text(errorMessage)
             }
         }
-    }
-}
-
-// MARK: - Navigation Bar
-struct NavigationBar: View {
-    @ObservedObject var viewModel: AuthenticationViewModel
-
-    var body: some View {
-        HStack {
-            Button("← Atrás") {
-                viewModel.switchToWelcome()
-            }
-            .foregroundColor(.blue)
-
-            Spacer()
-
-            Button(viewModel.currentFlow == .login ? "Crear Cuenta" : "Iniciar Sesión") {
-                if viewModel.currentFlow == .login {
-                    viewModel.switchToRegister()
-                } else {
-                    viewModel.switchToLogin()
-                }
-            }
-            .foregroundColor(.blue)
-        }
-        .padding()
     }
 }

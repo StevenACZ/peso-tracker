@@ -7,40 +7,49 @@
 
 import SwiftUI
 
-// MARK: - Welcome View
 struct WelcomeView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
 
     var body: some View {
         VStack(spacing: 40) {
-            // Logo and title
+            Spacer()
+            
+            // App title
             VStack(spacing: 16) {
                 Image(systemName: "scalemass")
                     .font(.system(size: 60))
-                    .foregroundColor(.blue)
-
+                    .foregroundColor(.accentColor)
+                
                 Text("PesoTracker")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-
-                Text("Rastrea tu peso fácilmente")
-                    .font(.headline)
+                
+                Text("Track your weight journey")
+                    .font(.title3)
                     .foregroundColor(.secondary)
             }
-
+            
+            Spacer()
+            
             // Action buttons
             VStack(spacing: 16) {
-                Button("Iniciar Sesión") {
+                Button("Sign In") {
                     viewModel.switchToLogin()
                 }
-                .buttonStyle(PrimaryButtonStyle())
-
-                Button("Crear Cuenta") {
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                
+                Button("Create Account") {
                     viewModel.switchToRegister()
                 }
-                .buttonStyle(SecondaryButtonStyle())
+                .buttonStyle(.bordered)
+                .controlSize(.large)
             }
+            .frame(maxWidth: 300)
+            
+            Spacer()
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 }

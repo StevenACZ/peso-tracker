@@ -9,20 +9,21 @@ import SwiftUI
 
 @main
 struct PesoTrackerApp: App {
-    
-    // MARK: - State
     @StateObject private var authManager = AuthenticationManager.shared
     
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environmentObject(authManager)
-                .task {
-                    await authManager.initialize()
+            Group {
+                if authManager.isAuthenticated {
+                    DashboardView()
+                } else {
+                    AuthenticationContainerView()
                 }
+            }
+            .task {
+                await authManager.initialize()
+            }
         }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentMinSize)
-        .defaultSize(width: 1000, height: 700)
+        .defaultSize(width: 800, height: 600)
     }
 }

@@ -62,15 +62,7 @@ struct LoginView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
-        .onAppear {
-            viewModel.validateCurrentForm()
-        }
-        .onChange(of: viewModel.email) { _ in
-            viewModel.validateField("email")
-        }
-        .onChange(of: viewModel.password) { _ in
-            viewModel.validateField("password")
-        }
+
     }
 
     private var isFormValid: Bool {
