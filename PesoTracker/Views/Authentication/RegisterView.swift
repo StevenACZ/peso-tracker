@@ -7,53 +7,88 @@
 
 import SwiftUI
 
-// MARK: - Register View
 struct RegisterView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
     @State private var confirmPassword = ""
 
     var body: some View {
-        VStack(spacing: 32) {
-            Text("Crear Cuenta")
-                .font(.title)
-                .fontWeight(.bold)
-
+        VStack(spacing: 40) {
+            Spacer()
+            
+            // Title
             VStack(spacing: 16) {
-                TextField("Nombre de usuario", text: $viewModel.username)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.none)
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 60))
+                    .foregroundColor(.accentColor)
+                
+                Text("Create Account")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+            }
+            
+            // Form
+            VStack(spacing: 20) {
+                TextField("Username", text: $viewModel.username)
+                    .textFieldStyle(.roundedBorder)
+                    .disableAutocorrection(true)
 
                 TextField("Email", text: $viewModel.email)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
+                    .textFieldStyle(.roundedBorder)
+                    .disableAutocorrection(true)
 
-                SecureField("Contraseña", text: $viewModel.password)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                SecureField("Password", text: $viewModel.password)
+                    .textFieldStyle(.roundedBorder)
 
-                SecureField("Confirmar Contraseña", text: $confirmPassword)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                SecureField("Confirm Password", text: $confirmPassword)
+                    .textFieldStyle(.roundedBorder)
 
-                Button("Crear Cuenta") {
-                    Task { await viewModel.register() }
+                Button("Create Account") {
+                    Task { 
+                        await viewModel.register() 
+                    }
                 }
-                .buttonStyle(PrimaryButtonStyle(color: .green))
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(viewModel.isLoading || !isFormValid)
 
                 if viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
+                
+                // Show validation errors
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
             }
-            .frame(maxWidth: 280)
+            .frame(maxWidth: 400)
+            
+            Spacer()
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(NSColor.windowBackgroundColor))
+        .onAppear {
+            viewModel.validateCurrentForm()
+        }
+        .onChange(of: viewModel.username) { _ in
+            viewModel.validateField("username")
+        }
+        .onChange(of: viewModel.email) { _ in
+            viewModel.validateField("email")
+        }
+        .onChange(of: viewModel.password) { _ in
+            viewModel.validateField("password")
+        }
     }
 
     private var isFormValid: Bool {
         !viewModel.username.isEmpty &&
         !viewModel.email.isEmpty &&
         !viewModel.password.isEmpty &&
-        viewModel.password == confirmPassword
+        viewModel.password == confirmPassword &&
+        confirmPassword.count > 0
     }
 }
