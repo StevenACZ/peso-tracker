@@ -19,6 +19,17 @@ struct RegisterRequest: Codable {
     let password: String
 }
 
+struct AddWeightRequest: Codable {
+    let weight: Double
+    let date: String
+    let notes: String?
+}
+
+struct AddWeightResponse: Codable {
+    let message: String
+    let data: WeightEntry
+}
+
 // MARK: - Response Models
 struct AuthResponse: Codable {
     let message: String
