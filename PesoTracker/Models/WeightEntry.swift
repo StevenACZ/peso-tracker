@@ -9,7 +9,7 @@ import Foundation
 
 struct WeightEntry: Codable, Identifiable {
     let id: Int
-    let weight: String // Your API returns weight as string
+    let weight: Double
     let date: String
     let userId: Int?
     let notes: String?
@@ -26,24 +26,66 @@ struct WeightEntry: Codable, Identifiable {
         case updatedAt = "updated_at"
     }
     
+    // Custom decoder to handle weight as string from API
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        userId = try container.decodeIfPresent(Int.self, forKey: .userId)
+        date = try container.decode(String.self, forKey: .date)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        
+        // Handle weight as either String or Double
+        if let weightString = try? container.decode(String.self, forKey: .weight) {
+            weight = Double(weightString) ?? 0.0
+        } else {
+            weight = try container.decode(Double.self, forKey: .weight)
+        }
+    }
+    
+    // Custom encoder for sending data back to API
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(weight, forKey: .weight) // Send as Double
+        try container.encode(date, forKey: .date)
+        try container.encodeIfPresent(userId, forKey: .userId)
+        try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encodeIfPresent(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(updatedAt, forKey: .updatedAt)
+    }
+    
     var weightValue: Double {
-        return Double(weight) ?? 0.0
+        return weight
     }
     
     var formattedDate: String {
-        // Simple date formatting - you can improve this later
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-        if let date = dateFormatter.date(from: date) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateFormat = "MMM dd, yyyy"
-            return displayFormatter.string(from: date)
+        // Try different date formats that the API might return
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd"
+        ]
+        
+        for format in formats {
+            dateFormatter.dateFormat = format
+            if let parsedDate = dateFormatter.date(from: date) {
+                let displayFormatter = DateFormatter()
+                displayFormatter.dateFormat = "MMM dd, yyyy"
+                return displayFormatter.string(from: parsedDate)
+            }
         }
+        
+        // If no format works, return the original string
         return date
     }
     
     var formattedWeight: String {
-        return String(format: "%.1f kg", weightValue)
+        return String(format: "%.1f kg", weight)
     }
 }
 
@@ -64,10 +106,10 @@ struct WeightResponse: Codable {
     }
     
     var currentWeight: Double? {
-        return data.last?.weightValue
+        return data.first?.weightValue // Most recent (first in sorted array)
     }
     
     var startingWeight: Double? {
-        return data.first?.weightValue
+        return data.last?.weightValue // Oldest (last in sorted array)
     }
 }
