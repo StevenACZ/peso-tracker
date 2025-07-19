@@ -27,7 +27,7 @@ struct Configuration {
     // MARK: - API Configuration
     struct API {
         static var baseURL: String {
-            return Bundle.main.apiBaseURL ?? "http://localhost:3000"
+            return Bundle.main.apiBaseURL ?? "http://100.111.122.121:3000"
         }
         
         static let timeout: TimeInterval = 30.0
