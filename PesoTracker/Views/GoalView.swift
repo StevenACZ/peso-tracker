@@ -16,15 +16,17 @@ struct GoalView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     
+    @State private var selectedGoalToEdit: Goal?
+    
     private var isEditing: Bool {
-        viewModel.currentGoal != nil
+        selectedGoalToEdit != nil
     }
     
     var body: some View {
         VStack(spacing: 24) {
             // Header
             HStack {
-                Text(isEditing ? "Update Goal" : "Set New Goal")
+                Text(isEditing ? "Update Goal" : "Create New Goal")
                     .font(.title2)
                     .fontWeight(.semibold)
                 
@@ -56,33 +58,68 @@ struct GoalView: View {
                         .datePickerStyle(.compact)
                 }
                 
-                // Current goal info (if editing)
-                if let currentGoal = viewModel.currentGoal {
+                // Existing goals list
+                if !viewModel.goals.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Current Goal")
+                        Text("Existing Goals")
                             .font(.headline)
                         
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("Target: \(currentGoal.formattedTargetWeight)")
-                                Text("By: \(currentGoal.formattedTargetDate)")
-                            }
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        ForEach(viewModel.goals) { goal in
+                            let isAchieved = viewModel.currentWeight <= goal.targetWeight
                             
-                            Spacer()
-                            
-                            Button("Delete Goal") {
-                                Task {
-                                    await deleteCurrentGoal()
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text("Target: \(goal.formattedTargetWeight)")
+                                        .fontWeight(.medium)
+                                    Text("By: \(goal.formattedTargetDate)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                if isAchieved {
+                                    HStack {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                        Text("Achieved!")
+                                            .font(.caption)
+                                            .foregroundColor(.green)
+                                            .fontWeight(.bold)
+                                    }
+                                }
+                                
+                                HStack(spacing: 8) {
+                                    Button("Edit") {
+                                        selectedGoalToEdit = goal
+                                        targetWeight = String(goal.targetWeight)
+                                        
+                                        let dateFormatter = DateFormatter()
+                                        dateFormatter.dateFormat = "yyyy-MM-dd"
+                                        if let date = dateFormatter.date(from: goal.targetDate) {
+                                            targetDate = date
+                                        }
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                                    
+                                    Button("Delete") {
+                                        Task {
+                                            await deleteGoal(goal)
+                                        }
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.red)
                                 }
                             }
-                            .foregroundColor(.red)
-                            .font(.caption)
+                            .padding()
+                            .background((isAchieved ? Color.green : Color.gray).opacity(0.1))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(isAchieved ? Color.green : Color.clear, lineWidth: isAchieved ? 2 : 0)
+                            )
                         }
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
                     }
                 }
                 
@@ -115,14 +152,10 @@ struct GoalView: View {
         }
         .frame(width: 500, height: 450)
         .onAppear {
-            if let currentGoal = viewModel.currentGoal {
-                targetWeight = String(currentGoal.targetWeight)
-                
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd"
-                if let date = dateFormatter.date(from: currentGoal.targetDate) {
-                    targetDate = date
-                }
+            // Start with a clean form for creating new goals
+            if selectedGoalToEdit == nil {
+                targetWeight = ""
+                targetDate = Date().addingTimeInterval(30 * 24 * 60 * 60) // Default to 30 days from now
             }
         }
     }
@@ -137,10 +170,10 @@ struct GoalView: View {
         errorMessage = nil
         
         do {
-            if let currentGoal = viewModel.currentGoal {
+            if let goalToEdit = selectedGoalToEdit {
                 // Update existing goal
                 try await viewModel.updateGoal(
-                    id: currentGoal.id,
+                    id: goalToEdit.id,
                     targetWeight: weightValue,
                     targetDate: targetDate
                 )
@@ -163,17 +196,19 @@ struct GoalView: View {
         isLoading = false
     }
     
-    private func deleteCurrentGoal() async {
-        guard let currentGoal = viewModel.currentGoal else { return }
-        
+    private func deleteGoal(_ goal: Goal) async {
         isLoading = true
         errorMessage = nil
         
         do {
-            try await viewModel.deleteGoal(id: currentGoal.id)
+            try await viewModel.deleteGoal(id: goal.id)
             
-            // Close the sheet on success
-            dismiss()
+            // If we were editing this goal, clear the selection
+            if selectedGoalToEdit?.id == goal.id {
+                selectedGoalToEdit = nil
+                targetWeight = ""
+                targetDate = Date()
+            }
             
         } catch {
             print("❌ GoalView: Failed to delete goal: \(error)")
