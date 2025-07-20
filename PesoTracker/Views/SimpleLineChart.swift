@@ -230,48 +230,24 @@ extension SimpleLineChart {
             if let goal = goal {
                 let goalY = height * (1 - (goal.targetWeight - chartData.minY) / chartData.rangeY)
                 
-                ZStack {
-                    // Goal line
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: goalY))
-                        path.addLine(to: CGPoint(x: width, y: goalY))
-                    }
-                    .stroke(Color.green, style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
-                    
-                    // Goal indicator circle
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 12, height: 12)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                        .position(x: width - 20, y: goalY)
+                // Goal line
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: goalY))
+                    path.addLine(to: CGPoint(x: width, y: goalY))
                 }
+                .stroke(Color.green, style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
             }
             
             // Starting weight line (red dashed)
             if let startingWeight = weights.first?.weightValue {
                 let startY = height * (1 - (startingWeight - chartData.minY) / chartData.rangeY)
                 
-                ZStack {
-                    // Starting weight line
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: startY))
-                        path.addLine(to: CGPoint(x: width, y: startY))
-                    }
-                    .stroke(Color.red.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
-                    
-                    // Starting weight indicator circle
-                    Circle()
-                        .fill(Color.red.opacity(0.7))
-                        .frame(width: 12, height: 12)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                        .position(x: width - 40, y: startY)
+                // Starting weight line
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: startY))
+                    path.addLine(to: CGPoint(x: width, y: startY))
                 }
+                .stroke(Color.red.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
             }
         }
     }
@@ -310,20 +286,56 @@ extension SimpleLineChart {
     private func dataPointsView(width: CGFloat, height: CGFloat) -> some View {
         let chartData = ChartDataCalculator.calculateChartData(weights: weights, goal: goal)
         
-        return ZStack {
-            ForEach(Array(weights.enumerated()), id: \.element.id) { index, weight in
-                let x = width * CGFloat(index) / CGFloat(weights.count - 1)
-                let normalizedWeight = (weight.weightValue - chartData.minY) / chartData.rangeY
-                let y = height * (1 - normalizedWeight)
+        return ForEach(Array(weights.enumerated()), id: \.element.id) { index, weight in
+            let x = width * CGFloat(index) / CGFloat(weights.count - 1)
+            let normalizedWeight = (weight.weightValue - chartData.minY) / chartData.rangeY
+            let y = height * (1 - normalizedWeight)
+            
+            ZStack {
+                // Large invisible hover area
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 50, height: 50)
+                    .onHover { isHovering in
+                        handlePointHover(weight: weight, isHovering: isHovering, position: CGPoint(x: x, y: y))
+                    }
                 
-                DataPointView(
-                    weight: weight,
-                    isHovered: hoveredPoint?.id == weight.id,
-                    position: CGPoint(x: x, y: y)
-                ) { isHovering in
-                    handlePointHover(weight: weight, isHovering: isHovering, position: CGPoint(x: x, y: y))
+                // Check if this point achieved the goal
+                let achievedGoal = goal != nil && abs((goal?.targetWeight ?? 0) - weight.weightValue) <= 0.5
+                
+                // Visible data point
+                ZStack {
+                    // Main circle
+                    Circle()
+                        .fill(hoveredPoint?.id == weight.id ? Color.blue.opacity(0.9) : Color.blue)
+                        .frame(
+                            width: hoveredPoint?.id == weight.id ? 16 : 12,
+                            height: hoveredPoint?.id == weight.id ? 16 : 12
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white, lineWidth: hoveredPoint?.id == weight.id ? 3 : 2)
+                        )
+                        .shadow(
+                            color: .black.opacity(hoveredPoint?.id == weight.id ? 0.3 : 0.1),
+                            radius: hoveredPoint?.id == weight.id ? 4 : 2,
+                            x: 0,
+                            y: hoveredPoint?.id == weight.id ? 2 : 1
+                        )
+                        .scaleEffect(hoveredPoint?.id == weight.id ? 1.1 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: hoveredPoint?.id == weight.id)
+                    
+                    // Goal achievement indicator
+                    if achievedGoal {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 8))
+                            .foregroundColor(.yellow)
+                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                    }
                 }
+                .allowsHitTesting(false)
             }
+            .position(x: x, y: y)
         }
     }
     
@@ -435,59 +447,93 @@ extension SimpleLineChart {
     private func tooltipView(for weight: WeightEntry) -> some View {
         let change = calculateWeightChange(for: weight)
         
-        return VStack(alignment: .leading, spacing: 6) {
-            // Date and weight in one line
+        return VStack(alignment: .leading, spacing: 8) {
+            // Header with date
+            Text(DateFormatter.tooltipDate(from: weight.date))
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            // Weight info
             HStack {
-                Text(DateFormatter.tooltipDate(from: weight.date))
-                    .font(.caption)
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 8, height: 8)
+                
+                Text("Peso: \(String(format: "%.1f", weight.weightValue)) kg")
+                    .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                Text("\(String(format: "%.1f", weight.weightValue)) kg")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.blue)
+                // Weight change
+                if let change = change {
+                    Text(change.text)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(change.color)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(change.color.opacity(0.1))
+                        .cornerRadius(4)
+                }
             }
             
-            // Weight change (if exists)
-            if let change = change {
-                Text("\(change.text)")
-                    .font(.caption)
-                    .foregroundColor(change.color)
-                    .fontWeight(.medium)
-            }
-            
-            // Goal progress (if exists)
+            // Goal progress (only show if relevant to this specific weight)
             if let goal = goal {
                 let remaining = goal.targetWeight - weight.weightValue
-                let progressText = remaining > 0 ? "Faltan \(String(format: "%.1f", remaining)) kg" : "¡Meta alcanzada!"
+                let tolerance: Double = 0.5 // 0.5 kg tolerance for "achieving" goal
                 
-                Text(progressText)
-                    .font(.caption)
-                    .foregroundColor(remaining > 0 ? .orange : .green)
+                if abs(remaining) <= tolerance {
+                    // Goal achieved at this point!
+                    HStack {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                            .font(.caption)
+                        
+                        Text("¡Felicitaciones! Meta alcanzada 🎉")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(6)
+                } else if remaining > 0 && remaining <= 2.0 {
+                    // Close to goal (within 2kg)
+                    HStack {
+                        Circle()
+                            .fill(Color.orange)
+                            .frame(width: 8, height: 8)
+                        
+                        Text("¡Casi! Faltan \(String(format: "%.1f", remaining)) kg")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+                // Don't show goal info if far from target to avoid clutter
             }
             
             // Notes (if any)
             if let notes = weight.notes, !notes.isEmpty {
+                Divider()
                 Text(notes)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
-                    .padding(.top, 2)
             }
         }
-        .padding(10)
-        .frame(maxWidth: 180) // Fixed width to prevent it from being too wide
+        .padding(12)
+        .frame(maxWidth: 200)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(NSColor.separatorColor).opacity(0.4), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
         )
     }
 }
@@ -524,28 +570,21 @@ extension SimpleLineChart {
     
     private func handlePointHover(weight: WeightEntry, isHovering: Bool, position: CGPoint) {
         if isHovering {
-            // Only update if this is a different point or no point is currently hovered
-            if hoveredPoint?.id != weight.id {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    hoveredPoint = weight
-                    
-                    // Adjust tooltip position to avoid edges and center on the hovered point
-                    let tooltipWidth: CGFloat = 180
-                    let tooltipHeight: CGFloat = 100
-                    
-                    // Calculate position relative to the chart area
-                    let adjustedX = min(max(position.x, tooltipWidth/2 + 20), 700 - tooltipWidth/2)
-                    let adjustedY = max(position.y - tooltipHeight - 15, 40)
-                    
-                    hoverLocation = CGPoint(x: adjustedX, y: adjustedY)
-                }
-            }
+            hoveredPoint = weight
+            
+            // Calculate tooltip position
+            let tooltipWidth: CGFloat = 200
+            let tooltipHeight: CGFloat = 120
+            
+            // Position tooltip above the point, adjusting for screen edges
+            let adjustedX = min(max(position.x, tooltipWidth/2 + 10), 600 - tooltipWidth/2)
+            let adjustedY = max(position.y - tooltipHeight - 20, 30)
+            
+            hoverLocation = CGPoint(x: adjustedX, y: adjustedY)
         } else {
             // Only clear if this specific point was being hovered
             if hoveredPoint?.id == weight.id {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    hoveredPoint = nil
-                }
+                hoveredPoint = nil
             }
         }
     }
@@ -601,35 +640,7 @@ struct LegendItem: View {
     }
 }
 
-struct DataPointView: View {
-    let weight: WeightEntry
-    let isHovered: Bool
-    let position: CGPoint
-    let onHover: (Bool) -> Void
-    
-    var body: some View {
-        ZStack {
-            // Invisible larger hit area for better hover detection
-            Circle()
-                .fill(Color.clear)
-                .frame(width: 24, height: 24)
-                .position(position)
-                .onHover(perform: onHover)
-            
-            // Visible circle
-            Circle()
-                .fill(Color.blue)
-                .frame(width: isHovered ? 14 : 10, height: isHovered ? 14 : 10)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white, lineWidth: 2)
-                )
-                .scaleEffect(isHovered ? 1.3 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isHovered)
-                .position(position)
-        }
-    }
-}
+
 
 // MARK: - Chart Calculation Helper
 struct ChartDataCalculator {
