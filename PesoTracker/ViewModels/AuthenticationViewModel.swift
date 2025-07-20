@@ -43,8 +43,10 @@ class AuthenticationViewModel: ObservableObject {
         
         do {
             try await authManager.register(username: username, email: email, password: password)
-            switchToLogin()
+            print("✅ AuthViewModel: Registration successful")
+            // Don't switch to login automatically, let the view handle it
         } catch {
+            print("❌ AuthViewModel: Registration failed: \(error)")
             errorMessage = error.localizedDescription
             showErrorAlert = true
         }
