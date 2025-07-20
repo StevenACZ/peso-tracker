@@ -50,10 +50,11 @@ class AuthenticationManager: ObservableObject {
         print("📝 AuthManager: Starting registration for email: \(email)")
         
         let registerRequest = RegisterRequest(username: username, email: email, password: password)
-        let _ = try await apiService.register(registerRequest)
+        let response = try await apiService.register(registerRequest)
         
-        print("✅ AuthManager: Registration successful, user needs to login")
-        // Registration successful, user needs to login
+        print("✅ AuthManager: Registration successful for user: \(response.user.username)")
+        print("📝 AuthManager: User needs to login to get authentication token")
+        // Registration successful, user needs to login to get token
     }
     
     func logout() {
