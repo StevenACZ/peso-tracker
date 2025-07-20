@@ -9,47 +9,45 @@ import SwiftUI
 
 struct WelcomeView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
-
+    
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
-            
-            // App title
-            VStack(spacing: 16) {
+        VStack(spacing: 50) {
+            VStack(spacing: 20) {
                 Image(systemName: "scalemass")
                     .font(.system(size: 60))
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(.blue)
                 
                 Text("PesoTracker")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .font(.title)
+                    .bold()
                 
-                Text("Track your weight journey")
-                    .font(.title3)
+                Text("Rastrea tu peso fácilmente")
                     .foregroundColor(.secondary)
             }
             
-            Spacer()
-            
-            // Action buttons
-            VStack(spacing: 16) {
-                Button("Sign In") {
+            VStack(spacing: 15) {
+                Button("Iniciar Sesión") {
                     viewModel.switchToLogin()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .frame(maxWidth: 250)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
                 
-                Button("Create Account") {
+                Button("Crear Cuenta") {
                     viewModel.switchToRegister()
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .frame(maxWidth: 250)
+                .padding()
+                .background(Color.clear)
+                .foregroundColor(.blue)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.blue, lineWidth: 1)
+                )
             }
-            .frame(maxWidth: 300)
-            
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding()
     }
 }

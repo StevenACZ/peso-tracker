@@ -10,74 +10,42 @@ import SwiftUI
 struct RegisterView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
     @State private var confirmPassword = ""
-
+    
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        VStack(spacing: 30) {
+            Text("Crear Cuenta")
+                .font(.title)
+                .bold()
             
-            // Title
-            VStack(spacing: 16) {
-                Image(systemName: "person.badge.plus")
-                    .font(.system(size: 60))
-                    .foregroundColor(.accentColor)
-                
-                Text("Create Account")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-            }
-            
-            // Form
-            VStack(spacing: 20) {
-                TextField("Username", text: $viewModel.username)
+            VStack(spacing: 15) {
+                TextField("Nombre de usuario", text: $viewModel.username)
                     .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-
+                
                 TextField("Email", text: $viewModel.email)
                     .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-
-                SecureField("Password", text: $viewModel.password)
+                
+                SecureField("Contraseña", text: $viewModel.password)
                     .textFieldStyle(.roundedBorder)
-
-                SecureField("Confirm Password", text: $confirmPassword)
+                
+                SecureField("Confirmar Contraseña", text: $confirmPassword)
                     .textFieldStyle(.roundedBorder)
-
-                Button("Create Account") {
-                    Task { 
-                        await viewModel.register() 
-                    }
+                
+                Button("Crear Cuenta") {
+                    Task { await viewModel.register() }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(viewModel.isLoading || !isFormValid)
-
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+                .disabled(viewModel.isLoading || viewModel.password != confirmPassword)
+                
                 if viewModel.isLoading {
                     ProgressView()
-                        .scaleEffect(0.8)
-                }
-                
-                // Show validation errors
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
                 }
             }
-            .frame(maxWidth: 400)
-            
-            Spacer()
+            .frame(maxWidth: 300)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(NSColor.windowBackgroundColor))
-
-    }
-
-    private var isFormValid: Bool {
-        !viewModel.username.isEmpty &&
-        !viewModel.email.isEmpty &&
-        !viewModel.password.isEmpty &&
-        viewModel.password == confirmPassword &&
-        confirmPassword.count > 0
+        .padding()
     }
 }

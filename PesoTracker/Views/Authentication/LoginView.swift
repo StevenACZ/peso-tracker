@@ -9,63 +9,36 @@ import SwiftUI
 
 struct LoginView: View {
     @ObservedObject var viewModel: AuthenticationViewModel
-
+    
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        VStack(spacing: 30) {
+            Text("Iniciar Sesión")
+                .font(.title)
+                .bold()
             
-            // Title
-            VStack(spacing: 16) {
-                Image(systemName: "person.circle")
-                    .font(.system(size: 60))
-                    .foregroundColor(.accentColor)
-                
-                Text("Sign In")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-            }
-            
-            // Form
-            VStack(spacing: 20) {
+            VStack(spacing: 15) {
                 TextField("Email", text: $viewModel.email)
                     .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-
-                SecureField("Password", text: $viewModel.password)
+                
+                SecureField("Contraseña", text: $viewModel.password)
                     .textFieldStyle(.roundedBorder)
-
-                Button("Sign In") {
-                    Task { 
-                        await viewModel.login() 
-                    }
+                
+                Button("Iniciar Sesión") {
+                    Task { await viewModel.login() }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(viewModel.isLoading || !isFormValid)
-
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+                .disabled(viewModel.isLoading)
+                
                 if viewModel.isLoading {
                     ProgressView()
-                        .scaleEffect(0.8)
-                }
-                
-                // Show validation errors
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
                 }
             }
-            .frame(maxWidth: 400)
-            
-            Spacer()
+            .frame(maxWidth: 300)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(NSColor.windowBackgroundColor))
-
-    }
-
-    private var isFormValid: Bool {
-        !viewModel.email.isEmpty && !viewModel.password.isEmpty
+        .padding()
     }
 }

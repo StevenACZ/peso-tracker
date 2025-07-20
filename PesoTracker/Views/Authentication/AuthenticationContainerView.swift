@@ -9,31 +9,30 @@ import SwiftUI
 
 struct AuthenticationContainerView: View {
     @StateObject private var viewModel = AuthenticationViewModel()
-
+    
     var body: some View {
-        VStack(spacing: 0) {
-            // Navigation bar
+        VStack {
+            // Simple navigation
             if viewModel.currentFlow != .welcome {
                 HStack {
-                    Button("← Back") {
+                    Button("← Atrás") {
                         viewModel.switchToWelcome()
                     }
-                    .foregroundColor(.accentColor)
-
+                    
                     Spacer()
-
-                    Button(viewModel.currentFlow == .login ? "Create Account" : "Sign In") {
+                    
+                    Button(viewModel.currentFlow == .login ? "Crear Cuenta" : "Iniciar Sesión") {
                         if viewModel.currentFlow == .login {
                             viewModel.switchToRegister()
                         } else {
                             viewModel.switchToLogin()
                         }
                     }
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(.blue)
                 }
                 .padding()
             }
-
+            
             // Main content
             switch viewModel.currentFlow {
             case .welcome:
