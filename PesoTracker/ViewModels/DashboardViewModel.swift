@@ -35,6 +35,12 @@ class DashboardViewModel: ObservableObject {
     }
     
     var currentGoal: Goal? {
+        // Return the closest unachieved goal, or the most recent one
+        let unachievedGoals = goals.filter { currentWeight > $0.targetWeight }
+        if let closestGoal = unachievedGoals.min(by: { abs($0.targetWeight - currentWeight) < abs($1.targetWeight - currentWeight) }) {
+            return closestGoal
+        }
+        // If all goals are achieved, return the most recent one
         return goals.first
     }
     
@@ -52,12 +58,12 @@ class DashboardViewModel: ObservableObject {
         guard let goal = currentGoal else { return "No goal set" }
         
         let remaining = goal.targetWeight - currentWeight
-        if abs(remaining) < 0.1 {
-            return "Goal achieved! 🎉"
-        } else if remaining > 0 {
-            return "\(String(format: "%.1f", remaining)) kg to go"
+        
+        // Check if goal is achieved (current weight is equal or less than target for weight loss)
+        if currentWeight <= goal.targetWeight {
+            return "¡Meta conseguida! 🎉"
         } else {
-            return "Goal exceeded by \(String(format: "%.1f", abs(remaining))) kg!"
+            return "\(String(format: "%.1f", remaining)) kg to go"
         }
     }
     
