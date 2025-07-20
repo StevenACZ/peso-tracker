@@ -21,7 +21,7 @@ struct DashboardView: View {
                 if viewModel.isLoading {
                     ProgressView("Loading weight data...")
                         .frame(maxWidth: .infinity, minHeight: 200)
-                } else if let error = viewModel.errorMessage {
+                } else if viewModel.errorMessage != nil {
                     errorSection
                 } else {
                     // Progress summary
@@ -297,8 +297,8 @@ struct DashboardView: View {
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(8)
             } else {
-                SimpleLineChart(weights: viewModel.weights)
-                    .frame(height: 300)
+                SimpleLineChart(weights: viewModel.weights, goal: viewModel.currentGoal)
+                    .frame(height: 350)
             }
         }
     }
