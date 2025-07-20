@@ -118,6 +118,8 @@ struct DashboardView: View {
             }
             
             if let goal = viewModel.currentGoal {
+                let isGoalAchieved = viewModel.currentWeight <= goal.targetWeight
+                
                 VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading) {
@@ -132,21 +134,34 @@ struct DashboardView: View {
                         Spacer()
                         
                         VStack(alignment: .trailing) {
-                            Text(viewModel.goalProgressText)
-                                .font(.title3)
-                                .fontWeight(.medium)
-                                .foregroundColor(.blue)
+                            HStack {
+                                if isGoalAchieved {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                        .font(.title3)
+                                }
+                                
+                                Text(viewModel.goalProgressText)
+                                    .font(.title3)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(isGoalAchieved ? .green : .blue)
+                            }
                             
                             if let progress = viewModel.goalProgress {
-                                ProgressView(value: progress)
+                                ProgressView(value: min(progress, 1.0))
                                     .frame(width: 120)
+                                    .tint(isGoalAchieved ? .green : .blue)
                             }
                         }
                     }
                 }
                 .padding()
-                .background(Color.blue.opacity(0.1))
+                .background((isGoalAchieved ? Color.green : Color.blue).opacity(0.1))
                 .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isGoalAchieved ? Color.green : Color.blue, lineWidth: isGoalAchieved ? 2 : 0)
+                )
             } else {
                 Text("No goal set. Set a goal to track your progress!")
                     .foregroundColor(.secondary)
