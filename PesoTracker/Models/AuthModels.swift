@@ -37,6 +37,11 @@ struct AuthResponse: Codable {
     let user: User?
 }
 
+struct RegisterResponse: Codable {
+    let message: String
+    let user: User
+}
+
 // APIError is defined below as an enum
 
 struct ValidationError: Codable {
