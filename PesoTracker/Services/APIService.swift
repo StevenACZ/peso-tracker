@@ -13,6 +13,74 @@ class APIService {
     
     private let baseURL = "http://100.111.122.121:3000"
     
+    // MARK: - Error Message Helper
+    private func getUserFriendlyErrorMessage(from errorMessage: String, statusCode: Int) -> String {
+        let lowercaseError = errorMessage.lowercased()
+        
+        // Database constraint errors (most common)
+        if lowercaseError.contains("duplicate key") {
+            if lowercaseError.contains("username") {
+                return "Este nombre de usuario ya está en uso. Por favor elige otro."
+            } else if lowercaseError.contains("email") {
+                return "Este email ya está registrado. ¿Ya tienes una cuenta?"
+            } else {
+                return "Ya existe una cuenta con estos datos."
+            }
+        }
+        
+        // Validation errors
+        if lowercaseError.contains("password must contain") || lowercaseError.contains("password") && lowercaseError.contains("lowercase") {
+            return "La contraseña debe contener al menos una mayúscula, una minúscula y un número."
+        }
+        
+        if lowercaseError.contains("invalid email") || lowercaseError.contains("email") && lowercaseError.contains("invalid") {
+            return "El formato del email no es válido."
+        }
+        
+        if lowercaseError.contains("username") && lowercaseError.contains("required") {
+            return "El nombre de usuario es requerido."
+        }
+        
+        // Authentication errors
+        if lowercaseError.contains("invalid credentials") || statusCode == 401 {
+            return "Email o contraseña incorrectos."
+        }
+        
+        if lowercaseError.contains("user not found") {
+            return "No existe una cuenta con este email."
+        }
+        
+        if lowercaseError.contains("unauthorized") {
+            return "No tienes autorización para realizar esta acción."
+        }
+        
+        // Server errors
+        if statusCode >= 500 {
+            if lowercaseError.contains("duplicate key") {
+                // Handle 500 errors that are actually constraint violations
+                return "Ya existe una cuenta con estos datos."
+            }
+            return "Error del servidor. Por favor intenta más tarde."
+        }
+        
+        // Rate limiting
+        if statusCode == 429 {
+            return "Demasiados intentos. Por favor espera un momento."
+        }
+        
+        // Network/Connection errors
+        if lowercaseError.contains("network") || lowercaseError.contains("connection") {
+            return "Error de conexión. Verifica tu internet."
+        }
+        
+        // Default fallback - return the original message if it's already user-friendly
+        if errorMessage.count < 100 && !lowercaseError.contains("error") {
+            return errorMessage
+        }
+        
+        return "Error inesperado. Por favor intenta nuevamente."
+    }
+    
     func login(_ request: LoginRequest) async throws -> AuthResponse {
         let url = URL(string: "\(baseURL)/api/auth/login")!
         
@@ -54,16 +122,32 @@ class APIService {
                 return authResponse
             } else {
                 print("❌ APIService: Login failed with status \(httpResponse.statusCode)")
-                throw NSError(domain: "APIService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Login failed"])
+                
+                // Try to decode error response for better error messages
+                let rawErrorMessage: String
+                if let errorResponse = try? JSONDecoder().decode(ServerErrorResponse.self, from: data) {
+                    rawErrorMessage = errorResponse.details?.first?.msg ?? errorResponse.error
+                } else {
+                    rawErrorMessage = "Error al iniciar sesión"
+                }
+                
+                let friendlyMessage = getUserFriendlyErrorMessage(from: rawErrorMessage, statusCode: httpResponse.statusCode)
+                throw NSError(domain: "APIService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: friendlyMessage])
             }
             
+        } catch let nsError as NSError where nsError.domain == "APIService" {
+            // Re-throw API errors as-is (they already have proper error messages)
+            throw nsError
+        } catch let decodingError as DecodingError {
+            print("❌ APIService: Decoding error: \(decodingError)")
+            throw NSError(domain: "APIService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Error procesando respuesta del servidor"])
         } catch {
             print("❌ APIService: Network error: \(error.localizedDescription)")
-            throw NSError(domain: "Network", code: 0, userInfo: [NSLocalizedDescriptionKey: "Network connection error. Please check your internet connection and try again."])
+            throw NSError(domain: "Network", code: 0, userInfo: [NSLocalizedDescriptionKey: "Error de conexión. Verifica tu conexión a internet."])
         }
     }
     
-    func register(_ request: RegisterRequest) async throws -> AuthResponse {
+    func register(_ request: RegisterRequest) async throws -> RegisterResponse {
         let url = URL(string: "\(baseURL)/api/auth/register")!
         
         print("🌐 APIService: Making register request to \(url.absoluteString)")
@@ -99,17 +183,33 @@ class APIService {
             }
             
             if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
-                let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+                let registerResponse = try JSONDecoder().decode(RegisterResponse.self, from: data)
                 print("✅ APIService: Register successful")
-                return authResponse
+                return registerResponse
             } else {
                 print("❌ APIService: Register failed with status \(httpResponse.statusCode)")
-                throw NSError(domain: "APIService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Registration failed"])
+                
+                // Try to decode error response for better error messages
+                let rawErrorMessage: String
+                if let errorResponse = try? JSONDecoder().decode(ServerErrorResponse.self, from: data) {
+                    rawErrorMessage = errorResponse.details?.first?.msg ?? errorResponse.error
+                } else {
+                    rawErrorMessage = "Error al crear la cuenta"
+                }
+                
+                let friendlyMessage = getUserFriendlyErrorMessage(from: rawErrorMessage, statusCode: httpResponse.statusCode)
+                throw NSError(domain: "APIService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: friendlyMessage])
             }
             
+        } catch let nsError as NSError where nsError.domain == "APIService" {
+            // Re-throw API errors as-is (they already have proper error messages)
+            throw nsError
+        } catch let decodingError as DecodingError {
+            print("❌ APIService: Decoding error: \(decodingError)")
+            throw NSError(domain: "APIService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Error procesando respuesta del servidor"])
         } catch {
             print("❌ APIService: Network error: \(error.localizedDescription)")
-            throw NSError(domain: "Network", code: 0, userInfo: [NSLocalizedDescriptionKey: "Network connection error. Please check your internet connection and try again."])
+            throw NSError(domain: "Network", code: 0, userInfo: [NSLocalizedDescriptionKey: "Error de conexión. Verifica tu conexión a internet."])
         }
     }
     
