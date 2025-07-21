@@ -13,32 +13,97 @@ struct DashboardView: View {
     @State private var showingGoal = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                headerSection
-                
-                if viewModel.isLoading {
-                    ProgressView("Loading weight data...")
-                        .frame(maxWidth: .infinity, minHeight: 200)
-                } else if viewModel.errorMessage != nil {
-                    errorSection
-                } else {
-                    // Progress summary
-                    progressSummarySection
+        VStack(spacing: 0) {
+            // Header
+            headerSection
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+                .background(Color(NSColor.windowBackgroundColor))
+            
+            Divider()
+            
+            if viewModel.isLoading {
+                ProgressView("Loading weight data...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if viewModel.errorMessage != nil {
+                errorSection
+            } else {
+                // Main content with horizontal layout
+                HStack(spacing: 0) {
+                    // Left side - Summary content
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Progress summary cards
+                            progressSummarySection
+                            
+                            // Smart insights and predictions
+                            DashboardPredictionSection(
+                                currentWeight: viewModel.currentWeight,
+                                weightEntries: viewModel.weights,
+                                mainGoal: viewModel.mainGoal,
+                                nextMilestone: viewModel.nextMilestone,
+                                progressPrediction: viewModel.progressPrediction
+                            )
+                            
+                            // Recent achievements
+                            DashboardAchievementSection(
+                                currentWeight: viewModel.currentWeight,
+                                weightEntries: viewModel.weights,
+                                goals: viewModel.goals
+                            )
+                            
+                            // Goal section
+                            goalSection
+                        }
+                        .padding(24)
+                    }
+                    .frame(minWidth: 450, maxWidth: 600)
                     
-                    // Goal section
-                    goalSection
+                    Divider()
                     
-                    // Weight history table
-                    weightTableSection
-                    
-                    // Simple chart
-                    chartSection
+                    // Right side - Chart and Weight History
+                    ScrollView {
+                        VStack(spacing: 64) {
+                            // Progress Chart Section
+                            VStack(spacing: 16) {
+                                Text("Progress Chart")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                if viewModel.weights.count < 2 {
+                                    VStack(spacing: 12) {
+                                        Image(systemName: "chart.line.uptrend.xyaxis")
+                                            .font(.system(size: 48))
+                                            .foregroundColor(.secondary)
+                                        
+                                        Text("Add more weight entries")
+                                            .font(.headline)
+                                            .foregroundColor(.secondary)
+                                        
+                                        Text("You need at least 2 weight entries to see your progress chart")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .frame(height: 300)
+                                } else {
+                                    SimpleLineChart(weights: viewModel.weights, goal: viewModel.currentGoal)
+                                        .frame(height: 300)
+                                }
+                            }
+                            
+                            // Weight History Section
+                            weightTableSection
+                        }
+                        .padding(24)
+                    }
+                    .frame(minWidth: 500)
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
                 }
             }
-            .padding()
         }
+        .frame(minWidth: 1000, minHeight: 700)
         .onAppear {
             Task { await viewModel.loadWeightData() }
         }
@@ -48,15 +113,41 @@ struct DashboardView: View {
         .sheet(isPresented: $showingGoal) {
             GoalView(viewModel: viewModel)
         }
+        .overlay(
+            // Achievement celebration overlay
+            Group {
+                if viewModel.celebrationManager.showingAchievementCelebration,
+                   let achievement = viewModel.celebrationManager.currentAchievement {
+                    AchievementCelebrationView(
+                        achievement: achievement,
+                        onDismiss: {
+                            viewModel.celebrationManager.dismissCurrentCelebration()
+                        }
+                    )
+                }
+                
+                if viewModel.celebrationManager.showingGoalCelebration,
+                   let goal = viewModel.celebrationManager.currentGoal {
+                    GoalCelebrationView(
+                        goal: goal,
+                        onDismiss: {
+                            viewModel.celebrationManager.dismissCurrentCelebration()
+                        }
+                    )
+                }
+            }
+        )
+        .errorHandling()
     }
     
     // MARK: - Header Section
     private var headerSection: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Weight Progress Tracker")
                     .font(.title)
                     .fontWeight(.bold)
+                    .foregroundColor(.primary)
                 
                 Text("Track your weight journey")
                     .font(.subheadline)
@@ -70,16 +161,19 @@ struct DashboardView: View {
                     showingAddWeight = true
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
                 
                 Button("Set Goal") {
                     showingGoal = true
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.regular)
                 
                 Button("Logout") {
                     viewModel.logout()
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.regular)
             }
         }
     }
@@ -87,26 +181,96 @@ struct DashboardView: View {
     // MARK: - Error Section
     private var errorSection: some View {
         VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundColor(.orange)
+            
             Text("Error loading data")
                 .font(.headline)
+                .foregroundColor(.primary)
             
             Text(viewModel.errorMessage ?? "Unknown error")
                 .foregroundColor(.red)
+                .multilineTextAlignment(.center)
             
             Button("Retry") {
                 Task { await viewModel.loadWeightData() }
             }
             .buttonStyle(.borderedProminent)
         }
-        .frame(maxWidth: .infinity, minHeight: 200)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+    
+    // MARK: - Progress Summary
+    private var progressSummarySection: some View {
+        HStack(spacing: 20) {
+            // Current Weight Card
+            VStack(spacing: 8) {
+                Text("\(String(format: "%.1f", viewModel.currentWeight)) kg")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                Text("Current Weight")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+            )
+            
+            // Starting Weight Card
+            VStack(spacing: 8) {
+                Text("\(String(format: "%.1f", viewModel.startingWeight)) kg")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                Text("Starting Weight")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            )
+            
+            // Progress Card
+            VStack(spacing: 8) {
+                Text(progressValueText)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(progressColor)
+                Text("Progress")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(progressColor.opacity(0.3), lineWidth: 1)
+            )
+        }
     }
     
     // MARK: - Goal Section
     private var goalSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Current Goal")
                     .font(.headline)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -120,132 +284,127 @@ struct DashboardView: View {
             if let goal = viewModel.currentGoal {
                 let isGoalAchieved = viewModel.currentWeight <= goal.targetWeight
                 
-                VStack(spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Target: \(goal.formattedTargetWeight)")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            Text("By: \(goal.formattedTargetDate)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing) {
-                            HStack {
-                                if isGoalAchieved {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                        .font(.title3)
-                                }
-                                
-                                Text(viewModel.goalProgressText)
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Target: \(goal.formattedTargetWeight)")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Text("By: \(goal.formattedTargetDate)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 8) {
+                        HStack(spacing: 8) {
+                            if isGoalAchieved {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
                                     .font(.title3)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(isGoalAchieved ? .green : .blue)
                             }
                             
-                            if let progress = viewModel.goalProgress {
-                                ProgressView(value: min(progress, 1.0))
-                                    .frame(width: 120)
-                                    .tint(isGoalAchieved ? .green : .blue)
-                            }
+                            Text(viewModel.goalProgressText)
+                                .font(.title3)
+                                .fontWeight(.medium)
+                                .foregroundColor(isGoalAchieved ? .green : .blue)
+                        }
+                        
+                        if let progress = viewModel.goalProgress {
+                            ProgressView(value: min(progress, 1.0))
+                                .frame(width: 120)
+                                .tint(isGoalAchieved ? .green : .blue)
                         }
                     }
                 }
                 .padding()
-                .background((isGoalAchieved ? Color.green : Color.blue).opacity(0.1))
+                .background(Color(NSColor.controlBackgroundColor))
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isGoalAchieved ? Color.green : Color.blue, lineWidth: isGoalAchieved ? 2 : 0)
+                        .stroke(isGoalAchieved ? Color.green : Color.blue, lineWidth: 2)
                 )
             } else {
-                Text("No goal set. Set a goal to track your progress!")
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
+                VStack(spacing: 12) {
+                    Image(systemName: "target")
+                        .font(.system(size: 32))
+                        .foregroundColor(.blue)
+                    
+                    Text("No goal set")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("Set a goal to track your progress and unlock achievements!")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                )
             }
-        }
-    }
-    
-    // MARK: - Progress Summary
-    private var progressSummarySection: some View {
-        VStack(spacing: 16) {
-            // Current stats
-            HStack(spacing: 40) {
-                VStack {
-                    Text("\(String(format: "%.1f", viewModel.currentWeight)) kg")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    Text("Current Weight")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                VStack {
-                    Text("\(String(format: "%.1f", viewModel.startingWeight)) kg")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    Text("Starting Weight")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                VStack {
-                    Text(progressValueText)
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(progressColor)
-                    Text("Progress")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(12)
         }
     }
     
     // MARK: - Weight Table
     private var weightTableSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Weight History")
                 .font(.headline)
+                .foregroundColor(.primary)
             
             if viewModel.weights.isEmpty {
-                Text("No weight entries yet")
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 100)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
+                VStack(spacing: 12) {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 32))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No weight entries yet")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Add your first weight entry to start tracking your progress")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, minHeight: 120)
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(12)
             } else {
                 VStack(spacing: 0) {
                     // Table header
                     HStack {
                         Text("Date")
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text("Weight (kg)")
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .frame(width: 100, alignment: .trailing)
                         
                         Text("Change")
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .frame(width: 80, alignment: .trailing)
                         
                         Text("Notes")
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text("Actions")
                             .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                             .frame(width: 60, alignment: .center)
                     }
                     .padding()
@@ -255,9 +414,11 @@ struct DashboardView: View {
                     ForEach(Array(viewModel.weights.enumerated()), id: \.element.id) { index, weight in
                         HStack {
                             Text(weight.formattedDate)
+                                .foregroundColor(.primary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             
                             Text(String(format: "%.1f", weight.weightValue))
+                                .foregroundColor(.primary)
                                 .frame(width: 100, alignment: .trailing)
                             
                             Text(changeText(for: index))
@@ -265,24 +426,22 @@ struct DashboardView: View {
                                 .frame(width: 80, alignment: .trailing)
                             
                             Text(weight.notes ?? "")
-                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             
                             // Action buttons
-                            HStack(spacing: 4) {
-                                Button("Delete") {
-                                    Task {
-                                        do {
-                                            try await viewModel.deleteWeight(id: weight.id)
-                                        } catch {
-                                            print("❌ Failed to delete weight: \(error)")
-                                        }
+                            Button("Delete") {
+                                Task {
+                                    do {
+                                        try await viewModel.deleteWeight(id: weight.id)
+                                    } catch {
+                                        print("❌ Failed to delete weight: \(error)")
                                     }
                                 }
-                                .foregroundColor(.red)
-                                .font(.caption)
-                                .buttonStyle(.plain)
                             }
+                            .foregroundColor(.red)
+                            .font(.caption)
+                            .buttonStyle(.plain)
                             .frame(width: 60)
                         }
                         .padding()
@@ -290,30 +449,11 @@ struct DashboardView: View {
                     }
                 }
                 .background(Color(NSColor.textBackgroundColor))
-                .cornerRadius(8)
+                .cornerRadius(12)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 12)
                         .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                 )
-            }
-        }
-    }
-    
-    // MARK: - Chart Section
-    private var chartSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Progress Chart")
-                .font(.headline)
-            
-            if viewModel.weights.count < 2 {
-                Text("Add more weight entries to see your progress chart")
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 200)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
-            } else {
-                SimpleLineChart(weights: viewModel.weights, goal: viewModel.currentGoal)
-                    .frame(height: 350)
             }
         }
     }
