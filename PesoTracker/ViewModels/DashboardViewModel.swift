@@ -11,13 +11,21 @@ import Foundation
 class DashboardViewModel: ObservableObject {
     @Published var weights: [WeightEntry] = []
     @Published var goals: [Goal] = []
+    @Published var goalHierarchy: GoalHierarchy?
     @Published var currentWeight: Double = 0.0
     @Published var startingWeight: Double = 0.0
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var progressPrediction: ProgressPrediction?
+    
+    // Achievement and celebration system
+    @Published var achievementSystem = AchievementSystem()
+    @Published var celebrationManager = CelebrationManager()
     
     private let apiService = APIService.shared
     private let keychainService = KeychainService.shared
+    private let smartGoalEngine = SmartGoalEngine()
+    private let progressPredictor = ProgressPredictor()
     
     var weightProgress: Double {
         return currentWeight - startingWeight
@@ -35,13 +43,23 @@ class DashboardViewModel: ObservableObject {
     }
     
     var currentGoal: Goal? {
-        // Return the closest unachieved goal, or the most recent one
-        let unachievedGoals = goals.filter { currentWeight > $0.targetWeight }
-        if let closestGoal = unachievedGoals.min(by: { abs($0.targetWeight - currentWeight) < abs($1.targetWeight - currentWeight) }) {
-            return closestGoal
-        }
-        // If all goals are achieved, return the most recent one
-        return goals.first
+        return goalHierarchy?.currentMilestone ?? goalHierarchy?.mainGoal
+    }
+    
+    var mainGoal: Goal? {
+        return goalHierarchy?.mainGoal
+    }
+    
+    var nextMilestone: Goal? {
+        return GoalHierarchyManager.getNextMilestone(from: goals, currentWeight: currentWeight)
+    }
+    
+    var achievedGoals: [Goal] {
+        return GoalHierarchyManager.getAchievedGoals(from: goals, currentWeight: currentWeight)
+    }
+    
+    var activeGoals: [Goal] {
+        return GoalHierarchyManager.getActiveGoals(from: goals, currentWeight: currentWeight)
     }
     
     var goalProgress: Double? {
@@ -102,6 +120,24 @@ class DashboardViewModel: ObservableObject {
             do {
                 let goalResponse = try await apiService.getGoals()
                 goals = goalResponse.data
+                
+                // Create goal hierarchy
+                goalHierarchy = GoalHierarchyManager.createHierarchy(from: goals)
+                
+                // Generate progress prediction if we have a main goal
+                if let mainGoal = goalHierarchy?.mainGoal,
+                   let targetDate = parseDate(mainGoal.targetDate) {
+                    progressPrediction = progressPredictor.generatePrediction(
+                        currentWeight: currentWeight,
+                        targetWeight: mainGoal.targetWeight,
+                        targetDate: targetDate,
+                        weightEntries: weights
+                    )
+                }
+                
+                // Evaluate achievements and trigger celebrations
+                await evaluateAchievementsAndCelebrate()
+                
             } catch {
                 print("⚠️ DashboardViewModel: Failed to load goals: \(error)")
                 // Don't fail the whole operation if goals fail
@@ -221,4 +257,212 @@ class DashboardViewModel: ObservableObject {
         // Refresh the data after deleting goal
         await loadWeightData()
     }
+    
+    // MARK: - Smart Goals Management
+    
+    /// Create a main goal and generate smart milestones
+    func createMainGoalWithMilestones(targetWeight: Double, targetDate: Date) async throws {
+        // First create the main goal
+        let mainGoalResponse = try await createMainGoal(targetWeight: targetWeight, targetDate: targetDate)
+        
+        // Generate smart milestones
+        let mainGoal = mainGoalResponse.data
+        let smartMilestones = smartGoalEngine.generateShortTermGoals(
+            from: mainGoal,
+            currentWeight: currentWeight,
+            weightEntries: weights
+        )
+        
+        // Create the milestone goals
+        let _ = try await apiService.createMultipleGoals(smartMilestones)
+        
+        print("✅ DashboardViewModel: Created main goal with \(smartMilestones.count) milestones")
+        
+        // Refresh data
+        await loadWeightData()
+    }
+    
+    /// Regenerate milestones based on current progress
+    func regenerateMilestones() async throws {
+        guard let mainGoal = goalHierarchy?.mainGoal else {
+            throw NSError(domain: "DashboardViewModel", code: 0, userInfo: [NSLocalizedDescriptionKey: "No main goal found"])
+        }
+        
+        // Delete existing milestones
+        try await apiService.deleteChildGoals(parentId: mainGoal.id)
+        
+        // Generate new milestones based on current progress
+        let adjustedGoals = smartGoalEngine.adjustGoalTimeline(
+            goals: goals,
+            currentWeight: currentWeight,
+            weightEntries: weights
+        )
+        
+        let newMilestones = adjustedGoals.filter { $0.type == .shortTerm }
+        let _ = try await apiService.createMultipleGoals(newMilestones)
+        
+        print("✅ DashboardViewModel: Regenerated \(newMilestones.count) milestones")
+        
+        // Refresh data
+        await loadWeightData()
+    }
+    
+    /// Create maintenance goal when main goal is achieved
+    func createMaintenanceGoal() async throws {
+        guard let mainGoal = goalHierarchy?.mainGoal else {
+            throw NSError(domain: "DashboardViewModel", code: 0, userInfo: [NSLocalizedDescriptionKey: "No main goal found"])
+        }
+        
+        let shouldCreate = smartGoalEngine.shouldCreateMaintenanceGoal(
+            currentWeight: currentWeight,
+            mainGoal: mainGoal,
+            weightEntries: weights
+        )
+        
+        guard shouldCreate else {
+            throw NSError(domain: "DashboardViewModel", code: 0, userInfo: [NSLocalizedDescriptionKey: "Not ready for maintenance goal yet"])
+        }
+        
+        let maintenanceGoal = smartGoalEngine.createMaintenanceGoal(from: mainGoal)
+        let _ = try await apiService.createSmartGoal(maintenanceGoal)
+        
+        print("✅ DashboardViewModel: Created maintenance goal")
+        
+        // Refresh data
+        await loadWeightData()
+    }
+    
+    /// Get goal recommendations for user input
+    func getGoalRecommendations(desiredWeight: Double, timeframe: TimeInterval) -> LegacyGoalRecommendation {
+        return smartGoalEngine.getGoalRecommendations(
+            currentWeight: currentWeight,
+            desiredWeight: desiredWeight,
+            timeframe: timeframe
+        )
+    }
+    
+    /// Get goal statistics
+    func getGoalStatistics() -> GoalStatistics {
+        return GoalStatistics(from: goals, currentWeight: currentWeight)
+    }
+    
+    /// Check if milestones need adjustment based on progress
+    func shouldAdjustMilestones() -> Bool {
+        guard let prediction = progressPrediction else { return false }
+        
+        switch prediction.insight {
+        case .aheadOfSchedule(let days) where days > 14:
+            return true
+        case .behindSchedule(let days) where days > 14:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func parseDate(_ dateString: String) -> Date? {
+        let formatter = DateFormatter()
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd"
+        ]
+        
+        for format in formats {
+            formatter.dateFormat = format
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+        }
+        
+        return nil
+    }
+    
+    private func createMainGoal(targetWeight: Double, targetDate: Date) async throws -> CreateGoalResponse {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: targetDate)
+        
+        let request = CreateGoalRequest(
+            targetWeight: targetWeight,
+            targetDate: dateString,
+            type: .main,
+            isAutoGenerated: false
+        )
+        
+        return try await apiService.createGoal(request)
+    }
+    
+    // MARK: - Achievement Management
+    
+    /// Evaluate achievements and trigger celebrations for new unlocks
+    private func evaluateAchievementsAndCelebrate() async {
+        // Store previous achievements for comparison
+        let previousAchievements = achievementSystem.userAchievements
+        
+        // Evaluate current achievements
+        await achievementSystem.evaluateAchievements(
+            currentWeight: currentWeight,
+            weightEntries: weights,
+            goals: goals
+        )
+        
+        // Check for newly unlocked achievements
+        let newAchievements = AchievementCriteriaEvaluator.getNewlyUnlockedAchievements(
+            current: achievementSystem.userAchievements,
+            previous: previousAchievements
+        )
+        
+        // Trigger celebrations for new achievements
+        if !newAchievements.isEmpty {
+            celebrationManager.celebrateMultipleAchievements(newAchievements)
+        }
+        
+        // Check for newly achieved goals
+        let newlyAchievedGoals = goals.filter { goal in
+            goal.isAchieved(currentWeight: currentWeight) &&
+            !previouslyAchievedGoals.contains(goal.id)
+        }
+        
+        // Trigger goal celebrations
+        for goal in newlyAchievedGoals {
+            celebrationManager.celebrateGoal(goal)
+        }
+        
+        // Update previously achieved goals
+        previouslyAchievedGoals = Set(goals.filter { $0.isAchieved(currentWeight: currentWeight) }.map { $0.id })
+    }
+    
+    /// Force re-evaluation of achievements (for manual refresh)
+    func refreshAchievements() async {
+        await evaluateAchievementsAndCelebrate()
+    }
+    
+    // MARK: - Achievement Navigation
+    
+    /// Get achievement by ID for navigation
+    func getAchievement(by id: String) -> Achievement? {
+        return achievementSystem.getAchievement(by: id)
+    }
+    
+    /// Get achievements for a specific category
+    func getAchievements(by category: AchievementCategory) -> [Achievement] {
+        return achievementSystem.getAchievements(by: category)
+    }
+    
+    /// Check if an achievement is unlocked
+    func isAchievementUnlocked(_ id: String) -> Bool {
+        return achievementSystem.isUnlocked(id)
+    }
+    
+    /// Get achievement progress
+    func getAchievementProgress(for id: String) -> AchievementProgress? {
+        return achievementSystem.getProgress(for: id)
+    }
+    
+    // MARK: - Private Properties
+    
+    private var previouslyAchievedGoals: Set<Int> = []
 }

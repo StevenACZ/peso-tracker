@@ -45,6 +45,25 @@ struct WeightEntry: Codable, Identifiable {
         }
     }
     
+    // Custom initializer for creating WeightEntry instances
+    init(
+        id: Int,
+        userId: Int?,
+        weight: Double,
+        date: String,
+        notes: String? = nil,
+        createdAt: String? = nil,
+        updatedAt: String? = nil
+    ) {
+        self.id = id
+        self.userId = userId
+        self.weight = weight
+        self.date = date
+        self.notes = notes
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+    
     // Custom encoder for sending data back to API
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)

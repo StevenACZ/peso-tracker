@@ -42,9 +42,8 @@ struct RegisterResponse: Codable {
     let user: User
 }
 
-// APIError is defined below as an enum
-
-struct ValidationError: Codable {
+// MARK: - API Validation Error
+struct APIValidationError: Codable {
     let msg: String
     let param: String
     let location: String
@@ -53,7 +52,7 @@ struct ValidationError: Codable {
 // MARK: - Server Error Response
 struct ServerErrorResponse: Codable {
     let error: String
-    let details: [ValidationError]?
+    let details: [APIValidationError]?
 }
 
 // MARK: - Authentication State
@@ -83,7 +82,7 @@ enum APIError: LocalizedError, Codable {
     case rateLimited
     case serverError(String)
     case unexpectedStatusCode(Int)
-    case validationError([ValidationError])
+    case validationError([APIValidationError])
     case authenticationRequired
     
     // For Codable support
@@ -95,7 +94,7 @@ enum APIError: LocalizedError, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let errorMessage = try container.decode(String.self, forKey: .error)
-        let details = try container.decodeIfPresent([ValidationError].self, forKey: .details)
+        let details = try container.decodeIfPresent([APIValidationError].self, forKey: .details)
         
         if let details = details {
             self = .validationError(details)

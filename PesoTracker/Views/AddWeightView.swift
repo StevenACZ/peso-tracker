@@ -16,80 +16,300 @@ struct AddWeightView: View {
     @State private var date = Date()
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedPhoto: NSImage?
+    @State private var showingPhotoGallery = false
+    
+    @StateObject private var photoManager = PhotoManager.shared
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             // Header
-            HStack {
-                Text("Add Weight Entry")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button("Cancel") {
-                    dismiss()
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Add Weight Entry")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
                 }
+                
+                Divider()
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            // Form
-            VStack(spacing: 20) {
-                // Date picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Date")
-                        .font(.headline)
+            // Main content
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Current weight info
+                    if viewModel.currentWeight > 0 {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Current Progress")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            HStack(spacing: 20) {
+                                VStack(spacing: 4) {
+                                    Text("\(String(format: "%.1f", viewModel.currentWeight)) kg")
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+                                    Text("Last Weight")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                if let goal = viewModel.currentGoal {
+                                    VStack(spacing: 4) {
+                                        Text("\(String(format: "%.1f", goal.targetWeight)) kg")
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.blue)
+                                        Text("Goal")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    VStack(spacing: 4) {
+                                        let remaining = viewModel.currentWeight - goal.targetWeight
+                                        Text("\(String(format: "%.1f", remaining)) kg")
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(remaining > 0 ? .orange : .green)
+                                        Text("To Go")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(12)
+                    }
                     
-                    DatePicker("Select date", selection: $date, displayedComponents: .date)
-                        .datePickerStyle(.compact)
-                }
-                
-                // Weight input
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Weight (kg)")
-                        .font(.headline)
+                    // Date selection
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Date")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        HStack {
+                            DatePicker("Select date", selection: $date, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                            
+                            Spacer()
+                            
+                            if Calendar.current.isDateInToday(date) {
+                                Text("Today")
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
                     
-                    TextField("Enter your weight", text: $weight)
-                        .textFieldStyle(.roundedBorder)
-                }
-                
-                // Notes input
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Notes (optional)")
-                        .font(.headline)
+                    // Weight input
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Weight (kg)")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        HStack(spacing: 16) {
+                            TextField("Enter your weight", text: $weight)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(maxWidth: 200)
+                            
+                            if let weightValue = Double(weight), weightValue > 0, viewModel.currentWeight > 0 {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    let change = weightValue - viewModel.currentWeight
+                                    if change != 0 {
+                                        Text("Change: \(change > 0 ? "+" : "")\(String(format: "%.1f", change)) kg")
+                                            .font(.subheadline)
+                                            .foregroundColor(change < 0 ? .green : .red)
+                                    } else {
+                                        Text("No change")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
                     
-                    TextField("Add any notes...", text: $notes)
-                        .textFieldStyle(.roundedBorder)
-                }
-                
-                // Error message
-                if let error = errorMessage {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                }
-                
-                // Save button
-                Button("Save Weight Entry") {
-                    Task {
-                        await saveWeight()
+                    // Progress photo section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Progress Photo (optional)")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        if let photo = selectedPhoto {
+                            // Show selected photo
+                            HStack(spacing: 16) {
+                                Image(nsImage: photo)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 100, height: 100)
+                                    .clipped()
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.blue, lineWidth: 2)
+                                    )
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Photo selected")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("This photo will be saved with your weight entry to track visual progress")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    
+                                    HStack(spacing: 12) {
+                                        Button("Change Photo") {
+                                            selectPhoto()
+                                        }
+                                        .font(.caption)
+                                        .buttonStyle(.bordered)
+                                        .controlSize(.small)
+                                        
+                                        Button("Remove") {
+                                            selectedPhoto = nil
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                
+                                Spacer()
+                            }
+                        } else {
+                            // Photo selection options
+                            VStack(spacing: 12) {
+                                Button(action: selectPhoto) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "camera")
+                                            .font(.title2)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Add Progress Photo")
+                                                .fontWeight(.medium)
+                                            Text("Track your visual progress")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color.blue.opacity(0.1))
+                                    .foregroundColor(.blue)
+                                    .cornerRadius(12)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button("View Photo Gallery") {
+                                    showingPhotoGallery = true
+                                }
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
+                    
+                    // Notes input
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Notes (optional)")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        TextField("Add any notes about your progress, how you're feeling, etc.", text: $notes, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                            .lineLimit(3...6)
+                        
+                        if !notes.isEmpty {
+                            Text("\(notes.count) characters")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
+                    
+                    // Error message
+                    if let error = errorMessage {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.red)
+                            
+                            Text(error)
+                                .foregroundColor(.red)
+                                .font(.subheadline)
+                        }
+                        .padding()
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(8)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(weight.isEmpty || isLoading)
-                
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
+                .padding(24)
             }
-            .frame(maxWidth: 400)
-            .padding()
             
-            Spacer()
+            // Bottom action bar
+            VStack(spacing: 0) {
+                Divider()
+                
+                HStack(spacing: 16) {
+                    Spacer()
+                    
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+                    
+                    Button("Save Weight Entry") {
+                        Task {
+                            await saveWeight()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(weight.isEmpty || isLoading)
+                }
+                .padding(24)
+                .background(Color(NSColor.windowBackgroundColor))
+            }
         }
-        .frame(width: 500, height: 400)
+        .frame(minWidth: 500, minHeight: 600)
+        .sheet(isPresented: $showingPhotoGallery) {
+            ProgressPhotoGalleryView()
+        }
     }
     
     private func saveWeight() async {
@@ -109,6 +329,26 @@ struct AddWeightView: View {
                 notes: notes.isEmpty ? nil : notes
             )
             
+            // Save progress photo if selected
+            if let photo = selectedPhoto {
+                // Create a temporary weight entry for photo saving
+                let tempWeightEntry = WeightEntry(
+                    id: Int.random(in: 1000...9999), // Temporary ID
+                    userId: 0,
+                    weight: weightValue,
+                    date: formatDate(date),
+                    notes: notes.isEmpty ? nil : notes,
+                    createdAt: formatDate(Date()),
+                    updatedAt: formatDate(Date())
+                )
+                
+                if let savedFilename = photoManager.saveProgressPhoto(photo, for: tempWeightEntry) {
+                    print("📸 AddWeightView: Saved progress photo: \(savedFilename)")
+                } else {
+                    print("❌ AddWeightView: Failed to save progress photo")
+                }
+            }
+            
             // Close the sheet on success
             dismiss()
             
@@ -118,5 +358,17 @@ struct AddWeightView: View {
         }
         
         isLoading = false
+    }
+    
+    // MARK: - Photo Methods
+    
+    private func selectPhoto() {
+        selectedPhoto = photoManager.selectPhoto()
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 }

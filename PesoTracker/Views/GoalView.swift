@@ -13,150 +13,319 @@ struct GoalView: View {
     
     @State private var targetWeight: String = ""
     @State private var targetDate = Date()
+    @State private var selectedGoalType: GoalType = .main
+    @State private var generateMilestones = true
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var goalRecommendation: LegacyGoalRecommendation?
     
     @State private var selectedGoalToEdit: Goal?
+    @State private var showingGoalPreview = false
     
     private var isEditing: Bool {
         selectedGoalToEdit != nil
     }
     
+    private var timeframeInDays: Int {
+        Int(targetDate.timeIntervalSinceNow / (24 * 60 * 60))
+    }
+    
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             // Header
-            HStack {
-                Text(isEditing ? "Update Goal" : "Create New Goal")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button("Cancel") {
-                    dismiss()
+            VStack(spacing: 16) {
+                HStack {
+                    Text(isEditing ? "Update Goal" : "Create New Goal")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
                 }
+                
+                Divider()
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            // Form
-            VStack(spacing: 20) {
-                // Target weight input
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Target Weight (kg)")
-                        .font(.headline)
-                    
-                    TextField("Enter target weight", text: $targetWeight)
-                        .textFieldStyle(.roundedBorder)
-                }
-                
-                // Target date picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Target Date")
-                        .font(.headline)
-                    
-                    DatePicker("Select target date", selection: $targetDate, in: Date()..., displayedComponents: .date)
-                        .datePickerStyle(.compact)
-                }
-                
-                // Existing goals list
-                if !viewModel.goals.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Existing Goals")
-                            .font(.headline)
-                        
-                        ForEach(viewModel.goals) { goal in
-                            let isAchieved = viewModel.currentWeight <= goal.targetWeight
+            // Main content
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Goal type selection (only for new goals)
+                    if !isEditing {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Goal Type")
+                                .font(.headline)
+                                .foregroundColor(.primary)
                             
+                            Picker("Goal Type", selection: $selectedGoalType) {
+                                ForEach(GoalType.allCases, id: \.self) { type in
+                                    HStack {
+                                        Text(type.emoji)
+                                        Text(type.displayName)
+                                    }
+                                    .tag(type)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .onChange(of: selectedGoalType) {
+                                updateGoalRecommendation()
+                            }
+                        }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Target weight input
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Target Weight (kg)")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        HStack(spacing: 16) {
+                            TextField("Enter target weight", text: $targetWeight)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(maxWidth: 200)
+                                .onChange(of: targetWeight) {
+                                    updateGoalRecommendation()
+                                }
+                            
+                            if viewModel.currentWeight > 0 {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Current: \(String(format: "%.1f", viewModel.currentWeight)) kg")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    
+                                    if let weight = Double(targetWeight), weight > 0 {
+                                        let difference = viewModel.currentWeight - weight
+                                        Text(difference > 0 ? "Goal: -\(String(format: "%.1f", difference)) kg" : "Goal: +\(String(format: "%.1f", abs(difference))) kg")
+                                            .font(.caption)
+                                            .foregroundColor(difference > 0 ? .green : .blue)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
+                    
+                    // Target date picker
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Target Date")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        HStack {
+                            DatePicker("Select target date", selection: $targetDate, in: Date()..., displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .onChange(of: targetDate) {
+                                    updateGoalRecommendation()
+                                }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("\(timeframeInDays) days")
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                
+                                Text("from now")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
+                    
+                    // Smart milestones option (only for main goals)
+                    if selectedGoalType == .main && !isEditing {
+                        VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                VStack(alignment: .leading) {
-                                    Text("Target: \(goal.formattedTargetWeight)")
-                                        .fontWeight(.medium)
-                                    Text("By: \(goal.formattedTargetDate)")
+                                Toggle("Generate Smart Milestones", isOn: $generateMilestones)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                            }
+                            
+                            if generateMilestones {
+                                HStack {
+                                    Image(systemName: "lightbulb")
+                                        .foregroundColor(.orange)
+                                    
+                                    Text("Automatic milestones will be created every 2-5kg to help you stay motivated and track progress")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Goal recommendation
+                    if let recommendation = goalRecommendation, !isEditing {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: recommendation.type == .optimal ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                    .foregroundColor(recommendation.type == .optimal ? .green : .orange)
+                                    .font(.title3)
+                                
+                                Text("AI Recommendation")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            Text(recommendation.recommendationText)
+                                .font(.subheadline)
+                                .foregroundColor(recommendation.type == .optimal ? .green : .orange)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                if recommendation.type != .optimal {
+                                    Text("• Suggested timeframe: \(recommendation.formattedTimeframe)")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
                                 
-                                Spacer()
-                                
-                                if isAchieved {
-                                    HStack {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                        Text("Achieved!")
-                                            .font(.caption)
-                                            .foregroundColor(.green)
-                                            .fontWeight(.bold)
-                                    }
-                                }
-                                
-                                HStack(spacing: 8) {
-                                    Button("Edit") {
-                                        selectedGoalToEdit = goal
-                                        targetWeight = String(goal.targetWeight)
-                                        
-                                        let dateFormatter = DateFormatter()
-                                        dateFormatter.dateFormat = "yyyy-MM-dd"
-                                        if let date = dateFormatter.date(from: goal.targetDate) {
-                                            targetDate = date
-                                        }
-                                    }
+                                Text("• Expected milestones: \(recommendation.milestoneCount)")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
-                                    
-                                    Button("Delete") {
-                                        Task {
-                                            await deleteGoal(goal)
-                                        }
-                                    }
+                                    .foregroundColor(.secondary)
+                                
+                                Text("• Weekly rate: \(String(format: "%.1f", recommendation.expectedWeeklyRate)) kg/week")
                                     .font(.caption)
-                                    .foregroundColor(.red)
-                                }
+                                    .foregroundColor(.secondary)
                             }
-                            .padding()
-                            .background((isAchieved ? Color.green : Color.gray).opacity(0.1))
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(isAchieved ? Color.green : Color.clear, lineWidth: isAchieved ? 2 : 0)
+                        }
+                        .padding()
+                        .background(recommendation.type == .optimal ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(recommendation.type == .optimal ? Color.green : Color.orange, lineWidth: 1)
+                        )
+                    }
+                    
+                    // Your Goals section
+                    if let hierarchy = viewModel.goalHierarchy {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Your Goals")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            GoalHierarchyView(
+                                hierarchy: hierarchy,
+                                currentWeight: viewModel.currentWeight,
+                                onEditGoal: { goal in
+                                    selectedGoalToEdit = goal
+                                    targetWeight = String(goal.targetWeight)
+                                    selectedGoalType = goal.type
+                                    
+                                    let dateFormatter = DateFormatter()
+                                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                                    if let date = dateFormatter.date(from: goal.targetDate) {
+                                        targetDate = date
+                                    }
+                                },
+                                onDeleteGoal: { goal in
+                                    Task {
+                                        await deleteGoal(goal)
+                                    }
+                                }
                             )
                         }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Error message
+                    if let error = errorMessage {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.red)
+                            
+                            Text(error)
+                                .foregroundColor(.red)
+                                .font(.subheadline)
+                        }
+                        .padding()
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(8)
                     }
                 }
-                
-                // Error message
-                if let error = errorMessage {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                }
-                
-                // Save button
-                Button(isEditing ? "Update Goal" : "Create Goal") {
-                    Task {
-                        await saveGoal()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(targetWeight.isEmpty || isLoading)
-                
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
+                .padding(24)
             }
-            .frame(maxWidth: 400)
-            .padding()
             
-            Spacer()
+            // Bottom action bar
+            VStack(spacing: 0) {
+                Divider()
+                
+                HStack(spacing: 16) {
+                    if !isEditing && selectedGoalType == .main && generateMilestones {
+                        Button("Preview Milestones") {
+                            showingGoalPreview = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .disabled(targetWeight.isEmpty)
+                    }
+                    
+                    Spacer()
+                    
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+                    
+                    Button(isEditing ? "Update Goal" : "Create Goal") {
+                        Task {
+                            await saveGoal()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(targetWeight.isEmpty || isLoading)
+                }
+                .padding(24)
+                .background(Color(NSColor.windowBackgroundColor))
+            }
         }
-        .frame(width: 500, height: 450)
+        .frame(minWidth: 600, minHeight: 500)
+        .sheet(isPresented: $showingGoalPreview) {
+            GoalPreviewView(
+                targetWeight: Double(targetWeight) ?? 0,
+                targetDate: targetDate,
+                currentWeight: viewModel.currentWeight,
+                weightEntries: viewModel.weights
+            )
+        }
         .onAppear {
             // Start with a clean form for creating new goals
             if selectedGoalToEdit == nil {
                 targetWeight = ""
                 targetDate = Date().addingTimeInterval(30 * 24 * 60 * 60) // Default to 30 days from now
+                
+                // Set default goal type based on existing goals
+                if viewModel.goalHierarchy?.mainGoal == nil {
+                    selectedGoalType = .main
+                } else {
+                    selectedGoalType = .shortTerm
+                    generateMilestones = false
+                }
             }
+            
+            updateGoalRecommendation()
         }
     }
     
@@ -178,11 +347,18 @@ struct GoalView: View {
                     targetDate: targetDate
                 )
             } else {
-                // Create new goal
-                try await viewModel.createGoal(
-                    targetWeight: weightValue,
-                    targetDate: targetDate
-                )
+                // Create new goal with smart features
+                if selectedGoalType == .main && generateMilestones {
+                    try await viewModel.createMainGoalWithMilestones(
+                        targetWeight: weightValue,
+                        targetDate: targetDate
+                    )
+                } else {
+                    try await viewModel.createGoal(
+                        targetWeight: weightValue,
+                        targetDate: targetDate
+                    )
+                }
             }
             
             // Close the sheet on success
@@ -194,6 +370,19 @@ struct GoalView: View {
         }
         
         isLoading = false
+    }
+    
+    private func updateGoalRecommendation() {
+        guard let weightValue = Double(targetWeight), weightValue > 0 else {
+            goalRecommendation = nil
+            return
+        }
+        
+        let timeframe = targetDate.timeIntervalSinceNow
+        goalRecommendation = viewModel.getGoalRecommendations(
+            desiredWeight: weightValue,
+            timeframe: timeframe
+        )
     }
     
     private func deleteGoal(_ goal: Goal) async {
