@@ -103,7 +103,7 @@ struct AddWeightView: View {
                         
                         HStack {
                             DatePicker("Select date", selection: $date, displayedComponents: .date)
-                                .datePickerStyle(.compact)
+                                .datePickerStyle(.field)
                             
                             Spacer()
                             

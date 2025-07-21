@@ -251,7 +251,7 @@ struct GoalCelebrationView: View {
                 }
             }
             .padding(32)
-            .background(Color(NSColor.windowBackgroundColor))
+            .background(Color.primary.colorInvert())
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
             .scaleEffect(scale)
@@ -452,19 +452,20 @@ class CelebrationManager: ObservableObject {
     }
     
     func dismissCurrentCelebration() {
+        // Immediately hide the current celebration
         showingAchievementCelebration = false
         showingGoalCelebration = false
+        
+        // Clear current items
         currentAchievement = nil
         currentGoal = nil
         
-        // Reset processing state immediately
+        // Reset processing state
         isProcessingQueue = false
         
-        // Show next celebration immediately if there are more
-        if !celebrationQueue.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.processQueue()
-            }
+        // Process next celebration if available
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.processQueue()
         }
     }
 }
