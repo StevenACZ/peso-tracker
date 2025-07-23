@@ -263,7 +263,7 @@ struct QuickTip {
         
         QuickTip(
             title: "Log Weight Consistently",
-            description: "Daily weigh-ins help unlock consistency achievements and provide better progress predictions.",
+            description: "Daily weigh-ins provide better progress predictions and help track your journey.",
             category: .general
         ),
         
@@ -273,11 +273,6 @@ struct QuickTip {
             category: .photos
         ),
         
-        QuickTip(
-            title: "Achievement Chains",
-            description: "Some achievements unlock others! Complete basic achievements to unlock more challenging ones.",
-            category: .achievements
-        ),
         
         QuickTip(
             title: "Smart Milestones",
@@ -293,8 +288,8 @@ struct QuickTip {
         
         QuickTip(
             title: "Weekend Logging",
-            description: "Don't skip weekend weigh-ins! Consistency achievements require regular logging, including weekends.",
-            category: .achievements
+            description: "Don't skip weekend weigh-ins! Consistent logging helps track your progress better.",
+            category: .general
         ),
         
         QuickTip(
@@ -333,8 +328,8 @@ extension View {
         QuickTipsView()
         
         FeatureHighlightView(
-            title: "New Achievement System",
-            description: "Unlock 30+ achievements as you progress on your journey",
+            title: "Progress Tracking",
+            description: "Track your weight journey with smart insights and predictions",
             isNew: true
         )
     }

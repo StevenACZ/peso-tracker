@@ -157,16 +157,6 @@ struct OnboardingPage {
             ]
         ),
         
-        OnboardingPage(
-            icon: "🏆",
-            title: "Achievement System",
-            description: "Unlock achievements as you progress and stay motivated with our comprehensive reward system.",
-            features: [
-                "30+ achievements across 5 categories",
-                "Real-time progress tracking",
-                "Celebration animations"
-            ]
-        ),
         
         OnboardingPage(
             icon: "📊",

@@ -136,7 +136,7 @@ struct GoalCardView: View {
             
             Spacer()
             
-            // Achievement status
+            // Goal status
             if isAchieved {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")

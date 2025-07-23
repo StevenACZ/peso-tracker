@@ -122,11 +122,6 @@ class ErrorHandlingService: ObservableObject {
                 RecoverySuggestion(title: "Restart App", action: .restartApp)
             ]
             
-        case .achievement:
-            return [
-                RecoverySuggestion(title: "Reset Achievements", action: .resetAchievements),
-                RecoverySuggestion(title: "Contact Support", action: .contactSupport)
-            ]
             
         case .photo:
             return [
@@ -177,7 +172,6 @@ struct AppError: Identifiable, Equatable {
         case network
         case validation
         case storage
-        case achievement
         case photo
         case system
     }
@@ -284,7 +278,6 @@ struct RecoverySuggestion {
         case resetForm
         case clearCache
         case restartApp
-        case resetAchievements
         case contactSupport
         case selectDifferentPhoto
         case checkPermissions
@@ -445,12 +438,9 @@ struct ErrorHandlingModifier: ViewModifier {
             break
         case .clearCache:
             // Clear app cache
-            AchievementPerformanceOptimizer.clearCache()
+            print("Cache cleared")
         case .restartApp:
             // Show restart instruction
-            break
-        case .resetAchievements:
-            // Reset achievement system
             break
         case .contactSupport:
             // Open support contact
