@@ -11,7 +11,6 @@ struct WeightEntry: Codable, Identifiable {
     let id: Int
     let weight: Double
     let date: String
-    let userId: Int?
     let notes: String?
     let createdAt: String?
     let updatedAt: String?
@@ -20,7 +19,6 @@ struct WeightEntry: Codable, Identifiable {
         case id
         case weight
         case date
-        case userId = "user_id"
         case notes
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -31,7 +29,6 @@ struct WeightEntry: Codable, Identifiable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         id = try container.decode(Int.self, forKey: .id)
-        userId = try container.decodeIfPresent(Int.self, forKey: .userId)
         date = try container.decode(String.self, forKey: .date)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
@@ -48,7 +45,6 @@ struct WeightEntry: Codable, Identifiable {
     // Custom initializer for creating WeightEntry instances
     init(
         id: Int,
-        userId: Int?,
         weight: Double,
         date: String,
         notes: String? = nil,
@@ -56,7 +52,6 @@ struct WeightEntry: Codable, Identifiable {
         updatedAt: String? = nil
     ) {
         self.id = id
-        self.userId = userId
         self.weight = weight
         self.date = date
         self.notes = notes
@@ -71,7 +66,6 @@ struct WeightEntry: Codable, Identifiable {
         try container.encode(id, forKey: .id)
         try container.encode(weight, forKey: .weight) // Send as Double
         try container.encode(date, forKey: .date)
-        try container.encodeIfPresent(userId, forKey: .userId)
         try container.encodeIfPresent(notes, forKey: .notes)
         try container.encodeIfPresent(createdAt, forKey: .createdAt)
         try container.encodeIfPresent(updatedAt, forKey: .updatedAt)
@@ -131,4 +125,25 @@ struct WeightResponse: Codable {
     var startingWeight: Double? {
         return data.last?.weightValue // Oldest (last in sorted array)
     }
+}
+
+struct ProgressPhoto: Codable, Identifiable {
+    let id: Int
+    let weight: Double
+    let date: String
+    let notes: String?
+    let thumbnail_url: String
+    let medium_url: String
+    let full_url: String
+    let created_at: String
+    let updated_at: String
+}
+
+struct UploadPhotoResponse: Codable {
+    let message: String
+    let data: ProgressPhoto
+}
+
+struct ProgressPhotosResponse: Codable {
+    let data: [ProgressPhoto]
 }

@@ -20,12 +20,21 @@ struct AchievementCelebrationView: View {
     
     var body: some View {
         ZStack {
-            // Background overlay
-            Color.black.opacity(0.7)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    dismissWithAnimation()
-                }
+            // Background overlay with blur effect
+            ZStack {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                
+                // Subtle blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.3)
+                    .ignoresSafeArea()
+            }
+            .onTapGesture {
+                onDismiss()
+            }
+            .accessibilityLabel("Dismiss achievement celebration")
             
             // Confetti background
             if showConfetti {
@@ -93,25 +102,25 @@ struct AchievementCelebrationView: View {
                         .opacity(opacity)
                 }
                 
-                // Action buttons
-                HStack(spacing: 16) {
-                    Button("Share") {
-                        shareAchievement()
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .opacity(opacity)
-                    
-                    Button("Continue") {
-                        dismissWithAnimation()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .opacity(opacity)
+                // Action button
+                Button("Continue") {
+                    onDismiss()
                 }
+                .buttonStyle(PrimaryButtonStyle())
+                .opacity(opacity)
+                .disabled(opacity < 1.0)
             }
             .padding(32)
-            .background(Color(NSColor.windowBackgroundColor))
-            .cornerRadius(20)
-            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.15), radius: 30, x: 0, y: 15)
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(.white.opacity(0.2), lineWidth: 1)
+            )
             .scaleEffect(scale)
             .padding(.horizontal, 40)
         }
@@ -124,32 +133,20 @@ struct AchievementCelebrationView: View {
         // Start confetti immediately
         showConfetti = true
         
-        // Animate the main elements
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        // Animate the main elements with a more professional feel
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7, blendDuration: 0.2)) {
             scale = 1.0
+        }
+        
+        // Fade in content slightly after scale
+        withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
             opacity = 1.0
         }
         
         // Add a subtle rotation to the icon
-        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-            rotation = 5
+        withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true).delay(0.3)) {
+            rotation = 3
         }
-    }
-    
-    private func dismissWithAnimation() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            scale = 0.8
-            opacity = 0
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            onDismiss()
-        }
-    }
-    
-    private func shareAchievement() {
-        // TODO: Implement sharing functionality
-        print("Sharing achievement: \(achievement.name)")
     }
 }
 
@@ -166,12 +163,21 @@ struct GoalCelebrationView: View {
     
     var body: some View {
         ZStack {
-            // Background overlay
-            Color.black.opacity(0.7)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    dismissWithAnimation()
-                }
+            // Background overlay with blur effect
+            ZStack {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                
+                // Subtle blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.3)
+                    .ignoresSafeArea()
+            }
+            .onTapGesture {
+                onDismiss()
+            }
+            .accessibilityLabel("Dismiss goal celebration")
             
             // Confetti background
             if showConfetti {
@@ -235,25 +241,25 @@ struct GoalCelebrationView: View {
                     .opacity(opacity)
                 }
                 
-                // Action buttons
-                HStack(spacing: 16) {
-                    Button("Share") {
-                        shareGoal()
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .opacity(opacity)
-                    
-                    Button("Continue") {
-                        dismissWithAnimation()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .opacity(opacity)
+                // Action button
+                Button("Continue") {
+                    onDismiss()
                 }
+                .buttonStyle(PrimaryButtonStyle())
+                .opacity(opacity)
+                .disabled(opacity < 1.0)
             }
             .padding(32)
-            .background(Color.primary.colorInvert())
-            .cornerRadius(20)
-            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.15), radius: 30, x: 0, y: 15)
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(.white.opacity(0.2), lineWidth: 1)
+            )
             .scaleEffect(scale)
             .padding(.horizontal, 40)
         }
@@ -266,32 +272,20 @@ struct GoalCelebrationView: View {
         // Start confetti immediately
         showConfetti = true
         
-        // Animate the main elements
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        // Animate the main elements with a more professional feel
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7, blendDuration: 0.2)) {
             scale = 1.0
+        }
+        
+        // Fade in content slightly after scale
+        withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
             opacity = 1.0
         }
         
         // Add a pulse effect to the background circle
-        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-            pulseScale = 1.2
+        withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true).delay(0.3)) {
+            pulseScale = 1.15
         }
-    }
-    
-    private func dismissWithAnimation() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            scale = 0.8
-            opacity = 0
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            onDismiss()
-        }
-    }
-    
-    private func shareGoal() {
-        // TODO: Implement sharing functionality
-        print("Sharing goal achievement: \(goal.displayTitle)")
     }
 }
 
@@ -364,7 +358,7 @@ struct Triangle: Shape {
     }
 }
 
-// MARK: - Button Styles
+// MARK: - Button Style
 
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: ButtonStyleConfiguration) -> some View {
@@ -373,99 +367,33 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundColor(.white)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
-            .background(Color.blue)
+            .background(configuration.isPressed ? Color.blue.opacity(0.8) : Color.blue)
             .cornerRadius(8)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
-struct SecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-        configuration.label
-            .font(.headline)
-            .foregroundColor(.blue)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(8)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-    }
-}
+// MARK: - Dashboard View Extension
 
-// MARK: - Celebration Manager
-
-@MainActor
-class CelebrationManager: ObservableObject {
-    @Published var showingAchievementCelebration = false
-    @Published var showingGoalCelebration = false
-    @Published var currentAchievement: Achievement?
-    @Published var currentGoal: Goal?
-    
-    private var celebrationQueue: [CelebrationType] = []
-    private var isProcessingQueue = false
-    
-    enum CelebrationType {
-        case achievement(Achievement)
-        case goal(Goal)
-    }
-    
-    func celebrateAchievement(_ achievement: Achievement) {
-        celebrationQueue.append(.achievement(achievement))
-        processQueue()
-    }
-    
-    func celebrateGoal(_ goal: Goal) {
-        celebrationQueue.append(.goal(goal))
-        processQueue()
-    }
-    
-    func celebrateMultipleAchievements(_ achievements: [Achievement]) {
-        for achievement in achievements {
-            celebrationQueue.append(.achievement(achievement))
-        }
-        processQueue()
-    }
-    
-    private func processQueue() {
-        guard !isProcessingQueue, !celebrationQueue.isEmpty else { return }
-        
-        isProcessingQueue = true
-        showNextCelebration()
-    }
-    
-    private func showNextCelebration() {
-        guard !celebrationQueue.isEmpty else {
-            isProcessingQueue = false
-            return
-        }
-        
-        let celebration = celebrationQueue.removeFirst()
-        
+extension DashboardView {
+    @ViewBuilder
+    func celebrationOverlay(for celebration: CelebrationManager.CelebrationType) -> some View {
         switch celebration {
         case .achievement(let achievement):
-            currentAchievement = achievement
-            showingAchievementCelebration = true
+            AchievementCelebrationView(
+                achievement: achievement,
+                onDismiss: {
+                    viewModel.celebrationManager.immediateDismiss()
+                }
+            )
         case .goal(let goal):
-            currentGoal = goal
-            showingGoalCelebration = true
-        }
-    }
-    
-    func dismissCurrentCelebration() {
-        // Immediately hide the current celebration
-        showingAchievementCelebration = false
-        showingGoalCelebration = false
-        
-        // Clear current items
-        currentAchievement = nil
-        currentGoal = nil
-        
-        // Reset processing state
-        isProcessingQueue = false
-        
-        // Process next celebration if available
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.processQueue()
+            GoalCelebrationView(
+                goal: goal,
+                onDismiss: {
+                    viewModel.celebrationManager.immediateDismiss()
+                }
+            )
         }
     }
 }

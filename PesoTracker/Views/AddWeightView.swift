@@ -19,7 +19,7 @@ struct AddWeightView: View {
     @State private var selectedPhoto: NSImage?
     @State private var showingPhotoGallery = false
     
-    @StateObject private var photoManager = PhotoManager.shared
+    @StateObject private var localPhotoService = LocalPhotoService.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -323,30 +323,16 @@ struct AddWeightView: View {
         
         do {
             // Call the API to save the weight
-            try await viewModel.addWeight(
+            let newWeightEntry = try await viewModel.addWeight(
                 weight: weightValue,
                 date: date,
                 notes: notes.isEmpty ? nil : notes
             )
             
-            // Save progress photo if selected
+            // Save progress photo locally if selected
             if let photo = selectedPhoto {
-                // Create a temporary weight entry for photo saving
-                let tempWeightEntry = WeightEntry(
-                    id: Int.random(in: 1000...9999), // Temporary ID
-                    userId: 0,
-                    weight: weightValue,
-                    date: formatDate(date),
-                    notes: notes.isEmpty ? nil : notes,
-                    createdAt: formatDate(Date()),
-                    updatedAt: formatDate(Date())
-                )
-                
-                if let savedFilename = photoManager.saveProgressPhoto(photo, for: tempWeightEntry) {
-                    print("📸 AddWeightView: Saved progress photo: \(savedFilename)")
-                } else {
-                    print("❌ AddWeightView: Failed to save progress photo")
-                }
+                localPhotoService.savePhoto(photo, for: newWeightEntry.id)
+                print("📸 AddWeightView: Photo saved locally for weight entry \(newWeightEntry.id)")
             }
             
             // Close the sheet on success
@@ -363,7 +349,20 @@ struct AddWeightView: View {
     // MARK: - Photo Methods
     
     private func selectPhoto() {
-        selectedPhoto = photoManager.selectPhoto()
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        
+        if panel.runModal() == .OK {
+            if let url = panel.url,
+               let image = NSImage(contentsOf: url) {
+                selectedPhoto = image
+            } else {
+                errorMessage = "Failed to load selected image"
+            }
+        }
     }
     
     private func formatDate(_ date: Date) -> String {

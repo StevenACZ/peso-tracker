@@ -13,13 +13,24 @@ struct DashboardPredictionSection: View {
     let mainGoal: Goal?
     let nextMilestone: Goal?
     let progressPrediction: ProgressPrediction?
+    let showProgressPhotos: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Section header
-            Text("📊 Smart Insights & Predictions")
-                .font(.headline)
-                .fontWeight(.semibold)
+            // Section header with progress button
+            HStack {
+                Text("📊 Smart Insights & Predictions")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button("View Progress") {
+                    showProgressPhotos()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
             
             if mainGoal != nil {
                 // Main goal progress

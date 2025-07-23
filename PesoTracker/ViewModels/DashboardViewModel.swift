@@ -154,7 +154,7 @@ class DashboardViewModel: ObservableObject {
         AuthenticationManager.shared.logout()
     }
     
-    func addWeight(weight: Double, date: Date, notes: String?) async throws {
+    func addWeight(weight: Double, date: Date, notes: String?) async throws -> WeightEntry {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateString = dateFormatter.string(from: date)
@@ -167,12 +167,14 @@ class DashboardViewModel: ObservableObject {
         
         print("📝 DashboardViewModel: Adding weight \(weight) kg on \(dateString)")
         
-        let _ = try await apiService.addWeight(request)
+        let newWeightEntry = try await apiService.addWeight(request)
         
         print("✅ DashboardViewModel: Weight added successfully, refreshing data")
         
         // Refresh the weight data after adding
         await loadWeightData()
+        
+        return newWeightEntry.data
     }
     
     func updateWeight(id: Int, weight: Double, date: Date, notes: String?) async throws {
@@ -194,6 +196,20 @@ class DashboardViewModel: ObservableObject {
         
         // Refresh the weight data after updating
         await loadWeightData()
+    }
+    
+    func updateWeight(_ weightEntry: WeightEntry) async throws {
+        // Parse the date string to Date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let date = dateFormatter.date(from: weightEntry.date) ?? Date()
+        
+        try await updateWeight(
+            id: weightEntry.id,
+            weight: weightEntry.weight,
+            date: date,
+            notes: weightEntry.notes
+        )
     }
     
     func deleteWeight(id: Int) async throws {
@@ -461,6 +477,10 @@ class DashboardViewModel: ObservableObject {
     func getAchievementProgress(for id: String) -> AchievementProgress? {
         return achievementSystem.getProgress(for: id)
     }
+    
+    // MARK: - Celebration Management
+    
+
     
     // MARK: - Private Properties
     
