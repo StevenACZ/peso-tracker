@@ -15,109 +15,115 @@ struct DashboardView: View {
     @State private var editingWeight: WeightEntry?
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            headerSection
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-                .background(Color(NSColor.windowBackgroundColor))
-            
-            Divider()
-            
-            if viewModel.isLoading {
-                ProgressView("Loading weight data...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if viewModel.errorMessage != nil {
-                errorSection
-            } else {
-                // Main content with horizontal layout
-                HStack(spacing: 0) {
-                    // Left side - Summary content
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // Progress summary cards
-                            progressSummarySection
-                            
-                            // Weight Goal section
-                            weightGoalSection
-                            
-                            // Smart insights and predictions
-                            DashboardPredictionSection(
-                                currentWeight: viewModel.currentWeight,
-                                weightEntries: viewModel.weights,
-                                mainGoal: viewModel.mainGoal,
-                                nextMilestone: nil,
-                                progressPrediction: viewModel.progressPrediction,
-                                showProgressPhotos: {
-                                    showingProgressPhotos = true
-                                }
-                            )
-                        }
-                        .padding(24)
-                    }
-                    .frame(minWidth: 450, maxWidth: 600)
-                    
-                    Divider()
-                    
-                    // Right side - Chart and Weight History
-                    ScrollView {
-                        VStack(spacing: 64) {
-                            // Progress Chart Section
-                            VStack(spacing: 16) {
-                                Text("Progress Chart")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                Spacer(minLength: 24)
+                // Header
+                headerSection
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(Color(NSColor.windowBackgroundColor))
+                
+                Divider()
+                
+                if viewModel.isLoading {
+                    ProgressView("Loading weight data...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.errorMessage != nil {
+                    errorSection
+                } else {
+                    // Main content with horizontal layout
+                    HStack(spacing: 0) {
+                        // Left side - Summary content
+                        ScrollView {
+                            VStack(spacing: 20) {
+                                // Progress summary cards
+                                progressSummarySection
                                 
-                                if viewModel.weights.count < 2 {
-                                    VStack(spacing: 12) {
-                                        Image(systemName: "chart.line.uptrend.xyaxis")
-                                            .font(.system(size: 48))
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text("Add more weight entries")
-                                            .font(.headline)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text("You need at least 2 weight entries to see your progress chart")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                            .multilineTextAlignment(.center)
+                                // Weight Goal section
+                                weightGoalSection
+                                
+                                // Smart insights and predictions
+                                DashboardPredictionSection(
+                                    currentWeight: viewModel.currentWeight,
+                                    weightEntries: viewModel.weights,
+                                    mainGoal: viewModel.mainGoal,
+                                    nextMilestone: nil,
+                                    progressPrediction: viewModel.progressPrediction,
+                                    showProgressPhotos: {
+                                        showingProgressPhotos = true
                                     }
-                                    .frame(height: 300)
-                                } else {
-                                    SimpleLineChart(weights: viewModel.weights, goal: viewModel.currentGoal)
-                                        .frame(height: 300)
-                                }
+                                )
                             }
-                            
-                            // Weight History Section
-                            weightTableSection
+                            .padding(24)
                         }
-                        .padding(24)
+                        .frame(minWidth: 450, maxWidth: 600)
+                        
+                        Divider()
+                        
+                        // Right side - Chart and Weight History
+                        ScrollView {
+                            VStack(spacing: 64) {
+                                // Progress Chart Section
+                                VStack(spacing: 16) {
+                                    Text("Progress Chart")
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    
+                                    if viewModel.weights.count < 2 {
+                                        VStack(spacing: 12) {
+                                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                                .font(.system(size: 48))
+                                                .foregroundColor(.secondary)
+                                            
+                                            Text("Add more weight entries")
+                                                .font(.headline)
+                                                .foregroundColor(.secondary)
+                                            
+                                            Text("You need at least 2 weight entries to see your progress chart")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                                .multilineTextAlignment(.center)
+                                        }
+                                        .frame(height: 300)
+                                    } else {
+                                        SimpleLineChart(weights: viewModel.weights, goal: viewModel.currentGoal)
+                                            .frame(height: 300)
+                                    }
+                                }
+                                
+                                // Weight History Section
+                                weightTableSection
+                            }
+                            .padding(24)
+                        }
+                        .frame(minWidth: 500)
+                        .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
                     }
-                    .frame(minWidth: 500)
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
                 }
+                Spacer(minLength: 24)
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .padding(.vertical, 24)
+            .edgesIgnoringSafeArea(.all)
+            .onAppear {
+                Task { await viewModel.loadWeightData() }
+            }
+            .sheet(isPresented: $showingAddWeight) {
+                AddWeightView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showingGoal) {
+                GoalView(viewModel: viewModel)
+            }
+            .sheet(item: $editingWeight) { weight in
+                EditWeightView(viewModel: viewModel, weightEntry: weight)
+            }
+            .sheet(isPresented: $showingProgressPhotos) {
+                ProgressPhotoSliderView(weightEntries: viewModel.weights)
+            }
+            .errorHandling()
         }
-        .frame(minWidth: 1000, minHeight: 700)
-        .onAppear {
-            Task { await viewModel.loadWeightData() }
-        }
-        .sheet(isPresented: $showingAddWeight) {
-            AddWeightView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showingGoal) {
-            GoalView(viewModel: viewModel)
-        }
-        .sheet(item: $editingWeight) { weight in
-            EditWeightView(viewModel: viewModel, weightEntry: weight)
-        }
-        .sheet(isPresented: $showingProgressPhotos) {
-            ProgressPhotoSliderView(weightEntries: viewModel.weights)
-        }
-        .errorHandling()
     }
     
     // MARK: - Header Section

@@ -19,8 +19,18 @@ class AuthenticationViewModel: ObservableObject {
     
     private let authManager = AuthenticationManager.shared
     
+    var isValidEmail: Bool {
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email)
+    }
+    
+    var canLogin: Bool {
+        !email.isEmpty && isValidEmail && !password.isEmpty && password.count >= 6
+    }
+    
     func login() async {
-        guard !email.isEmpty && !password.isEmpty else { return }
+        guard canLogin else { return }
         
         isLoading = true
         errorMessage = nil
@@ -36,7 +46,7 @@ class AuthenticationViewModel: ObservableObject {
     }
     
     func register() async {
-        guard !username.isEmpty && !email.isEmpty && !password.isEmpty else { return }
+        guard !username.isEmpty && username.count >= 3 && isValidEmail && !password.isEmpty && password.count >= 6 else { return }
         
         isLoading = true
         errorMessage = nil
