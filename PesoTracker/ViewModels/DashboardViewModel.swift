@@ -88,7 +88,17 @@ class DashboardViewModel: ObservableObject {
     init() {
         Task {
             await loadWeightData()
+            await MainActor.run {
+                loadUsername()
+            }
         }
+    }
+    
+    @Published var username: String = ""
+    
+    @MainActor
+    func loadUsername() {
+        username = AuthenticationManager.shared.currentUser?.username ?? ""
     }
     
     @MainActor
@@ -102,7 +112,8 @@ class DashboardViewModel: ObservableObject {
             
             let (weightsResponse, goalsResponse) = try await (weightsTask, goalsTask)
             
-            self.weights = weightsResponse.data.sorted { $0.date > $1.date }
+            // Ordenamos los pesos del más antiguo al más reciente
+            self.weights = weightsResponse.data.sorted { $0.date < $1.date }
             self.goals = goalsResponse.data
             self.currentGoal = goalsResponse.data.first { $0.type == .main }
             
@@ -174,5 +185,6 @@ class DashboardViewModel: ObservableObject {
     @MainActor
     func logout() {
         AuthenticationManager.shared.logout()
+        username = ""
     }
 }

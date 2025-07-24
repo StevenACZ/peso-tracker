@@ -105,10 +105,20 @@ struct RegisterView: View {
                                 }
                                 .authenticationField()
                                 
-                                if !viewModel.password.isEmpty && viewModel.password.count < 6 {
-                                    Text("La contraseña debe tener al menos 6 caracteres")
-                                        .font(.caption)
-                                        .foregroundColor(.red)
+                                if !viewModel.password.isEmpty {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        if viewModel.password.count < 6 {
+                                            Text("La contraseña debe tener al menos 6 caracteres")
+                                                .font(.caption)
+                                                .foregroundColor(.red)
+                                        }
+                                        
+                                        if !viewModel.isValidPassword {
+                                            Text("La contraseña debe contener al menos una letra mayúscula")
+                                                .font(.caption)
+                                                .foregroundColor(.red)
+                                        }
+                                    }
                                 }
                             }
                             
@@ -136,8 +146,18 @@ struct RegisterView: View {
                             }
                             
                             // Action Button
-                            Button("Crear Cuenta") {
+                            Button {
                                 Task { await viewModel.register() }
+                            } label: {
+                                if viewModel.isLoading {
+                                    HStack {
+                                        Text("Creando cuenta...")
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                    }
+                                } else {
+                                    Text("Crear Cuenta")
+                                }
                             }
                             .buttonStyle(PrimaryButtonStyle())
                             .disabled(!canRegister || viewModel.isLoading)
@@ -148,12 +168,7 @@ struct RegisterView: View {
                         .frame(maxWidth: 380)
                         .padding(30)
                         
-                        // Loading Indicator
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                                .padding(.top, 20)
-                        }
+                        // Eliminamos el indicador de carga separado ya que ahora está integrado en el botón
                     }
                     Spacer()
                     // Back to Login

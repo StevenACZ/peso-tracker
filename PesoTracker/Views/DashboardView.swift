@@ -130,10 +130,17 @@ struct DashboardView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Weight Progress Tracker")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                if !viewModel.username.isEmpty {
+                    Text("Hello, \(viewModel.username)!")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                } else {
+                    Text("Weight Progress Tracker")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                }
                 
                 Text("Track your weight journey")
                     .font(.subheadline)
@@ -298,7 +305,9 @@ struct DashboardView: View {
                         }
                         
                         if let progress = viewModel.goalProgress {
-                            ProgressView(value: min(progress, 1.0))
+                            // Aseguramos que el valor esté entre 0 y 1
+                            let clampedProgress = max(0.0, min(progress, 1.0))
+                            ProgressView(value: clampedProgress, total: 1.0)
                                 .frame(width: 120)
                                 .tint(isGoalAchieved ? .green : .blue)
                         }
@@ -479,7 +488,7 @@ struct DashboardView: View {
     private func changeText(for index: Int) -> String {
         if index == 0 { return "-" } // First entry (oldest) has no previous
         let current = viewModel.weights[index].weightValue
-        let previous = viewModel.weights[index - 1].weightValue // Previous in array is older
+        let previous = viewModel.weights[index - 1].weightValue // Previous in array is older (since we sorted ascending)
         let change = current - previous
         
         if change > 0 {
@@ -494,13 +503,13 @@ struct DashboardView: View {
     private func changeColor(for index: Int) -> Color {
         if index == 0 { return .secondary } // First entry has no previous
         let current = viewModel.weights[index].weightValue
-        let previous = viewModel.weights[index - 1].weightValue // Previous in array is older
+        let previous = viewModel.weights[index - 1].weightValue // Previous in array is older (since we sorted ascending)
         let change = current - previous
         
         if change < 0 {
-            return .green // Weight loss
+            return .green // Weight loss (verde para pérdida de peso)
         } else if change > 0 {
-            return .red // Weight gain
+            return .red // Weight gain (rojo para aumento de peso)
         } else {
             return .secondary // No change
         }

@@ -12,7 +12,7 @@ struct GoalView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var targetWeight: String = ""
-    @State private var targetDate = Date().addingTimeInterval(30 * 24 * 60 * 60)
+    @State private var targetDate = Date().addingTimeInterval(30 * 24 * 60 * 60) // Será reemplazado por la fecha original si estamos editando
     @State private var isLoading = false
     @State private var errorMessage: String?
     
@@ -78,7 +78,9 @@ struct GoalView: View {
                                         .foregroundColor(.blue)
                                     
                                     if let progress = viewModel.goalProgress {
-                                        ProgressView(value: min(progress, 1.0))
+                                        // Aseguramos que el valor esté entre 0 y 1
+                                        let clampedProgress = max(0.0, min(progress, 1.0))
+                                        ProgressView(value: clampedProgress, total: 1.0)
                                             .frame(width: 100)
                                             .tint(.blue)
                                     }
@@ -134,6 +136,7 @@ struct GoalView: View {
                         HStack {
                             DatePicker("Select target date", selection: $targetDate, in: Date()..., displayedComponents: .date)
                                 .datePickerStyle(.compact)
+                                .id(targetDate) // Forzar la actualización del DatePicker cuando cambia la fecha
                             
                             Spacer()
                             
@@ -221,7 +224,8 @@ struct GoalView: View {
             }
         }
         .frame(minWidth: 500, minHeight: 400)
-        .onAppear {
+        .task {
+            // Usar task en lugar de onAppear para asegurarnos de que se ejecute correctamente
             setupInitialValues()
         }
     }
@@ -231,10 +235,32 @@ struct GoalView: View {
             // Editing existing goal
             targetWeight = String(format: "%.1f", currentGoal.targetWeight)
             
+            print("🎯 GoalView: Original target date string: \(currentGoal.targetDate)")
+            
+            // Probar diferentes formatos de fecha que podría devolver la API
             let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            if let date = dateFormatter.date(from: currentGoal.targetDate) {
-                targetDate = date
+            let formats = [
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyy-MM-dd"
+            ]
+            
+            var parsedDate: Date?
+            for format in formats {
+                dateFormatter.dateFormat = format
+                if let date = dateFormatter.date(from: currentGoal.targetDate) {
+                    parsedDate = date
+                    print("🎯 GoalView: Successfully parsed date with format: \(format)")
+                    break
+                }
+            }
+            
+            if let parsedDate = parsedDate {
+                targetDate = parsedDate
+                print("🎯 GoalView: Set target date to: \(targetDate)")
+            } else {
+                print("❌ GoalView: Failed to parse target date: \(currentGoal.targetDate)")
+                // Mantener la fecha predeterminada
             }
         } else {
             // Creating new goal

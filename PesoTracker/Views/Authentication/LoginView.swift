@@ -98,8 +98,18 @@ struct LoginView: View {
                             
                             // Action Buttons
                             VStack(spacing: 18) {
-                                Button("Iniciar Sesión") {
+                                Button {
                                     Task { await viewModel.login() }
+                                } label: {
+                                    if viewModel.isLoading {
+                                        HStack {
+                                            Text("Iniciando sesión...")
+                                            ProgressView()
+                                                .scaleEffect(0.8)
+                                        }
+                                    } else {
+                                        Text("Iniciar Sesión")
+                                    }
                                 }
                                 .buttonStyle(PrimaryButtonStyle())
                                 .disabled(!viewModel.canLogin || viewModel.isLoading)
@@ -116,12 +126,7 @@ struct LoginView: View {
                         .frame(maxWidth: 380)
                         .padding(30)
                         
-                        // Loading Indicator
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                                .padding(.top, 20)
-                        }
+                        // Eliminamos el indicador de carga separado ya que ahora está integrado en el botón
                     }
                     Spacer()
                     // Bottom links

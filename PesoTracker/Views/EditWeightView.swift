@@ -14,7 +14,7 @@ struct EditWeightView: View {
     
     @State private var weight: String = ""
     @State private var notes: String = ""
-    @State private var date = Date().addingTimeInterval(-24 * 60 * 60) // Default to yesterday, will be overridden in setupInitialValues
+    @State private var date = Date() // Será reemplazado por la fecha original del registro en setupInitialValues
     @State private var selectedImage: NSImage?
     @State private var currentPhoto: NSImage?
     @State private var isLoading = false
@@ -52,6 +52,7 @@ struct EditWeightView: View {
                         
                         DatePicker("Select date", selection: $date, displayedComponents: .date)
                             .datePickerStyle(.compact)
+                            .id(date) // Forzar la actualización del DatePicker cuando cambia la fecha
                     }
                     
                     // Weight input
@@ -187,7 +188,8 @@ struct EditWeightView: View {
         }
         .frame(minWidth: 500, maxWidth: 500, minHeight: 600, maxHeight: 600)
         .fixedSize()
-        .onAppear {
+        .task {
+            // Usar task en lugar de onAppear para asegurarnos de que se ejecute correctamente
             setupInitialValues()
         }
     }
@@ -199,10 +201,43 @@ struct EditWeightView: View {
         notes = weightEntry.notes ?? ""
         
         // Parse the date from the weight entry
+        print("📅 EditWeightView: Original date string from entry: \(weightEntry.date)")
+        
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        if let parsedDate = dateFormatter.date(from: weightEntry.date) {
-            date = parsedDate
+        // Probar diferentes formatos de fecha que podría devolver la API
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd"
+        ]
+        
+        var parsedDate: Date?
+        for format in formats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: weightEntry.date) {
+                parsedDate = date
+                print("📅 EditWeightView: Successfully parsed date with format: \(format)")
+                
+                // Mostrar la fecha en un formato legible para depuración
+                let readableDateFormatter = DateFormatter()
+                readableDateFormatter.dateStyle = .full
+                readableDateFormatter.timeStyle = .short
+                print("📅 EditWeightView: Parsed date readable format: \(readableDateFormatter.string(from: date))")
+                break
+            }
+        }
+        
+        if let parsedDate = parsedDate {
+            // Asignar la fecha parseada al estado
+            self.date = parsedDate
+            
+            // Mostrar la fecha asignada en un formato legible para depuración
+            let readableDateFormatter = DateFormatter()
+            readableDateFormatter.dateStyle = .full
+            readableDateFormatter.timeStyle = .short
+            print("📅 EditWeightView: Set date to readable format: \(readableDateFormatter.string(from: self.date))")
+        } else {
+            print("❌ EditWeightView: Failed to parse date: \(weightEntry.date)")
         }
         
         // Load current photo if exists

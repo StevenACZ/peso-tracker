@@ -25,8 +25,16 @@ class AuthenticationViewModel: ObservableObject {
         return emailPredicate.evaluate(with: email)
     }
     
+    var isValidPassword: Bool {
+        password.count >= 6 && password.rangeOfCharacter(from: .uppercaseLetters) != nil
+    }
+    
     var canLogin: Bool {
         !email.isEmpty && isValidEmail && !password.isEmpty && password.count >= 6
+    }
+    
+    var canRegister: Bool {
+        !username.isEmpty && username.count >= 3 && isValidEmail && isValidPassword
     }
     
     func login() async {
@@ -46,7 +54,7 @@ class AuthenticationViewModel: ObservableObject {
     }
     
     func register() async {
-        guard !username.isEmpty && username.count >= 3 && isValidEmail && !password.isEmpty && password.count >= 6 else { return }
+        guard canRegister else { return }
         
         isLoading = true
         errorMessage = nil
@@ -54,9 +62,12 @@ class AuthenticationViewModel: ObservableObject {
         do {
             try await authManager.register(username: username, email: email, password: password)
             print("✅ AuthViewModel: Registration successful")
-            // Don't switch to login automatically, let the view handle it
+            
+            // Iniciar sesión automáticamente después del registro exitoso
+            try await authManager.login(email: email, password: password)
+            print("✅ AuthViewModel: Auto-login after registration successful")
         } catch {
-            print("❌ AuthViewModel: Registration failed: \(error)")
+            print("❌ AuthViewModel: Registration or auto-login failed: \(error)")
             errorMessage = error.localizedDescription
             showErrorAlert = true
         }
