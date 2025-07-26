@@ -6,8 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B0C45F7C2E345F09006CA38B /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = B0C45F7B2E345F09006CA38B /* Development.xcconfig */; };
+		B0C45F7E2E345F0F006CA38B /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = B0C45F7D2E345F0F006CA38B /* Production.xcconfig */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		B00E701A2E29B1E500430D69 /* PesoTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PesoTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0C45F7B2E345F09006CA38B /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		B0C45F7D2E345F0F006CA38B /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -47,6 +54,8 @@
 			children = (
 				B00E701C2E29B1E500430D69 /* PesoTracker */,
 				B00E701B2E29B1E500430D69 /* Products */,
+				B0C45F7B2E345F09006CA38B /* Development.xcconfig */,
+				B0C45F7D2E345F0F006CA38B /* Production.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +131,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B0C45F7C2E345F09006CA38B /* Development.xcconfig in Resources */,
+				B0C45F7E2E345F0F006CA38B /* Production.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -140,6 +151,7 @@
 /* Begin XCBuildConfiguration section */
 		B00E70242E29B1E600430D69 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0C45F7B2E345F09006CA38B /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -204,6 +216,7 @@
 		};
 		B00E70252E29B1E600430D69 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0C45F7D2E345F0F006CA38B /* Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

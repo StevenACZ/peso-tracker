@@ -117,21 +117,35 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Configuration files with sensitive data
-Config.xcconfig
-Secrets.xcconfig
-Development.xcconfig
-Production.xcconfig
-Staging.xcconfig
+# IMPORTANTE: Archivos de configuración - REVISA ESTOS
+# Solo ignora archivos de configuración que contengan datos sensibles
+# NO ignores Config.xcconfig si contiene configuración necesaria del proyecto
 
-# Environment-specific configuration
-**/Config/
-**/Secrets/
-
-# API Keys and sensitive configuration
+# Archivos con datos sensibles (API keys, secrets, etc.)
 APIKeys.plist
 Secrets.plist
-Config.plist
+**/Secrets/
+
+# Archivos de configuración específicos del entorno LOCAL
+Development-Local.xcconfig
+Development.xcconfig
+Production.xcconfig
+Local.xcconfig
+Personal.xcconfig
 
 # Kiro IDE configuration and local files
 .kiro/
+
+# Archivos temporales adicionales de Xcode
+*.xcworkspacedata
+!default.xcworkspacedata
+
+# Archivos de respaldo de Xcode
+*.orig
+
+# Archivos de log
+*.log
+
+# Archivos de testing
+*.gcda
+*.gcno
