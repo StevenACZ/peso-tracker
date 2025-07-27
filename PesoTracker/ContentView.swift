@@ -20,9 +20,7 @@ struct ContentView: View {
                 splashScreen
             } else if authViewModel.isAuthenticated {
                 // Main app content for authenticated users
-                NavigationView {
-                    MainDashboardView()
-                }
+                MainDashboardView()
             } else {
                 // Authentication flow for non-authenticated users
                 AuthView()
@@ -49,10 +47,10 @@ struct ContentView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 24) {
-                // App Icon - blue like in login
+                // App Icon - green like in dashboard
                 Image(systemName: "figure.walk.circle.fill")
                     .font(.system(size: 100))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.green)
                 
                 // App Name
                 Text("PesoTracker")
@@ -62,7 +60,7 @@ struct ContentView: View {
                 
                 // Loading indicator
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .green))
                     .scaleEffect(1.2)
                 
                 Text("Cargando...")

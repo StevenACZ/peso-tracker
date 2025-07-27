@@ -1,187 +1,157 @@
 import SwiftUI
 
 struct MainDashboardView: View {
-    
     // MARK: - Properties
     @StateObject private var authViewModel = AuthViewModel()
-    @State private var selectedTab = 0
+    @State private var selectedTimeRange = "1 semana"
+    @State private var hasData = false // Toggle this to show empty/filled state
+    
+    // Modal states
+    @State private var showAddWeightModal = false
+    @State private var showEditWeightModal = false
+    @State private var showAddGoalModal = false
+    @State private var showEditGoalModal = false
+    @State private var showAdvancedSettingsModal = false
+    @State private var showViewProgressModal = false
+    @State private var showDeleteConfirmationModal = false
+    
+    // Selected record for editing/deleting
+    @State private var selectedRecord: WeightRecord?
+    
+    // Sample data - replace with real data later
+    private let sampleRecords = [
+        WeightRecord(date: "2024-01-15", weight: "82 kg", notes: "Punto de partida", hasPhoto: false),
+        WeightRecord(date: "2024-02-15", weight: "80 kg", notes: "Actualización primer mes", hasPhoto: true),
+        WeightRecord(date: "2024-03-15", weight: "78 kg", notes: "Actualización segundo mes", hasPhoto: false)
+    ]
     
     var body: some View {
-        GeometryReader { geometry in
-            if geometry.size.width > 800 {
-                // Desktop layout - side by side panels
-                desktopLayout(geometry: geometry)
-            } else {
-                // Mobile/compact layout - tabbed interface
-                compactLayout
-            }
-        }
-        .navigationTitle("PesoTracker")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button("Configuración") {
-                        // TODO: Open settings
+        ZStack {
+            // Main content
+            HStack(spacing: 0) {
+                // Left Panel - Summary (Sidebar)
+                LeftSidebarPanel(
+                    hasData: hasData,
+                    onEditGoal: { showEditGoalModal = true },
+                    onAddGoal: { showAddGoalModal = true },
+                    onAdvancedSettings: { showAdvancedSettingsModal = true },
+                    onLogout: { 
+                        // TODO: Handle logout logic
+                        print("Logout pressed")
                     }
-                    
-                    Divider()
-                    
-                    Button("Cerrar Sesión", role: .destructive) {
-                        authViewModel.logout()
+                )
+                .frame(width: 350)
+                .background(Color(NSColor.controlBackgroundColor))
+                
+                // Right Panel - Progress (Main content)
+                RightContentPanel(
+                    hasData: hasData,
+                    records: hasData ? sampleRecords : [],
+                    selectedTimeRange: $selectedTimeRange,
+                    onViewProgress: { showViewProgressModal = true },
+                    onAddWeight: { showAddWeightModal = true },
+                    onEditRecord: { record in
+                        selectedRecord = record
+                        showEditWeightModal = true
+                    },
+                    onDeleteRecord: { record in
+                        selectedRecord = record
+                        showDeleteConfirmationModal = true
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(NSColor.windowBackgroundColor))
             }
-        }
-    }
-    
-    // MARK: - Desktop Layout
-    private func desktopLayout(geometry: GeometryProxy) -> some View {
-        HStack(spacing: 0) {
-            // Left Panel - Summary (35%)
-            SummaryPanelView()
-                .frame(width: geometry.size.width * Constants.UI.dashboardLeftPanelRatio)
-                .background(.regularMaterial)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
+            .clipped()
             
-            // Divider
-            Divider()
-            
-            // Right Panel - Data (65%)
-            DataPanelView()
-                .frame(width: geometry.size.width * Constants.UI.dashboardRightPanelRatio)
-                .background(.regularMaterial)
-        }
-    }
-    
-    // MARK: - Compact Layout
-    private var compactLayout: some View {
-        TabView(selection: $selectedTab) {
-            SummaryPanelView()
-                .tabItem {
-                    Image(systemName: "person.circle")
-                    Text("Resumen")
-                }
-                .tag(0)
-            
-            DataPanelView()
-                .tabItem {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                    Text("Progreso")
-                }
-                .tag(1)
-        }
-    }
-}
-
-// MARK: - Summary Panel View (Placeholder)
-struct SummaryPanelView: View {
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Resumen Personal")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.top)
-            
-            Spacer()
-            
-            VStack(spacing: 16) {
-                Text("Peso Inicial: --")
-                    .font(.subheadline)
+            // Modal overlays
+            if showAddWeightModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showAddWeightModal = false
+                    }
                 
-                Text("Peso Actual: --")
-                    .font(.subheadline)
-                
-                Text("Pérdida Total: --")
-                    .font(.subheadline)
-                
-                Text("Promedio Semanal: --")
-                    .font(.subheadline)
-            }
-            .padding()
-            .background(.ultraThinMaterial)
-            .cornerRadius(12)
-            
-            Spacer()
-            
-            VStack(spacing: 12) {
-                Button("Nueva Meta") {
-                    // TODO: Implement
-                }
-                .buttonStyle(.borderedProminent)
-                
-                Button("Milestone") {
-                    // TODO: Implement
-                }
-                .buttonStyle(.bordered)
-                
-                Button("Ver Progreso") {
-                    // TODO: Implement
-                }
-                .buttonStyle(.bordered)
+                AddWeightModal(isPresented: $showAddWeightModal)
             }
             
-            Spacer()
-        }
-        .padding()
-    }
-}
-
-// MARK: - Data Panel View (Placeholder)
-struct DataPanelView: View {
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Datos de Progreso")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.top)
-            
-            Spacer()
-            
-            VStack {
-                Text("Gráfico de Progreso")
-                    .font(.headline)
-                    .padding()
+            if showEditWeightModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showEditWeightModal = false
+                    }
                 
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .frame(height: 200)
-                    .cornerRadius(12)
-                    .overlay(
-                        Text("Gráfico aquí")
-                            .foregroundColor(.secondary)
-                    )
+                AddWeightModal(
+                    isPresented: $showEditWeightModal,
+                    isEditing: true,
+                    record: selectedRecord
+                )
             }
             
-            Spacer()
-            
-            VStack {
-                Text("Tabla de Pesos")
-                    .font(.headline)
-                    .padding()
+            if showAddGoalModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showAddGoalModal = false
+                    }
                 
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .frame(height: 300)
-                    .cornerRadius(12)
-                    .overlay(
-                        Text("Tabla aquí")
-                            .foregroundColor(.secondary)
-                    )
+                AddGoalModal(isPresented: $showAddGoalModal)
             }
             
-            Spacer()
+            if showEditGoalModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showEditGoalModal = false
+                    }
+                
+                AddGoalModal(isPresented: $showEditGoalModal, isEditing: true)
+            }
+            
+            if showAdvancedSettingsModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showAdvancedSettingsModal = false
+                    }
+                
+                AdvancedSettingsModal(isPresented: $showAdvancedSettingsModal)
+            }
+            
+            if showViewProgressModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showViewProgressModal = false
+                    }
+                
+                ViewProgressModal(isPresented: $showViewProgressModal)
+            }
+            
+            if showDeleteConfirmationModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showDeleteConfirmationModal = false
+                    }
+                
+                DeleteConfirmationModal(
+                    isPresented: $showDeleteConfirmationModal,
+                    recordToDelete: selectedRecord,
+                    onConfirm: {
+                        // TODO: Delete record logic
+                        print("Deleting record: \(selectedRecord?.weight ?? "")")
+                    }
+                )
+            }
         }
-        .padding()
     }
 }
 
 // MARK: - Preview
 #Preview {
-    NavigationView {
-        MainDashboardView()
-    }
+    MainDashboardView()
 }

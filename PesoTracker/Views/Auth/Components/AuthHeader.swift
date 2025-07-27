@@ -9,7 +9,7 @@ struct AuthHeader: View {
             HStack(spacing: 8) {
                 Image(systemName: "figure.walk.circle.fill")
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.green)
                 
                 Text("PesoTracker")
                     .font(.system(size: 16, weight: .medium))

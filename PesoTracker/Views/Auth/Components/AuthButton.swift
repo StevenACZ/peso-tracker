@@ -22,12 +22,12 @@ struct AuthButton: View {
             .frame(height: 48)
             .background(
                 isEnabled && !isLoading ?
-                LinearGradient(colors: [Color.blue, Color.blue.opacity(0.9)], startPoint: .top, endPoint: .bottom) :
-                LinearGradient(colors: [Color.blue.opacity(0.4), Color.blue.opacity(0.3)], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [Color.green, Color.green.opacity(0.9)], startPoint: .top, endPoint: .bottom) :
+                LinearGradient(colors: [Color.green.opacity(0.4), Color.green.opacity(0.3)], startPoint: .top, endPoint: .bottom)
             )
             .foregroundColor(.white)
             .cornerRadius(6)
-            .shadow(color: Color.blue.opacity(0.3), radius: isEnabled ? 4 : 0, x: 0, y: 2)
+            .shadow(color: Color.green.opacity(0.3), radius: isEnabled ? 4 : 0, x: 0, y: 2)
         }
         .disabled(!isEnabled || isLoading)
         .buttonStyle(PlainButtonStyle())
