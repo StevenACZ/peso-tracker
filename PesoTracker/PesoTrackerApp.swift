@@ -9,9 +9,18 @@ import SwiftUI
 
 @main
 struct PesoTrackerApp: App {
+    
+    init() {
+        // Log build configuration on app startup
+        Constants.logBuildConfiguration()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .frame(minWidth: 1000, minHeight: 700)
         }
+        .windowResizability(.contentSize)
+        .defaultSize(width: 1200, height: 800)
     }
 }

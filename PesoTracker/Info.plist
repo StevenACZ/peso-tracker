@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSServices</key>
+	<array>
+		<dict/>
+	</array>
+	
+	<!-- API Configuration from xcconfig -->
+	<key>API_PROTOCOL</key>
+	<string>$(API_PROTOCOL)</string>
+	
+	<key>API_HOST</key>
+	<string>$(API_HOST)</string>
+	
+	<key>API_PORT</key>
+	<string>$(API_PORT)</string>
+	
+	<!-- App Information -->
+	<key>CFBundleName</key>
+	<string>PesoTracker</string>
+	
+	<key>CFBundleDisplayName</key>
+	<string>PesoTracker</string>
+	
+	<key>CFBundleIdentifier</key>
+	<string>com.pesotracker.app</string>
+	
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	
+	<!-- Platform Support -->
+	<key>LSMinimumSystemVersion</key>
+	<string>15.5</string>
+	
+	<!-- Network Usage Description (for macOS) -->
+	<key>NSNetworkUsageDescription</key>
+	<string>Esta aplicación necesita acceso a internet para sincronizar tus datos de peso y progreso.</string>
+</dict>
+</plist>

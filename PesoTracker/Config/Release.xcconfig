@@ -1,0 +1,11 @@
+// Release Configuration for PesoTracker - macOS only
+
+// API Configuration
+API_PROTOCOL = https
+API_HOST = peso-tracker-backend.onrender.com
+API_PORT = 
+
+// Build settings
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE
+MACOSX_DEPLOYMENT_TARGET = 15.5
+SWIFT_OPTIMIZATION_LEVEL = -O

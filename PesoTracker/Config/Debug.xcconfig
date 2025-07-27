@@ -1,0 +1,10 @@
+// Debug Configuration for PesoTracker - macOS only
+
+// API Configuration
+API_PROTOCOL = http
+API_HOST = localhost
+API_PORT = 3000
+
+// Build settings
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+MACOSX_DEPLOYMENT_TARGET = 15.5
