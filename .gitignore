@@ -212,6 +212,7 @@ vendor/bundle/
 # Kiro IDE files (if any)
 .kiro/cache/
 .kiro/temp/
+.claude/
 
 # README: xcconfig files are kept public as they contain public endpoints
 # If you need to add sensitive configuration, use environment variables or separate private config files

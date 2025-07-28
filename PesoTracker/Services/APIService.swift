@@ -72,6 +72,13 @@ class APIService: ObservableObject {
         print("🌐 [API SERVICE] Initializing with base URL: \(baseURL)")
         print("🌐 [API SERVICE] Timeout configured: \(Constants.API.timeout)s")
         
+        // Check if baseURL looks valid
+        if baseURL == "XCCONFIG_NOT_LOADED" {
+            print("⚠️ [API SERVICE] WARNING: xcconfig not loaded properly!")
+        } else if !baseURL.hasPrefix("http") {
+            print("⚠️ [API SERVICE] WARNING: baseURL doesn't start with http/https: \(baseURL)")
+        }
+        
         // Initialize modular components
         self.httpClient = HTTPClient(baseURL: baseURL)
         self.authHandler = AuthenticationHandler()

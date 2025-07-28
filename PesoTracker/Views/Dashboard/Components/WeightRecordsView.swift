@@ -90,7 +90,7 @@ struct WeightRecordsView: View {
             
             // Photo indicator
             Group {
-                if weight.hasPhotos {
+                if weight.hasPhoto {
                     Image(systemName: "photo.fill")
                         .font(.system(size: 12))
                         .foregroundColor(.blue)
@@ -125,7 +125,7 @@ struct WeightRecordsView: View {
                         date: weight.formattedDate,
                         weight: weight.formattedWeight,
                         notes: weight.notes ?? "",
-                        hasPhotos: weight.hasPhotos
+                        hasPhotos: weight.hasPhoto
                     )
                     onDeleteRecord(record)
                 }) {
@@ -156,23 +156,23 @@ struct WeightRecordsView: View {
         HStack(spacing: 12) {
             Button(action: {
                 Task {
-                    await viewModel.loadPreviousPage()
+                    await viewModel.loadPreviousTablePage()
                 }
             }) {
                 Text("← Anterior")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(viewModel.canGoBack ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                    .foregroundColor(viewModel.canGoBack ? .green : .gray)
+                    .background(viewModel.canGoPreviousTable ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                    .foregroundColor(viewModel.canGoPreviousTable ? .green : .gray)
                     .cornerRadius(6)
                     .font(.system(size: 12))
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canGoBack)
+            .disabled(!viewModel.canGoPreviousTable)
             
             Spacer()
             
-            Text(viewModel.paginationInfo)
+            Text(viewModel.tablePaginationInfo)
                 .font(.system(size: 11))
                 .foregroundColor(.secondary)
             
@@ -180,19 +180,19 @@ struct WeightRecordsView: View {
             
             Button(action: {
                 Task {
-                    await viewModel.loadNextPage()
+                    await viewModel.loadNextTablePage()
                 }
             }) {
                 Text("Siguiente →")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(viewModel.canGoNext ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                    .foregroundColor(viewModel.canGoNext ? .green : .gray)
+                    .background(viewModel.canGoNextTable ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                    .foregroundColor(viewModel.canGoNextTable ? .green : .gray)
                     .cornerRadius(6)
                     .font(.system(size: 12))
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canGoNext)
+            .disabled(!viewModel.canGoNextTable)
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)

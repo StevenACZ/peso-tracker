@@ -10,7 +10,7 @@ struct WeightPredictionCard: View {
                 .foregroundColor(.secondary)
                 .tracking(0.5)
             
-            if viewModel.hasWeightData && viewModel.allWeights.count >= 3 {
+            if viewModel.hasWeightData && viewModel.totalRecords >= 3 {
                 dataView
             } else {
                 emptyView
@@ -24,7 +24,7 @@ struct WeightPredictionCard: View {
                 Text("Promedio / semana")
                     .font(.system(size: 14))
                 Spacer()
-                Text(viewModel.averageWeeklyChange)
+                Text(viewModel.formattedWeeklyAverage)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(weeklyChangeColor)
             }
@@ -33,16 +33,17 @@ struct WeightPredictionCard: View {
                 Text("Total de registros")
                     .font(.system(size: 14))
                 Spacer()
-                Text("\(viewModel.totalWeightRecords)")
+                Text("\(viewModel.totalRecords)")
                     .font(.system(size: 14, weight: .medium))
             }
             
             HStack {
-                Text("Días rastreando")
+                Text("Cambio total")
                     .font(.system(size: 14))
                 Spacer()
-                Text("\(viewModel.trackingDays)")
+                Text(viewModel.formattedWeightChange)
                     .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(totalChangeColor)
             }
         }
     }
@@ -55,6 +56,11 @@ struct WeightPredictionCard: View {
     }
     
     private var weeklyChangeColor: Color {
+        guard let weeklyAverage = viewModel.weeklyAverage else { return .secondary }
+        return weeklyAverage < 0 ? .green : weeklyAverage > 0 ? .red : .secondary
+    }
+    
+    private var totalChangeColor: Color {
         guard let change = viewModel.weightChange else { return .secondary }
         return change < 0 ? .green : change > 0 ? .red : .secondary
     }

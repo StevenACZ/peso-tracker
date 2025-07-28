@@ -63,13 +63,13 @@ struct MainGoalCard: View {
             // Progress bar
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Progreso: \(viewModel.formattedProgressPercentage)")
+                    Text("Meta: \(goalDateText)")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     
                     Spacer()
                     
-                    Text(viewModel.formattedDaysToGoal)
+                    Text("Progreso")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -83,13 +83,34 @@ struct MainGoalCard: View {
                         
                         Rectangle()
                             .fill(.green)
-                            .frame(width: geometry.size.width * (viewModel.progressPercentage / 100.0), height: 6)
+                            .frame(width: geometry.size.width * progressPercentage, height: 6)
                             .cornerRadius(3)
                     }
                 }
                 .frame(height: 6)
             }
         }
+    }
+    
+    private var goalDateText: String {
+        guard let goalDate = viewModel.goalDate else { return "Sin fecha" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: goalDate)
+    }
+    
+    private var progressPercentage: CGFloat {
+        guard let currentWeight = viewModel.currentWeight,
+              let goalWeight = viewModel.goalWeight,
+              let initialWeight = viewModel.initialWeight else { return 0.0 }
+        
+        let totalChange = initialWeight - goalWeight
+        let currentChange = initialWeight - currentWeight
+        
+        if totalChange == 0 { return 0.0 }
+        
+        let progress = currentChange / totalChange
+        return min(max(progress, 0.0), 1.0)
     }
     
     private var emptyView: some View {

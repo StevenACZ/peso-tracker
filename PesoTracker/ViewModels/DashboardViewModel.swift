@@ -8,25 +8,20 @@ class DashboardViewModel: ObservableObject {
     // MARK: - Properties
     private let dashboardService = DashboardService.shared
     
-    // MARK: - Modular Components
-    private let dataFormatter = DashboardDataFormatter()
-    private let statisticsCalculator = DashboardStatisticsCalculator()
-    private let validator = DashboardValidator()
-    
     // Published properties
     @Published var isLoading = false
     @Published var error: String?
     @Published var showError = false
     
-    // Dashboard data
+    // Dashboard data (from service)
     @Published var currentUser: User?
-    @Published var weights: [Weight] = [] // Paginated weights for table
-    @Published var allWeights: [Weight] = [] // All weights for charts and stats
-    @Published var goals: [Goal] = []
-    @Published var photos: [Photo] = []
+    @Published var statistics: DashboardStatistics?
+    @Published var activeGoal: DashboardGoal?
+    @Published var weights: [Weight] = []
+    @Published var chartPoints: [WeightPoint] = []
     
     // UI State
-    @Published var selectedTimeRange = "1 mes"
+    @Published var selectedTimeRange = "1month"
     @Published var hasData = false
     
     // Combine cancellables
@@ -34,7 +29,7 @@ class DashboardViewModel: ObservableObject {
     
     // MARK: - Initialization
     init() {
-        print("📊 [DASHBOARD VM] Initializing dashboard view model")
+        print("📊 [DASHBOARD VM] Initializing simplified dashboard view model")
         setupBindings()
     }
     
@@ -52,30 +47,39 @@ class DashboardViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        dashboardService.$currentUser
+        // Bind dashboard data
+        dashboardService.$dashboardData
+            .map { $0?.user }
             .assign(to: &$currentUser)
         
-        dashboardService.$weights
+        dashboardService.$dashboardData
+            .map { $0?.statistics }
+            .assign(to: &$statistics)
+        
+        dashboardService.$dashboardData
+            .map { $0?.activeGoal }
+            .assign(to: &$activeGoal)
+        
+        // Bind table data - using computed property from service
+        dashboardService.$tableData
+            .map { $0?.data ?? [] }
             .assign(to: &$weights)
         
-        dashboardService.$allWeights
-            .assign(to: &$allWeights)
+        // Bind chart data - using computed property from service  
+        dashboardService.$chartData
+            .map { $0?.data ?? [] }
+            .assign(to: &$chartPoints)
         
-        dashboardService.$goals
-            .assign(to: &$goals)
+        // Update hasData when statistics change
+        dashboardService.$dashboardData
+            .map { dashboardData in
+                (dashboardData?.statistics.totalRecords ?? 0) > 0
+            }
+            .assign(to: &$hasData)
         
-        dashboardService.$photos
-            .assign(to: &$photos)
-        
-        // Update hasData when allWeights or goals change
-        Publishers.CombineLatest(
-            dashboardService.$allWeights,
-            dashboardService.$goals
-        )
-        .map { allWeights, goals in
-            !allWeights.isEmpty || !goals.isEmpty
-        }
-        .assign(to: &$hasData)
+        // Bind time range changes
+        dashboardService.$selectedTimeRange
+            .assign(to: &$selectedTimeRange)
     }
     
     // MARK: - Load Data
@@ -89,106 +93,72 @@ class DashboardViewModel: ObservableObject {
         await dashboardService.refreshData()
     }
     
-    // MARK: - Data Access Methods (Delegated to Statistics Calculator)
-    var currentWeight: Weight? {
-        return statisticsCalculator.getCurrentWeight(from: allWeights)
+    // MARK: - Data Access Methods (Simplified)
+    var currentWeight: Double? {
+        return statistics?.currentWeight
     }
     
     var weightChange: Double? {
-        return statisticsCalculator.getWeightChange(from: allWeights)
+        return statistics?.totalChange
     }
     
-    var mainGoal: Goal? {
-        return statisticsCalculator.getMainGoal(from: goals)
+    var totalRecords: Int {
+        return statistics?.totalRecords ?? 0
     }
     
-    var progressPercentage: Double {
-        return statisticsCalculator.getProgressPercentage(allWeights: allWeights, goals: goals)
+    var weeklyAverage: Double? {
+        return statistics?.weeklyAverage
     }
     
-    var daysToGoal: Int? {
-        return statisticsCalculator.getDaysToGoal(from: goals)
+    var initialWeight: Double? {
+        return statistics?.initialWeight
     }
     
-    func getWeightsForChart() -> [Weight] {
-        return statisticsCalculator.getWeightsForChart(from: allWeights, timeRange: selectedTimeRange)
-    }
-    
-    // MARK: - Data Status Properties (Delegated to Validator)
+    // MARK: - Data Status Properties
     var hasWeightData: Bool {
-        return validator.hasWeightData(allWeights: allWeights)
+        return !weights.isEmpty
     }
     
     var hasGoalData: Bool {
-        return validator.hasGoalData(goals: goals)
+        return activeGoal != nil
     }
     
-    var hasPhotoData: Bool {
-        return validator.hasPhotoData(photos: photos)
+    var hasActiveGoal: Bool {
+        return activeGoal != nil
     }
     
-    // MARK: - Formatted Data for UI (Delegated to Data Formatter)
+    // MARK: - Formatted Data for UI (Direct from Service)
     var formattedCurrentWeight: String {
-        return dataFormatter.formattedCurrentWeight(currentUser: currentUser, allWeights: allWeights)
+        return dashboardService.formattedCurrentWeight
     }
     
     var formattedWeightChange: String {
-        return dataFormatter.formattedWeightChange(from: allWeights)
+        return dashboardService.formattedWeightChange
     }
     
     var formattedGoalWeight: String {
-        return dataFormatter.formattedGoalWeight(from: goals)
+        return dashboardService.formattedGoalWeight
     }
     
-    var formattedProgressPercentage: String {
-        return dataFormatter.formattedProgressPercentage(progressPercentage: progressPercentage)
-    }
-    
-    var formattedDaysToGoal: String {
-        return dataFormatter.formattedDaysToGoal(daysToGoal: daysToGoal)
+    var formattedWeeklyAverage: String {
+        return dashboardService.formattedWeeklyAverage
     }
     
     var formattedUserName: String {
-        return dataFormatter.formattedUserName(from: currentUser)
+        return currentUser?.username ?? "Sin nombre"
     }
     
     var formattedUserEmail: String {
-        return dataFormatter.formattedUserEmail(from: currentUser)
+        return currentUser?.email ?? "Sin email"
     }
     
-    // MARK: - Photos Data (Delegated to Statistics Calculator)
-    var recentPhotos: [Photo] {
-        return statisticsCalculator.getRecentPhotos(from: photos)
+    // MARK: - Goal Information
+    var goalWeight: Double? {
+        return activeGoal?.targetWeight
     }
     
-    var totalPhotos: Int {
-        return statisticsCalculator.getTotalPhotos(from: photos)
-    }
-    
-    // MARK: - Goal Information (Delegated to Validator and Formatter)
-    var hasActiveGoal: Bool {
-        return validator.hasActiveGoal(goals: goals)
-    }
-    
-    var goalStatus: String {
-        return dataFormatter.formattedGoalStatus(from: goals)
-    }
-    
-    var goalProgress: String {
-        return dataFormatter.formattedGoalProgress(allWeights: allWeights, goals: goals)
-    }
-    
-    // MARK: - Goals Information (Delegated to Statistics Calculator)
-    var totalGoals: Int {
-        return statisticsCalculator.getTotalGoals(from: goals)
-    }
-    
-    var completedGoals: Int {
-        return statisticsCalculator.getCompletedGoals(from: goals)
-    }
-    
-    var activeGoals: Int {
-        return statisticsCalculator.getActiveGoals(from: goals)
+    var goalDate: Date? {
+        return activeGoal?.targetDate
     }
     
     // MARK: - Actions
@@ -203,86 +173,60 @@ class DashboardViewModel: ObservableObject {
     }
     
     // MARK: - Time Range Selection
-    func updateTimeRange(_ newRange: String) {
-        selectedTimeRange = newRange
+    func updateTimeRange(_ newRange: String) async {
         print("📊 [DASHBOARD VM] Time range updated to: \(newRange)")
+        await dashboardService.changeTimeRange(newRange)
     }
     
-    // MARK: - Data Validation (Delegated to Validator)
+    // MARK: - Chart Navigation
+    var canGoNextChart: Bool {
+        return dashboardService.canGoNextChart
+    }
+    
+    var canGoPreviousChart: Bool {
+        return dashboardService.canGoPreviousChart
+    }
+    
+    var chartPaginationInfo: String {
+        return dashboardService.chartPaginationInfo
+    }
+    
+    func loadNextChartPage() async {
+        await dashboardService.loadNextChartPage()
+    }
+    
+    func loadPreviousChartPage() async {
+        await dashboardService.loadPreviousChartPage()
+    }
+    
+    // MARK: - Table Pagination Methods
+    var canGoNextTable: Bool {
+        return dashboardService.canGoNextTable
+    }
+    
+    var canGoPreviousTable: Bool {
+        return dashboardService.canGoPreviousTable
+    }
+    
+    var tablePaginationInfo: String {
+        return dashboardService.tablePaginationInfo
+    }
+    
+    func loadNextTablePage() async {
+        await dashboardService.loadNextTablePage()
+    }
+    
+    func loadPreviousTablePage() async {
+        await dashboardService.loadPreviousTablePage()
+    }
+    
+    // MARK: - Data Validation
     var canShowChart: Bool {
-        return validator.canShowChart(allWeights: allWeights, timeRange: selectedTimeRange)
+        return !chartPoints.isEmpty
     }
     
     var canShowProgress: Bool {
-        return validator.canShowProgress(allWeights: allWeights, goals: goals)
-    }
-    
-    var canShowPhotos: Bool {
-        return validator.canShowPhotos(photos: photos)
-    }
-    
-    // MARK: - Statistics (Delegated to Statistics Calculator and Formatter)
-    var totalWeightRecords: Int {
-        return statisticsCalculator.getTotalWeightRecords(from: allWeights)
-    }
-    
-    var trackingDays: Int {
-        return statisticsCalculator.calculateTrackingDays(from: allWeights)
-    }
-    
-    var averageWeeklyChange: String {
-        let weeklyChange = statisticsCalculator.calculateAverageWeeklyChange(from: allWeights)
-        return dataFormatter.formattedAverageWeeklyChange(trackingDays: trackingDays, weightChange: weeklyChange)
-    }
-    
-    // MARK: - Recent Activity (Delegated to Formatter and Statistics Calculator)
-    var lastWeightEntry: String {
-        return dataFormatter.formattedLastWeightEntry(from: allWeights)
-    }
-    
-    var recentWeights: [Weight] {
-        return statisticsCalculator.getRecentWeights(from: allWeights)
-    }
-    
-    // MARK: - Weight Management
-    func deleteWeight(weightId: Int) async {
-        isLoading = true
-        do {
-            let weightService = WeightEntryService()
-            try await weightService.deleteWeight(weightId: weightId)
-            
-            // Remove from local array
-            weights.removeAll { $0.id == weightId }
-            
-            // Refresh data to ensure consistency
-            await loadDashboardData()
-            
-        } catch {
-            self.error = "Error al eliminar el peso: \(error.localizedDescription)"
-            showError = true
-        }
-        isLoading = false
-    }
-    
-    // MARK: - Pagination Methods (Delegated to Service and Formatter)
-    var canGoBack: Bool {
-        return dashboardService.canGoBack
-    }
-    
-    var canGoNext: Bool {
-        return dashboardService.canGoNext
-    }
-    
-    var paginationInfo: String {
-        return dashboardService.paginationInfo
-    }
-    
-    func loadNextPage() async {
-        await dashboardService.loadNextPage()
-    }
-    
-    func loadPreviousPage() async {
-        await dashboardService.loadPreviousPage()
+        return hasWeightData && hasGoalData
     }
 }
 

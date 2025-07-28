@@ -3,6 +3,14 @@ import SwiftUI
 struct ProgressChartView: View {
     @ObservedObject var viewModel: DashboardViewModel
     
+    private let timeRangeMapping: [String: String] = [
+        "1 semana": "1week",
+        "1 mes": "1month", 
+        "3 meses": "3months",
+        "6 meses": "6months",
+        "1 año": "1year"
+    ]
+    
     private let timeRanges = ["1 semana", "1 mes", "3 meses", "6 meses", "1 año"]
     
     var body: some View {
@@ -10,9 +18,16 @@ struct ProgressChartView: View {
             header
             currentWeightDisplay
             
-            if viewModel.canShowChart {
-                chartWithData
+            if hasPaginationData {
+                // Show chart (with or without data) and pagination controls
+                if viewModel.canShowChart {
+                    chartWithData
+                } else {
+                    emptyChartWithPagination
+                }
+                chartPaginationControls
             } else {
+                // No pagination data at all - show no data message
                 emptyChart
             }
         }
@@ -29,14 +44,16 @@ struct ProgressChartView: View {
             HStack(spacing: 2) {
                 ForEach(timeRanges, id: \.self) { range in
                     Button(action: {
-                        viewModel.updateTimeRange(range)
+                        Task {
+                            await viewModel.updateTimeRange(timeRangeMapping[range] ?? "1month")
+                        }
                     }) {
                         Text(range)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(viewModel.selectedTimeRange == range ? Color.gray.opacity(0.3) : Color.clear)
+                            .background(timeRangeMapping[range] == viewModel.selectedTimeRange ? Color.gray.opacity(0.3) : Color.clear)
                             .font(.system(size: 12))
-                            .foregroundColor(viewModel.selectedTimeRange == range ? .primary : .secondary)
+                            .foregroundColor(timeRangeMapping[range] == viewModel.selectedTimeRange ? .primary : .secondary)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -54,7 +71,7 @@ struct ProgressChartView: View {
             
             if viewModel.hasWeightData, let change = viewModel.weightChange {
                 HStack(spacing: 4) {
-                    Text(viewModel.selectedTimeRange)
+                    Text("Total")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     
@@ -81,7 +98,7 @@ struct ProgressChartView: View {
                     .cornerRadius(8)
                 
                 // Chart based on real data
-                if !chartWeights.isEmpty {
+                if !viewModel.chartPoints.isEmpty {
                     chartPath(in: geometry.size)
                         .stroke(.green, lineWidth: 2)
                         .background(
@@ -94,17 +111,65 @@ struct ProgressChartView: View {
         .frame(height: 200)
     }
     
-    private var chartWeights: [Weight] {
-        return viewModel.getWeightsForChart()
+    private var chartPaginationControls: some View {
+        HStack {
+            Button(action: {
+                Task {
+                    await viewModel.loadPreviousChartPage()
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12))
+                    Text("Anterior")
+                        .font(.system(size: 12))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(viewModel.canGoPreviousChart ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
+                .cornerRadius(6)
+                .foregroundColor(viewModel.canGoPreviousChart ? .primary : .secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!viewModel.canGoPreviousChart)
+            
+            Spacer()
+            
+            Text(viewModel.chartPaginationInfo)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Button(action: {
+                Task {
+                    await viewModel.loadNextChartPage()
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Text("Siguiente")
+                        .font(.system(size: 12))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(viewModel.canGoNextChart ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
+                .cornerRadius(6)
+                .foregroundColor(viewModel.canGoNextChart ? .primary : .secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!viewModel.canGoNextChart)
+        }
     }
     
     private func chartPath(in size: CGSize, filled: Bool = false) -> Path {
         Path { path in
-            guard !chartWeights.isEmpty else { return }
+            guard !viewModel.chartPoints.isEmpty else { return }
             
-            let weights = chartWeights.reversed() // Oldest to newest
-            let minWeight = weights.map(\.weight).min() ?? 0
-            let maxWeight = weights.map(\.weight).max() ?? 100
+            let points = viewModel.chartPoints.sorted { $0.date < $1.date } // Oldest to newest
+            let minWeight = points.map(\.weight).min() ?? 0
+            let maxWeight = points.map(\.weight).max() ?? 100
             let weightRange = maxWeight - minWeight
             
             // Add some padding to the range
@@ -115,30 +180,57 @@ struct ProgressChartView: View {
             let chartWidth = size.width - 40 // Padding
             let chartHeight = size.height - 40 // Padding
             
-            var points: [CGPoint] = []
+            var chartPoints: [CGPoint] = []
             
-            for (index, weight) in weights.enumerated() {
-                let x = 20 + (CGFloat(index) / CGFloat(weights.count - 1)) * chartWidth
-                let normalizedWeight = (weight.weight - paddedMin) / paddedRange
+            for (index, point) in points.enumerated() {
+                let x = 20 + (CGFloat(index) / CGFloat(points.count - 1)) * chartWidth
+                let normalizedWeight = (point.weight - paddedMin) / paddedRange
                 let y = 20 + (1 - normalizedWeight) * chartHeight
                 
-                points.append(CGPoint(x: x, y: y))
+                chartPoints.append(CGPoint(x: x, y: y))
             }
             
-            guard !points.isEmpty else { return }
+            guard !chartPoints.isEmpty else { return }
             
-            path.move(to: points[0])
-            for point in points.dropFirst() {
+            path.move(to: chartPoints[0])
+            for point in chartPoints.dropFirst() {
                 path.addLine(to: point)
             }
             
             if filled {
                 // Close the path for filling
-                path.addLine(to: CGPoint(x: points.last!.x, y: size.height - 20))
-                path.addLine(to: CGPoint(x: points.first!.x, y: size.height - 20))
+                path.addLine(to: CGPoint(x: chartPoints.last!.x, y: size.height - 20))
+                path.addLine(to: CGPoint(x: chartPoints.first!.x, y: size.height - 20))
                 path.closeSubpath()
             }
         }
+    }
+    
+    // MARK: - Computed Properties
+    private var hasPaginationData: Bool {
+        // Check if we have any pagination periods available
+        return (viewModel.chartPoints.count > 0) || 
+               (viewModel.canGoNextChart || viewModel.canGoPreviousChart) ||
+               (!viewModel.chartPaginationInfo.isEmpty && viewModel.chartPaginationInfo != "")
+    }
+    
+    private var emptyChartWithPagination: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.05))
+            .frame(height: 200)
+            .cornerRadius(8)
+            .overlay(
+                VStack(spacing: 12) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 32))
+                        .foregroundColor(.secondary.opacity(0.4))
+                    
+                    Text("Sin datos en este período")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+            )
     }
     
     private var emptyChart: some View {

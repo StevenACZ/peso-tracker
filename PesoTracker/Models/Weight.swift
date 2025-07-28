@@ -5,9 +5,12 @@ struct Weight: Codable, Identifiable {
     let weight: Double
     let date: Date
     let notes: String?
-    let userId: Int
-    let createdAt: Date
-    let updatedAt: Date
+    let hasPhoto: Bool
+    
+    // Propiedades opcionales para compatibilidad con API antigua (deprecated)
+    let userId: Int?
+    let createdAt: Date?
+    let updatedAt: Date?
     let photos: [Photo]?
     
     enum CodingKeys: String, CodingKey {
@@ -15,6 +18,7 @@ struct Weight: Codable, Identifiable {
         case weight
         case date
         case notes
+        case hasPhoto
         case userId
         case createdAt
         case updatedAt
@@ -34,14 +38,17 @@ struct Weight: Codable, Identifiable {
         }
         
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        userId = try container.decode(Int.self, forKey: .userId)
+        hasPhoto = try container.decodeIfPresent(Bool.self, forKey: .hasPhoto) ?? false
+        
+        // Optional properties for backward compatibility
+        userId = try container.decodeIfPresent(Int.self, forKey: .userId)
         photos = try container.decodeIfPresent([Photo].self, forKey: .photos)
         
         // Date decoding helper
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         
-        // Decode date
+        // Decode date (required)
         let dateString = try container.decode(String.self, forKey: .date)
         if let parsedDate = dateFormatter.date(from: dateString) {
             date = parsedDate
@@ -50,22 +57,27 @@ struct Weight: Codable, Identifiable {
             date = dateFormatter.date(from: dateString) ?? Date()
         }
         
-        // Decode createdAt
-        let createdAtString = try container.decode(String.self, forKey: .createdAt)
-        if let parsedDate = dateFormatter.date(from: createdAtString) {
-            createdAt = parsedDate
+        // Decode optional dates
+        if let createdAtString = try container.decodeIfPresent(String.self, forKey: .createdAt) {
+            if let parsedDate = dateFormatter.date(from: createdAtString) {
+                createdAt = parsedDate
+            } else {
+                dateFormatter.formatOptions = [.withInternetDateTime]
+                createdAt = dateFormatter.date(from: createdAtString)
+            }
         } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            createdAt = dateFormatter.date(from: createdAtString) ?? Date()
+            createdAt = nil
         }
         
-        // Decode updatedAt
-        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
-        if let parsedDate = dateFormatter.date(from: updatedAtString) {
-            updatedAt = parsedDate
+        if let updatedAtString = try container.decodeIfPresent(String.self, forKey: .updatedAt) {
+            if let parsedDate = dateFormatter.date(from: updatedAtString) {
+                updatedAt = parsedDate
+            } else {
+                dateFormatter.formatOptions = [.withInternetDateTime]
+                updatedAt = dateFormatter.date(from: updatedAtString)
+            }
         } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            updatedAt = dateFormatter.date(from: updatedAtString) ?? Date()
+            updatedAt = nil
         }
     }
     
@@ -75,15 +87,22 @@ struct Weight: Codable, Identifiable {
         try container.encode(id, forKey: .id)
         try container.encode(weight, forKey: .weight)
         try container.encodeIfPresent(notes, forKey: .notes)
-        try container.encode(userId, forKey: .userId)
+        try container.encode(hasPhoto, forKey: .hasPhoto)
+        try container.encodeIfPresent(userId, forKey: .userId)
         try container.encodeIfPresent(photos, forKey: .photos)
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         
         try container.encode(formatter.string(from: date), forKey: .date)
-        try container.encode(formatter.string(from: createdAt), forKey: .createdAt)
-        try container.encode(formatter.string(from: updatedAt), forKey: .updatedAt)
+        
+        if let createdAt = createdAt {
+            try container.encode(formatter.string(from: createdAt), forKey: .createdAt)
+        }
+        
+        if let updatedAt = updatedAt {
+            try container.encode(formatter.string(from: updatedAt), forKey: .updatedAt)
+        }
     }
 }
 
@@ -138,8 +157,9 @@ struct WeightUpdateRequest: Codable {
 
 // MARK: - Weight Extensions
 extension Weight {
+    // Backward compatibility - delegate to hasPhoto
     var hasPhotos: Bool {
-        return photos != nil && !photos!.isEmpty
+        return hasPhoto
     }
     
     var hasNotes: Bool {

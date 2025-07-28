@@ -37,9 +37,19 @@ class HTTPClient {
         headers: [String: String] = [:]
     ) throws -> URLRequest {
         
-        guard let url = URL(string: baseURL + endpoint) else {
+        let fullURL = baseURL + endpoint
+        print("🌐 [HTTP CLIENT] Building request:")
+        print("   📍 Base URL: '\(baseURL)'")
+        print("   📍 Endpoint: '\(endpoint)'")
+        print("   📍 Full URL: '\(fullURL)'")
+        print("   🔧 Method: \(method.rawValue)")
+        
+        guard let url = URL(string: fullURL) else {
+            print("❌ [HTTP CLIENT] Invalid URL: '\(fullURL)'")
             throw APIError.invalidURL
         }
+        
+        print("✅ [HTTP CLIENT] URL constructed successfully: \(url.absoluteString)")
         
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
@@ -65,8 +75,10 @@ class HTTPClient {
     ) async throws -> T {
         
         // Execute request
+        print("🚀 [HTTP CLIENT] Executing request to: \(request.url?.absoluteString ?? "unknown")")
         do {
             let (data, response) = try await session.data(for: request)
+            print("📦 [HTTP CLIENT] Received response: \(data.count) bytes")
             
             // Validate HTTP response
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -74,13 +86,20 @@ class HTTPClient {
             }
             
             // Handle HTTP status codes
+            print("📡 [HTTP CLIENT] HTTP Status: \(httpResponse.statusCode)")
             switch httpResponse.statusCode {
             case 200...299:
                 // Success - decode response
+                print("✅ [HTTP CLIENT] Success response, decoding...")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📄 [HTTP CLIENT] Response body: \(responseString)")
+                }
                 do {
                     let decodedResponse = try jsonDecoder.decode(T.self, from: data)
+                    print("✅ [HTTP CLIENT] Successfully decoded response")
                     return decodedResponse
                 } catch {
+                    print("❌ [HTTP CLIENT] Decoding error: \(error)")
                     throw APIError.decodingError(error)
                 }
                 
@@ -97,13 +116,16 @@ class HTTPClient {
             default:
                 // Server error
                 let errorMessage = String(data: data, encoding: .utf8)
+                print("❌ [HTTP CLIENT] Server error \(httpResponse.statusCode): \(errorMessage ?? "No message")")
                 throw APIError.serverError(httpResponse.statusCode, errorMessage)
             }
             
         } catch {
             if error is APIError {
+                print("❌ [HTTP CLIENT] API Error: \(error)")
                 throw error
             } else {
+                print("❌ [HTTP CLIENT] Network Error: \(error)")
                 throw APIError.networkError(error)
             }
         }

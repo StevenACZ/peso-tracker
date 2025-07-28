@@ -30,8 +30,8 @@ struct PersonalSummaryCard: View {
     }
     
     private var initialWeight: String {
-        guard let lastWeight = viewModel.allWeights.last else { return "-" }
-        return String(format: "%.2f kg", lastWeight.weight)
+        guard let initial = viewModel.initialWeight else { return "-" }
+        return String(format: "%.2f kg", initial)
     }
     
     private var emptyView: some View {

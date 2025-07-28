@@ -109,7 +109,134 @@ struct UserStats: Codable {
     }
 }
 
-// MARK: - Dashboard Stats (Simplified)
+// MARK: - New Dashboard Response Models
+struct DashboardResponse: Codable {
+    let user: User
+    let statistics: DashboardStatistics
+    let activeGoal: DashboardGoal?
+    
+    enum CodingKeys: String, CodingKey {
+        case user
+        case statistics
+        case activeGoal
+    }
+}
+
+struct DashboardGoal: Codable {
+    let id: Int
+    let targetWeight: Double
+    let targetDate: Date
+    let createdAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case targetWeight
+        case targetDate
+        case createdAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        targetWeight = try container.decode(Double.self, forKey: .targetWeight)
+        
+        // Date decoding helper
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        // Decode targetDate
+        let targetDateString = try container.decode(String.self, forKey: .targetDate)
+        if let parsedDate = dateFormatter.date(from: targetDateString) {
+            targetDate = parsedDate
+        } else {
+            dateFormatter.formatOptions = [.withInternetDateTime]
+            targetDate = dateFormatter.date(from: targetDateString) ?? Date()
+        }
+        
+        // Decode createdAt
+        let createdAtString = try container.decode(String.self, forKey: .createdAt)
+        if let parsedDate = dateFormatter.date(from: createdAtString) {
+            createdAt = parsedDate
+        } else {
+            dateFormatter.formatOptions = [.withInternetDateTime]
+            createdAt = dateFormatter.date(from: createdAtString) ?? Date()
+        }
+    }
+}
+
+struct DashboardStatistics: Codable {
+    let initialWeight: Double?
+    let currentWeight: Double?
+    let totalChange: Double?
+    let weeklyAverage: Double?
+    let totalRecords: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case initialWeight
+        case currentWeight
+        case totalChange
+        case weeklyAverage
+        case totalRecords
+    }
+}
+
+// MARK: - Chart Data Response Models
+struct ChartDataResponse: Codable {
+    let data: [WeightPoint]
+    let pagination: ChartPagination
+    
+    enum CodingKeys: String, CodingKey {
+        case data
+        case pagination
+    }
+}
+
+struct WeightPoint: Codable {
+    let weight: Double
+    let date: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case weight
+        case date
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        weight = try container.decode(Double.self, forKey: .weight)
+        
+        // Handle date parsing
+        let dateString = try container.decode(String.self, forKey: .date)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let parsedDate = formatter.date(from: dateString) {
+            date = parsedDate
+        } else {
+            formatter.formatOptions = [.withInternetDateTime]
+            date = formatter.date(from: dateString) ?? Date()
+        }
+    }
+}
+
+struct ChartPagination: Codable {
+    let currentPeriod: String
+    let hasNext: Bool
+    let hasPrevious: Bool
+    let totalPeriods: Int
+    let currentPage: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case currentPeriod
+        case hasNext
+        case hasPrevious
+        case totalPeriods
+        case currentPage
+    }
+}
+
+// MARK: - Dashboard Stats (Simplified - DEPRECATED)
 struct DashboardStats: Codable {
     let totalRecords: Int
     let weightChange: Double?

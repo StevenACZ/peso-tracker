@@ -31,7 +31,8 @@ class WeightEntryViewModel: ObservableObject {
     @Published var hasExistingPhoto = false
     
     // MARK: - Services and Helpers
-    private let weightEntryService = WeightEntryService()
+    // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
+    // private let weightEntryService = WeightEntryService()
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Constants
@@ -185,6 +186,9 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Photo Management
     
     func deleteExistingPhoto() async {
+        // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
+        errorMessage = "Función deshabilitada temporalmente"
+        /*
         guard let photoId = existingPhotoId else { 
             errorMessage = "No se encontró el ID de la foto para eliminar"
             return 
@@ -202,11 +206,15 @@ class WeightEntryViewModel: ObservableObject {
             errorMessage = "Error al eliminar la foto: \(error.localizedDescription)"
         }
         isLoading = false
+        */
     }
     
     // MARK: - Save Methods
     
     func saveWeight() async {
+        // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
+        errorMessage = "Función deshabilitada temporalmente"
+        /*
         guard isValid else { return }
         
         isLoading = true
@@ -262,6 +270,7 @@ class WeightEntryViewModel: ObservableObject {
         }
         
         isLoading = false
+        */
     }
     
     // MARK: - Helper Methods
@@ -295,6 +304,8 @@ class WeightEntryViewModel: ObservableObject {
         print("   - Date: \(weight.formattedDate)")
         print("   - Notes: \(self.notes)")
         
+        // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
+        /*
         // Fetch photo data using the new endpoint
         do {
             if let photoDetails = try await weightEntryService.getWeightPhoto(weightId: weight.id) {
@@ -317,6 +328,7 @@ class WeightEntryViewModel: ObservableObject {
             existingPhotoUrl = nil
             existingPhotoId = nil
         }
+        */
     }
     
     func loadExistingWeight(_ weightRecord: WeightRecord) {
