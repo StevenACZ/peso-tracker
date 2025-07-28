@@ -1,10 +1,7 @@
 import SwiftUI
 
 struct MainGoalCard: View {
-    let hasData: Bool
-    let currentWeight: String
-    let targetWeight: String
-    let progress: Double
+    @ObservedObject var viewModel: DashboardViewModel
     let onEditGoal: () -> Void
     let onAddGoal: () -> Void
     
@@ -12,7 +9,7 @@ struct MainGoalCard: View {
         VStack(alignment: .leading, spacing: 16) {
             header
             
-            if hasData {
+            if viewModel.hasActiveGoal {
                 dataView
             } else {
                 emptyView
@@ -29,7 +26,7 @@ struct MainGoalCard: View {
             
             Spacer()
             
-            if hasData {
+            if viewModel.hasActiveGoal {
                 Button(action: onEditGoal) {
                     Image(systemName: "pencil")
                         .font(.system(size: 12))
@@ -47,7 +44,7 @@ struct MainGoalCard: View {
                     Text("Actual")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
-                    Text(currentWeight)
+                    Text(viewModel.formattedCurrentWeight)
                         .font(.system(size: 20, weight: .semibold))
                 }
                 
@@ -57,7 +54,7 @@ struct MainGoalCard: View {
                     Text("Objetivo")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
-                    Text(targetWeight)
+                    Text(viewModel.formattedGoalWeight)
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.green)
                 }
@@ -65,6 +62,18 @@ struct MainGoalCard: View {
             
             // Progress bar
             VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Progreso: \(viewModel.formattedProgressPercentage)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text(viewModel.formattedDaysToGoal)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         Rectangle()
@@ -74,7 +83,7 @@ struct MainGoalCard: View {
                         
                         Rectangle()
                             .fill(.green)
-                            .frame(width: geometry.size.width * progress, height: 6)
+                            .frame(width: geometry.size.width * (viewModel.progressPercentage / 100.0), height: 6)
                             .cornerRadius(3)
                     }
                 }
@@ -107,24 +116,10 @@ struct MainGoalCard: View {
 }
 
 #Preview {
-    VStack(spacing: 20) {
-        MainGoalCard(
-            hasData: true,
-            currentWeight: "75 kg",
-            targetWeight: "68 kg",
-            progress: 0.7,
-            onEditGoal: {},
-            onAddGoal: {}
-        )
-        
-        MainGoalCard(
-            hasData: false,
-            currentWeight: "",
-            targetWeight: "",
-            progress: 0,
-            onEditGoal: {},
-            onAddGoal: {}
-        )
-    }
+    MainGoalCard(
+        viewModel: DashboardViewModel(),
+        onEditGoal: {},
+        onAddGoal: {}
+    )
     .padding()
 }

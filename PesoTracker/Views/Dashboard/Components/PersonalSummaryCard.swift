@@ -1,10 +1,7 @@
 import SwiftUI
 
 struct PersonalSummaryCard: View {
-    let hasData: Bool
-    let initialWeight: String
-    let currentWeight: String
-    let totalChange: String
+    @ObservedObject var viewModel: DashboardViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -13,7 +10,7 @@ struct PersonalSummaryCard: View {
                 .foregroundColor(.secondary)
                 .tracking(0.5)
             
-            if hasData {
+            if viewModel.hasData {
                 dataView
             } else {
                 emptyView
@@ -25,11 +22,16 @@ struct PersonalSummaryCard: View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 weightCard(title: "Peso Inicial", value: initialWeight)
-                weightCard(title: "Peso Actual", value: currentWeight)
+                weightCard(title: "Peso Actual", value: viewModel.formattedCurrentWeight)
             }
             
             totalChangeCard
         }
+    }
+    
+    private var initialWeight: String {
+        guard let lastWeight = viewModel.weights.last else { return "-" }
+        return String(format: "%.1f kg", lastWeight.weight)
     }
     
     private var emptyView: some View {
@@ -79,33 +81,24 @@ struct PersonalSummaryCard: View {
                 Text("Total Perdido/Ganado")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
-                Text(totalChange)
+                Text(viewModel.formattedWeightChange)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.green)
+                    .foregroundColor(weightChangeColor)
             }
             Spacer()
         }
         .padding(.vertical, 12)
-        .background(Color.green.opacity(0.1))
+        .background(weightChangeColor.opacity(0.1))
         .cornerRadius(8)
+    }
+    
+    private var weightChangeColor: Color {
+        guard let change = viewModel.weightChange else { return .secondary }
+        return change < 0 ? .green : change > 0 ? .red : .secondary
     }
 }
 
 #Preview {
-    VStack {
-        PersonalSummaryCard(
-            hasData: true,
-            initialWeight: "82 kg",
-            currentWeight: "75 kg",
-            totalChange: "-7 kg"
-        )
-        
-        PersonalSummaryCard(
-            hasData: false,
-            initialWeight: "",
-            currentWeight: "",
-            totalChange: ""
-        )
-    }
-    .padding()
+    PersonalSummaryCard(viewModel: DashboardViewModel())
+        .padding()
 }

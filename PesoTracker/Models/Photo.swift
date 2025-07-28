@@ -10,21 +10,39 @@ struct Photo: Codable, Identifiable {
     
     enum CodingKeys: String, CodingKey {
         case id
-        case weightId = "weight_id"
-        case photoURL = "photo_url"
+        case weightId
+        case photoURL = "thumbnailUrl"
         case notes
-        case uploadedAt = "uploaded_at"
-        case userId = "user_id"
+        case uploadedAt = "createdAt"
+        case userId
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        id = try container.decode(String.self, forKey: .id)
-        weightId = try container.decode(String.self, forKey: .weightId)
+        // Handle id as either Int or String
+        if let idInt = try? container.decode(Int.self, forKey: .id) {
+            id = String(idInt)
+        } else {
+            id = try container.decode(String.self, forKey: .id)
+        }
+        
+        // Handle weightId as either Int or String
+        if let weightIdInt = try? container.decode(Int.self, forKey: .weightId) {
+            weightId = String(weightIdInt)
+        } else {
+            weightId = try container.decode(String.self, forKey: .weightId)
+        }
+        
         photoURL = try container.decode(String.self, forKey: .photoURL)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        userId = try container.decode(String.self, forKey: .userId)
+        
+        // Handle userId as either Int or String
+        if let userIdInt = try? container.decode(Int.self, forKey: .userId) {
+            userId = String(userIdInt)
+        } else {
+            userId = try container.decode(String.self, forKey: .userId)
+        }
         
         // Date decoding
         let dateFormatter = ISO8601DateFormatter()

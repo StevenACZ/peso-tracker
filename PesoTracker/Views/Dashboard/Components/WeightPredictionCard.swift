@@ -1,19 +1,16 @@
 import SwiftUI
 
 struct WeightPredictionCard: View {
-    let hasData: Bool
-    let weeklyAverage: String
-    let estimatedDate: String
-    let daysAhead: Int
+    @ObservedObject var viewModel: DashboardViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("PREDICCIÓN DE PESO")
+            Text("ESTADÍSTICAS DE PESO")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.secondary)
                 .tracking(0.5)
             
-            if hasData {
+            if viewModel.hasWeightData && viewModel.weights.count >= 3 {
                 dataView
             } else {
                 emptyView
@@ -27,55 +24,43 @@ struct WeightPredictionCard: View {
                 Text("Promedio / semana")
                     .font(.system(size: 14))
                 Spacer()
-                Text(weeklyAverage)
+                Text(viewModel.averageWeeklyChange)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.green)
+                    .foregroundColor(weeklyChangeColor)
             }
             
             HStack {
-                Text("Fecha de meta estimada")
+                Text("Total de registros")
                     .font(.system(size: 14))
                 Spacer()
-                Text(estimatedDate)
+                Text("\(viewModel.totalWeightRecords)")
                     .font(.system(size: 14, weight: .medium))
             }
             
-            if daysAhead > 0 {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.system(size: 12))
-                    Text("Adelantaste \(daysAhead) días")
-                        .font(.system(size: 12))
-                        .foregroundColor(.green)
-                }
+            HStack {
+                Text("Días rastreando")
+                    .font(.system(size: 14))
+                Spacer()
+                Text("\(viewModel.trackingDays)")
+                    .font(.system(size: 14, weight: .medium))
             }
         }
     }
     
     private var emptyView: some View {
-        Text("Agregue peso para ver la predicción.")
+        Text("Agregue más registros de peso para ver estadísticas.")
             .font(.system(size: 14))
             .foregroundColor(.secondary)
             .italic()
     }
+    
+    private var weeklyChangeColor: Color {
+        guard let change = viewModel.weightChange else { return .secondary }
+        return change < 0 ? .green : change > 0 ? .red : .secondary
+    }
 }
 
 #Preview {
-    VStack(spacing: 20) {
-        WeightPredictionCard(
-            hasData: true,
-            weeklyAverage: "-0.5 kg",
-            estimatedDate: "2024-12-15",
-            daysAhead: 31
-        )
-        
-        WeightPredictionCard(
-            hasData: false,
-            weeklyAverage: "",
-            estimatedDate: "",
-            daysAhead: 0
-        )
-    }
-    .padding()
+    WeightPredictionCard(viewModel: DashboardViewModel())
+        .padding()
 }

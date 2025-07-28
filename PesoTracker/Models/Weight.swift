@@ -1,34 +1,41 @@
 import Foundation
 
 struct Weight: Codable, Identifiable {
-    let id: String
+    let id: Int
     let weight: Double
     let date: Date
     let notes: String?
-    let photoURL: String?
-    let userId: String
+    let userId: Int
     let createdAt: Date
     let updatedAt: Date
+    let photos: [Photo]?
     
     enum CodingKeys: String, CodingKey {
         case id
         case weight
         case date
         case notes
-        case photoURL = "photo_url"
-        case userId = "user_id"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
+        case userId
+        case createdAt
+        case updatedAt
+        case photos
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        id = try container.decode(String.self, forKey: .id)
-        weight = try container.decode(Double.self, forKey: .weight)
+        id = try container.decode(Int.self, forKey: .id)
+        
+        // Handle weight as string from API
+        if let weightString = try? container.decode(String.self, forKey: .weight) {
+            weight = Double(weightString) ?? 0.0
+        } else {
+            weight = try container.decode(Double.self, forKey: .weight)
+        }
+        
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        photoURL = try container.decodeIfPresent(String.self, forKey: .photoURL)
-        userId = try container.decode(String.self, forKey: .userId)
+        userId = try container.decode(Int.self, forKey: .userId)
+        photos = try container.decodeIfPresent([Photo].self, forKey: .photos)
         
         // Date decoding helper
         let dateFormatter = ISO8601DateFormatter()
@@ -68,8 +75,8 @@ struct Weight: Codable, Identifiable {
         try container.encode(id, forKey: .id)
         try container.encode(weight, forKey: .weight)
         try container.encodeIfPresent(notes, forKey: .notes)
-        try container.encodeIfPresent(photoURL, forKey: .photoURL)
         try container.encode(userId, forKey: .userId)
+        try container.encodeIfPresent(photos, forKey: .photos)
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -131,8 +138,8 @@ struct WeightUpdateRequest: Codable {
 
 // MARK: - Weight Extensions
 extension Weight {
-    var hasPhoto: Bool {
-        return photoURL != nil && !photoURL!.isEmpty
+    var hasPhotos: Bool {
+        return photos != nil && !photos!.isEmpty
     }
     
     var hasNotes: Bool {

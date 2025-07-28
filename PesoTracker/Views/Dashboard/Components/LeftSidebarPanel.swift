@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LeftSidebarPanel: View {
-    let hasData: Bool
+    @ObservedObject var viewModel: DashboardViewModel
     let onEditGoal: () -> Void
     let onAddGoal: () -> Void
     let onAdvancedSettings: () -> Void
@@ -17,26 +17,17 @@ struct LeftSidebarPanel: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     PersonalSummaryCard(
-                        hasData: hasData,
-                        initialWeight: hasData ? "82 kg" : "",
-                        currentWeight: hasData ? "75 kg" : "",
-                        totalChange: hasData ? "-7 kg" : ""
+                        viewModel: viewModel
                     )
                     
                     MainGoalCard(
-                        hasData: hasData,
-                        currentWeight: hasData ? "75 kg" : "",
-                        targetWeight: hasData ? "68 kg" : "",
-                        progress: 0.7,
+                        viewModel: viewModel,
                         onEditGoal: onEditGoal,
                         onAddGoal: onAddGoal
                     )
                     
                     WeightPredictionCard(
-                        hasData: hasData,
-                        weeklyAverage: "-0.5 kg",
-                        estimatedDate: "2024-12-15",
-                        daysAhead: 31
+                        viewModel: viewModel
                     )
                 }
                 .padding(.horizontal, 24)
@@ -45,9 +36,7 @@ struct LeftSidebarPanel: View {
             
             // User profile at bottom
             UserProfileSection(
-                userName: "Usuario",
-                userEmail: "email@example.com",
-                userInitials: "U",
+                viewModel: viewModel,
                 showSettingsDropdown: $showSettingsDropdown,
                 onAdvancedSettings: {
                     onAdvancedSettings()
@@ -111,7 +100,7 @@ struct LeftSidebarPanel: View {
 
 #Preview {
     LeftSidebarPanel(
-        hasData: true,
+        viewModel: DashboardViewModel(),
         onEditGoal: {},
         onAddGoal: {},
         onAdvancedSettings: {},

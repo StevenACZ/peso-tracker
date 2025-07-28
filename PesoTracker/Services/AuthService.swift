@@ -35,10 +35,10 @@ class AuthService: ObservableObject {
     }
     
     private func loadCurrentUser() {
-        if keychainHelper.get(key: Constants.Keychain.userID) != nil {
-            // In a real app, you might want to fetch fresh user data from the API
-            // For now, we'll just mark as authenticated
-            // TODO: Implement user profile fetching if needed
+        if let userID = keychainHelper.get(key: Constants.Keychain.userID) {
+            // Try to load user data from UserDefaults
+            currentUser = loadUserDataLocally()
+            print("🔐 [AUTH SERVICE] Loaded cached user data for ID: \(userID)")
         }
     }
     
@@ -60,10 +60,10 @@ class AuthService: ObservableObject {
             )
             
             print("✅ [LOGIN] Respuesta recibida:")
+            print("   📧 Email: \(response.user.email)")
+            print("   👤 Nombre: \(response.user.username)")
+            print("   🔑 Token: \(response.token)")
             print("   User ID: \(response.user.id)")
-            print("   Username: \(response.user.username)")
-            print("   Email: \(response.user.email)")
-            print("   Token: \(String(response.token.prefix(20)))...")
             print("   Expires: \(response.expiresAt)")
             
             // Save token and user ID to keychain
@@ -73,6 +73,9 @@ class AuthService: ObservableObject {
             guard tokenSaved && userIDSaved else {
                 throw APIError.serverError(500, "Error al guardar credenciales")
             }
+            
+            // Save user data locally in UserDefaults
+            saveUserDataLocally(user: response.user)
             
             // Update authentication state
             await MainActor.run {
@@ -119,10 +122,10 @@ class AuthService: ObservableObject {
             )
             
             print("✅ [REGISTER] Respuesta recibida:")
+            print("   📧 Email: \(response.user.email)")
+            print("   👤 Nombre: \(response.user.username)")
+            print("   🔑 Token: \(response.token)")
             print("   User ID: \(response.user.id)")
-            print("   Username: \(response.user.username)")
-            print("   Email: \(response.user.email)")
-            print("   Token: \(String(response.token.prefix(20)))...")
             print("   Expires: \(response.expiresAt)")
             
             // Save token and user ID to keychain
@@ -132,6 +135,9 @@ class AuthService: ObservableObject {
             guard tokenSaved && userIDSaved else {
                 throw APIError.serverError(500, "Error al guardar credenciales")
             }
+            
+            // Save user data locally in UserDefaults
+            saveUserDataLocally(user: response.user)
             
             // Update authentication state
             await MainActor.run {
@@ -174,8 +180,55 @@ class AuthService: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.hasCompletedOnboarding)
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.lastSyncDate)
         
+        // Clear cached user data
+        UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.cachedUserData)
+        UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.cachedUsername)
+        UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.cachedUserEmail)
+        UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.cachedUserId)
+        
         // Clear any other cached data
         // This could include clearing Core Data, cached images, etc.
+    }
+    
+    // MARK: - Local User Data Management
+    private func saveUserDataLocally(user: User) {
+        print("💾 [AUTH SERVICE] Saving user data locally")
+        
+        // Save individual fields
+        UserDefaults.standard.set(user.id, forKey: Constants.UserDefaults.cachedUserId)
+        UserDefaults.standard.set(user.username, forKey: Constants.UserDefaults.cachedUsername)
+        UserDefaults.standard.set(user.email, forKey: Constants.UserDefaults.cachedUserEmail)
+        
+        // Save complete user object as JSON
+        do {
+            let encoder = JSONEncoder()
+            let userData = try encoder.encode(user)
+            UserDefaults.standard.set(userData, forKey: Constants.UserDefaults.cachedUserData)
+            print("✅ [AUTH SERVICE] User data saved successfully")
+        } catch {
+            print("❌ [AUTH SERVICE] Error saving user data: \(error)")
+        }
+    }
+    
+    private func loadUserDataLocally() -> User? {
+        guard let userData = UserDefaults.standard.data(forKey: Constants.UserDefaults.cachedUserData) else {
+            print("⚠️ [AUTH SERVICE] No cached user data found")
+            return nil
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = Constants.DateFormats.api
+            decoder.dateDecodingStrategy = .formatted(dateFormatter)
+            
+            let user = try decoder.decode(User.self, from: userData)
+            print("✅ [AUTH SERVICE] Cached user data loaded successfully")
+            return user
+        } catch {
+            print("❌ [AUTH SERVICE] Error loading cached user data: \(error)")
+            return nil
+        }
     }
     
     // MARK: - Token Management

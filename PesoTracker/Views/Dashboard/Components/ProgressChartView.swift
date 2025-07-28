@@ -1,20 +1,16 @@
 import SwiftUI
 
 struct ProgressChartView: View {
-    let hasData: Bool
-    let currentWeight: String
-    let weightChange: String
-    let timeRange: String
-    @Binding var selectedTimeRange: String
+    @ObservedObject var viewModel: DashboardViewModel
     
-    private let timeRanges = ["1 semana", "1 mes", "6 meses"]
+    private let timeRanges = ["1 semana", "1 mes", "3 meses", "6 meses", "1 año"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
             currentWeightDisplay
             
-            if hasData {
+            if viewModel.canShowChart {
                 chartWithData
             } else {
                 emptyChart
@@ -33,14 +29,14 @@ struct ProgressChartView: View {
             HStack(spacing: 2) {
                 ForEach(timeRanges, id: \.self) { range in
                     Button(action: {
-                        selectedTimeRange = range
+                        viewModel.updateTimeRange(range)
                     }) {
                         Text(range)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(selectedTimeRange == range ? Color.gray.opacity(0.3) : Color.clear)
+                            .background(viewModel.selectedTimeRange == range ? Color.gray.opacity(0.3) : Color.clear)
                             .font(.system(size: 12))
-                            .foregroundColor(selectedTimeRange == range ? .primary : .secondary)
+                            .foregroundColor(viewModel.selectedTimeRange == range ? .primary : .secondary)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -52,23 +48,23 @@ struct ProgressChartView: View {
     
     private var currentWeightDisplay: some View {
         HStack {
-            Text(currentWeight)
+            Text(viewModel.formattedCurrentWeight)
                 .font(.system(size: 32, weight: .bold))
-                .foregroundColor(currentWeight == "-" ? .secondary : .primary)
+                .foregroundColor(viewModel.hasWeightData ? .primary : .secondary)
             
-            if hasData && !weightChange.isEmpty {
+            if viewModel.hasWeightData, let change = viewModel.weightChange {
                 HStack(spacing: 4) {
-                    Text("Últimos 6 meses")
+                    Text(viewModel.selectedTimeRange)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     
-                    Image(systemName: "arrow.down")
+                    Image(systemName: change < 0 ? "arrow.down" : change > 0 ? "arrow.up" : "minus")
                         .font(.system(size: 10))
-                        .foregroundColor(.green)
+                        .foregroundColor(change < 0 ? .green : change > 0 ? .red : .secondary)
                     
-                    Text(weightChange)
+                    Text(viewModel.formattedWeightChange)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.green)
+                        .foregroundColor(change < 0 ? .green : change > 0 ? .red : .secondary)
                 }
             }
             
@@ -77,56 +73,71 @@ struct ProgressChartView: View {
     }
     
     private var chartWithData: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color.gray.opacity(0.05))
-                .frame(height: 200)
-                .cornerRadius(8)
-            
-            // Simple line chart simulation
-            Path { path in
-                let points: [CGPoint] = [
-                    CGPoint(x: 50, y: 150),
-                    CGPoint(x: 100, y: 120),
-                    CGPoint(x: 150, y: 140),
-                    CGPoint(x: 200, y: 110),
-                    CGPoint(x: 250, y: 130),
-                    CGPoint(x: 300, y: 100),
-                    CGPoint(x: 350, y: 80),
-                    CGPoint(x: 400, y: 120),
-                    CGPoint(x: 450, y: 90)
-                ]
+        GeometryReader { geometry in
+            ZStack {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.05))
+                    .frame(height: 200)
+                    .cornerRadius(8)
                 
-                path.move(to: points[0])
-                for point in points.dropFirst() {
-                    path.addLine(to: point)
+                // Chart based on real data
+                if !chartWeights.isEmpty {
+                    chartPath(in: geometry.size)
+                        .stroke(.green, lineWidth: 2)
+                        .background(
+                            chartPath(in: geometry.size, filled: true)
+                                .fill(LinearGradient(colors: [.green.opacity(0.3), .green.opacity(0.1)], startPoint: .top, endPoint: .bottom))
+                        )
                 }
             }
-            .stroke(.green, lineWidth: 2)
-            .background(
-                Path { path in
-                    let points: [CGPoint] = [
-                        CGPoint(x: 50, y: 150),
-                        CGPoint(x: 100, y: 120),
-                        CGPoint(x: 150, y: 140),
-                        CGPoint(x: 200, y: 110),
-                        CGPoint(x: 250, y: 130),
-                        CGPoint(x: 300, y: 100),
-                        CGPoint(x: 350, y: 80),
-                        CGPoint(x: 400, y: 120),
-                        CGPoint(x: 450, y: 90),
-                        CGPoint(x: 450, y: 200),
-                        CGPoint(x: 50, y: 200)
-                    ]
-                    
-                    path.move(to: points[0])
-                    for point in points.dropFirst() {
-                        path.addLine(to: point)
-                    }
-                    path.closeSubpath()
-                }
-                .fill(LinearGradient(colors: [.green.opacity(0.3), .green.opacity(0.1)], startPoint: .top, endPoint: .bottom))
-            )
+        }
+        .frame(height: 200)
+    }
+    
+    private var chartWeights: [Weight] {
+        return viewModel.getWeightsForChart()
+    }
+    
+    private func chartPath(in size: CGSize, filled: Bool = false) -> Path {
+        Path { path in
+            guard !chartWeights.isEmpty else { return }
+            
+            let weights = chartWeights.reversed() // Oldest to newest
+            let minWeight = weights.map(\.weight).min() ?? 0
+            let maxWeight = weights.map(\.weight).max() ?? 100
+            let weightRange = maxWeight - minWeight
+            
+            // Add some padding to the range
+            let paddedMin = minWeight - (weightRange * 0.1)
+            let paddedMax = maxWeight + (weightRange * 0.1)
+            let paddedRange = paddedMax - paddedMin
+            
+            let chartWidth = size.width - 40 // Padding
+            let chartHeight = size.height - 40 // Padding
+            
+            var points: [CGPoint] = []
+            
+            for (index, weight) in weights.enumerated() {
+                let x = 20 + (CGFloat(index) / CGFloat(weights.count - 1)) * chartWidth
+                let normalizedWeight = (weight.weight - paddedMin) / paddedRange
+                let y = 20 + (1 - normalizedWeight) * chartHeight
+                
+                points.append(CGPoint(x: x, y: y))
+            }
+            
+            guard !points.isEmpty else { return }
+            
+            path.move(to: points[0])
+            for point in points.dropFirst() {
+                path.addLine(to: point)
+            }
+            
+            if filled {
+                // Close the path for filling
+                path.addLine(to: CGPoint(x: points.last!.x, y: size.height - 20))
+                path.addLine(to: CGPoint(x: points.first!.x, y: size.height - 20))
+                path.closeSubpath()
+            }
         }
     }
     
@@ -158,22 +169,6 @@ struct ProgressChartView: View {
 }
 
 #Preview {
-    VStack(spacing: 20) {
-        ProgressChartView(
-            hasData: true,
-            currentWeight: "75 kg",
-            weightChange: "7 kg",
-            timeRange: "6 meses",
-            selectedTimeRange: .constant("1 semana")
-        )
-        
-        ProgressChartView(
-            hasData: false,
-            currentWeight: "-",
-            weightChange: "",
-            timeRange: "",
-            selectedTimeRange: .constant("1 semana")
-        )
-    }
-    .padding()
+    ProgressChartView(viewModel: DashboardViewModel())
+        .padding()
 }

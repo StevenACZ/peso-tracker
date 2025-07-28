@@ -1,9 +1,7 @@
 import SwiftUI
 
 struct UserProfileSection: View {
-    let userName: String
-    let userEmail: String
-    let userInitials: String
+    @ObservedObject var viewModel: DashboardViewModel
     @Binding var showSettingsDropdown: Bool
     let onAdvancedSettings: () -> Void
     let onLogout: () -> Void
@@ -27,9 +25,9 @@ struct UserProfileSection: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(userName)
+                    Text(viewModel.formattedUserName)
                         .font(.system(size: 14, weight: .medium))
-                    Text(userEmail)
+                    Text(viewModel.formattedUserEmail)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -49,15 +47,24 @@ struct UserProfileSection: View {
             .padding(20)
             .background(Color(NSColor.controlBackgroundColor))
         }
-
+    }
+    
+    private var userInitials: String {
+        let name = viewModel.formattedUserName
+        let components = name.components(separatedBy: " ")
+        if components.count >= 2 {
+            let first = String(components[0].prefix(1))
+            let last = String(components[1].prefix(1))
+            return "\(first)\(last)".uppercased()
+        } else {
+            return String(name.prefix(2)).uppercased()
+        }
     }
 }
 
 #Preview {
     UserProfileSection(
-        userName: "Usuario",
-        userEmail: "email@example.com",
-        userInitials: "U",
+        viewModel: DashboardViewModel(),
         showSettingsDropdown: .constant(false),
         onAdvancedSettings: {},
         onLogout: {}

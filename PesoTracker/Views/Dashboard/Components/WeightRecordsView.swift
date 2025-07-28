@@ -4,12 +4,11 @@ struct WeightRecord {
     let date: String
     let weight: String
     let notes: String
-    let hasPhoto: Bool
+    let hasPhotos: Bool
 }
 
 struct WeightRecordsView: View {
-    let hasData: Bool
-    let records: [WeightRecord]
+    @ObservedObject var viewModel: DashboardViewModel
     let onEditRecord: (WeightRecord) -> Void
     let onDeleteRecord: (WeightRecord) -> Void
     
@@ -18,7 +17,7 @@ struct WeightRecordsView: View {
             Text("Registros de Peso")
                 .font(.system(size: 16, weight: .medium))
             
-            if hasData && !records.isEmpty {
+            if viewModel.hasWeightData {
                 dataView
             } else {
                 emptyView
@@ -32,8 +31,8 @@ struct WeightRecordsView: View {
             tableHeader
             
             // Records
-            ForEach(records.indices, id: \.self) { index in
-                weightRecordRow(records[index])
+            ForEach(viewModel.recentWeights.indices, id: \.self) { index in
+                weightRecordRow(viewModel.recentWeights[index])
             }
         }
     }
@@ -68,24 +67,24 @@ struct WeightRecordsView: View {
         .background(Color.gray.opacity(0.05))
     }
     
-    private func weightRecordRow(_ record: WeightRecord) -> some View {
+    private func weightRecordRow(_ weight: Weight) -> some View {
         HStack {
-            Text(record.date)
+            Text(weight.formattedDate)
                 .font(.system(size: 12))
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            Text(record.weight)
+            Text(weight.formattedWeight)
                 .font(.system(size: 12, weight: .medium))
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            Text(record.notes)
+            Text(weight.notes ?? "Sin notas")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             // Photo indicator
             Group {
-                if record.hasPhoto {
+                if weight.hasPhotos {
                     Image(systemName: "photo.fill")
                         .font(.system(size: 12))
                         .foregroundColor(.blue)
@@ -99,7 +98,16 @@ struct WeightRecordsView: View {
             
             // Actions
             HStack(spacing: 8) {
-                Button(action: { onEditRecord(record) }) {
+                Button(action: { 
+                    // Convert Weight to WeightRecord for compatibility
+                    let record = WeightRecord(
+                        date: weight.formattedDate,
+                        weight: weight.formattedWeight,
+                        notes: weight.notes ?? "",
+                        hasPhotos: weight.hasPhotos
+                    )
+                    onEditRecord(record)
+                }) {
                     Text("Editar")
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -110,7 +118,16 @@ struct WeightRecordsView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                Button(action: { onDeleteRecord(record) }) {
+                Button(action: { 
+                    // Convert Weight to WeightRecord for compatibility
+                    let record = WeightRecord(
+                        date: weight.formattedDate,
+                        weight: weight.formattedWeight,
+                        notes: weight.notes ?? "",
+                        hasPhotos: weight.hasPhotos
+                    )
+                    onDeleteRecord(record)
+                }) {
                     Text("Eliminar")
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -160,26 +177,10 @@ struct WeightRecordsView: View {
 }
 
 #Preview {
-    let sampleRecords = [
-        WeightRecord(date: "2024-01-15", weight: "82 kg", notes: "Punto de partida", hasPhoto: false),
-        WeightRecord(date: "2024-02-15", weight: "80 kg", notes: "Actualización primer mes", hasPhoto: true),
-        WeightRecord(date: "2024-03-15", weight: "78 kg", notes: "Actualización segundo mes", hasPhoto: false)
-    ]
-    
-    VStack(spacing: 20) {
-        WeightRecordsView(
-            hasData: true,
-            records: sampleRecords,
-            onEditRecord: { _ in },
-            onDeleteRecord: { _ in }
-        )
-        
-        WeightRecordsView(
-            hasData: false,
-            records: [],
-            onEditRecord: { _ in },
-            onDeleteRecord: { _ in }
-        )
-    }
+    WeightRecordsView(
+        viewModel: DashboardViewModel(),
+        onEditRecord: { _ in },
+        onDeleteRecord: { _ in }
+    )
     .padding()
 }

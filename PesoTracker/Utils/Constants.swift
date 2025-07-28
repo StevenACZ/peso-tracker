@@ -38,10 +38,13 @@ struct Constants {
         struct Endpoints {
             static let login = "/auth/login"
             static let register = "/auth/register"
+            static let logout = "/auth/logout"
             static let weights = "/weights"
             static let goals = "/goals"
             static let photos = "/photos"
             static let profile = "/profile"
+            static let dashboard = "/dashboard"
+            static let weightsPrediction = "/weights/prediction"
         }
         
         // Headers
@@ -71,6 +74,10 @@ struct Constants {
         static let hasCompletedOnboarding = "has_completed_onboarding"
         static let lastSyncDate = "last_sync_date"
         static let preferredWeightUnit = "preferred_weight_unit"
+        static let cachedUserData = "cached_user_data"
+        static let cachedUsername = "cached_username"
+        static let cachedUserEmail = "cached_user_email"
+        static let cachedUserId = "cached_user_id"
     }
     
     // MARK: - UI Constants

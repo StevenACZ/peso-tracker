@@ -2,9 +2,7 @@ import SwiftUI
 
 struct MainDashboardView: View {
     // MARK: - Properties
-    @StateObject private var authViewModel = AuthViewModel()
-    @State private var selectedTimeRange = "1 semana"
-    @State private var hasData = false // Toggle this to show empty/filled state
+    @StateObject private var dashboardViewModel = DashboardViewModel()
     
     // Modal states
     @State private var showAddWeightModal = false
@@ -18,26 +16,18 @@ struct MainDashboardView: View {
     // Selected record for editing/deleting
     @State private var selectedRecord: WeightRecord?
     
-    // Sample data - replace with real data later
-    private let sampleRecords = [
-        WeightRecord(date: "2024-01-15", weight: "82 kg", notes: "Punto de partida", hasPhoto: false),
-        WeightRecord(date: "2024-02-15", weight: "80 kg", notes: "Actualización primer mes", hasPhoto: true),
-        WeightRecord(date: "2024-03-15", weight: "78 kg", notes: "Actualización segundo mes", hasPhoto: false)
-    ]
-    
     var body: some View {
         ZStack {
             // Main content
             HStack(spacing: 0) {
                 // Left Panel - Summary (Sidebar)
                 LeftSidebarPanel(
-                    hasData: hasData,
+                    viewModel: dashboardViewModel,
                     onEditGoal: { showEditGoalModal = true },
                     onAddGoal: { showAddGoalModal = true },
                     onAdvancedSettings: { showAdvancedSettingsModal = true },
                     onLogout: { 
-                        // TODO: Handle logout logic
-                        print("Logout pressed")
+                        dashboardViewModel.logout()
                     }
                 )
                 .frame(width: 350)
@@ -45,9 +35,7 @@ struct MainDashboardView: View {
                 
                 // Right Panel - Progress (Main content)
                 RightContentPanel(
-                    hasData: hasData,
-                    records: hasData ? sampleRecords : [],
-                    selectedTimeRange: $selectedTimeRange,
+                    viewModel: dashboardViewModel,
                     onViewProgress: { showViewProgressModal = true },
                     onAddWeight: { showAddWeightModal = true },
                     onEditRecord: { record in
@@ -146,6 +134,39 @@ struct MainDashboardView: View {
                         print("Deleting record: \(selectedRecord?.weight ?? "")")
                     }
                 )
+            }
+        }
+        .onAppear {
+            Task {
+                await dashboardViewModel.loadDashboardData()
+            }
+        }
+        .alert("Error", isPresented: $dashboardViewModel.showError) {
+            Button("OK") {
+                dashboardViewModel.dismissError()
+            }
+        } message: {
+            Text(dashboardViewModel.error ?? "Error desconocido")
+        }
+        .overlay {
+            if dashboardViewModel.isLoading {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        
+                        Text("Cargando datos...")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+                    .padding(24)
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .cornerRadius(12)
+                    .shadow(radius: 10)
+                }
             }
         }
     }

@@ -1,9 +1,7 @@
 import SwiftUI
 
 struct RightContentPanel: View {
-    let hasData: Bool
-    let records: [WeightRecord]
-    @Binding var selectedTimeRange: String
+    @ObservedObject var viewModel: DashboardViewModel
     let onViewProgress: () -> Void
     let onAddWeight: () -> Void
     let onEditRecord: (WeightRecord) -> Void
@@ -14,16 +12,11 @@ struct RightContentPanel: View {
             progressHeader
             
             ProgressChartView(
-                hasData: hasData,
-                currentWeight: hasData ? "75 kg" : "-",
-                weightChange: hasData ? "7 kg" : "",
-                timeRange: "6 meses",
-                selectedTimeRange: $selectedTimeRange
+                viewModel: viewModel
             )
             
             WeightRecordsView(
-                hasData: hasData,
-                records: records,
+                viewModel: viewModel,
                 onEditRecord: onEditRecord,
                 onDeleteRecord: onDeleteRecord
             )
@@ -43,7 +36,7 @@ struct RightContentPanel: View {
             
             HStack(spacing: 12) {
                 // Solo mostrar "Ver Progreso" si hay datos
-                if hasData {
+                if viewModel.canShowProgress {
                     Button(action: onViewProgress) {
                         HStack(spacing: 4) {
                             Text("Ver Progreso")
@@ -74,15 +67,8 @@ struct RightContentPanel: View {
 }
 
 #Preview {
-    let sampleRecords = [
-        WeightRecord(date: "2024-01-15", weight: "82 kg", notes: "Punto de partida", hasPhoto: false),
-        WeightRecord(date: "2024-02-15", weight: "80 kg", notes: "Actualización primer mes", hasPhoto: true)
-    ]
-    
     RightContentPanel(
-        hasData: true,
-        records: sampleRecords,
-        selectedTimeRange: .constant("1 semana"),
+        viewModel: DashboardViewModel(),
         onViewProgress: {},
         onAddWeight: {},
         onEditRecord: { _ in },
