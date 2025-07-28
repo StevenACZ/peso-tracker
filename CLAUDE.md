@@ -29,19 +29,22 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 ### Key Components
 
 #### Services (`/Services/`)
-- **APIService**: Generic HTTP client with JWT authentication, error handling, and multipart upload support
+- **APIService**: Generic HTTP client with JWT authentication, error handling, and multipart upload support (POST/PATCH)
 - **AuthService**: Handles user authentication, token management, and session validation
-- **DashboardService**: Manages dashboard data fetching and aggregation
+- **DashboardService**: Manages dashboard data fetching and aggregation from unified `/dashboard` endpoint
+- **WeightService**: Unified weight management service with CRUD operations and photo upload support
 
 #### ViewModels (`/ViewModels/`)
 - **AuthViewModel**: Manages authentication state, form validation, and user session
-- **DashboardViewModel**: Handles dashboard data state and user interactions
+- **DashboardViewModel**: Handles dashboard data state, smart pagination navigation, and user interactions
+- **WeightEntryViewModel**: Manages weight entry forms with photo upload, validation, and editing capabilities
 
 #### Models (`/Models/`)
 - **User**: User account with flexible ID handling (String/Int) and robust date parsing
-- **Weight**: Weight tracking entries
+- **Weight**: Weight tracking entries with nested WeightPhoto support for unified API responses
+- **WeightPhoto**: Photo model with thumbnailUrl, mediumUrl, and fullUrl for weight images
 - **Goal**: User goals and targets
-- **Photo**: Photo uploads for progress tracking
+- **Photo**: Photo uploads for progress tracking (legacy, maintained for compatibility)
 - **UserProfile**: Extended user profile information
 
 ### Configuration Management
@@ -53,7 +56,14 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Base URL**: Configured via xcconfig (API_PROTOCOL, API_HOST, API_PORT)
 - **Authentication**: Bearer token-based with automatic token refresh
 - **Error Handling**: Comprehensive error types with localized Spanish messages
-- **Endpoints**: RESTful API for auth, weights, goals, photos, profile, and dashboard
+- **Unified Weight Endpoints**: New simplified API structure for weight management
+  - `POST /weights` - Create weight with multipart form data (weight, date, notes, photo)
+  - `PATCH /weights/:id` - Update weight with multipart form data
+  - `GET /weights/:id` - Get single weight with full photo details
+  - `DELETE /weights/:id` - Delete weight and associated photos
+  - `GET /dashboard` - Unified dashboard data endpoint
+  - `GET /weights/paginated` - Paginated weight list (hasPhoto boolean only)
+  - `GET /weights/chart-data` - Chart data with time range filtering
 
 ### UI Architecture
 - **Dashboard Layout**: Split view with left sidebar (35%) and right content panel (65%)
@@ -94,12 +104,12 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 3. UI components reactively update based on ViewModel state
 
 ### Weight Data Architecture
-- **Dual Data Streams**: Separate paginated and complete datasets for optimal performance
-- **Paginated Data** (`weights[]`): 5 records per page for table display with navigation controls
-- **Complete Data** (`allWeights[]`): Full user history (up to 1000 records) for charts and statistics
-- **Data Synchronization**: Both streams updated on create/update/delete operations
-- **Statistics Independence**: Charts and analytics use complete dataset regardless of table pagination
-- **Smart Pagination**: Previous/Next controls with disabled states when not applicable
+- **Unified API Approach**: Single endpoints for weight management with automatic photo handling
+- **Smart Photo Loading**: Paginated endpoint returns hasPhoto boolean, individual endpoint provides full photo details
+- **Paginated Data** (`weights[]`): 5 records per page for table display with smart navigation
+- **Chart Data**: Separate optimized endpoint for visualization with time range filtering
+- **Auto-Navigation**: Smart pagination that navigates to previous page when current page becomes empty after deletion
+- **Photo Integration**: Photos are automatically handled through weight endpoints (no separate photo CRUD)
 
 ### Error Handling Strategy
 - API errors are localized to Spanish
@@ -107,9 +117,21 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - Authentication failures trigger automatic token cleanup
 - User-friendly error messages displayed in UI
 
+### Photo Management
+- **Unified Upload**: Photos uploaded via multipart form data with weight creation/update
+- **Automatic Compression**: Images compressed to 80% quality with 1024px max dimension
+- **Smart Preview**: Edit modal automatically fetches photo details when needed
+- **Single Action**: "Cambiar foto" button replaces image (no separate delete needed)
+
+### Logging Strategy
+- **Minimal Logging**: Only essential user information logged on dashboard load
+- **User Info Log**: `👤 [DASHBOARD] User: {username} ({email}) - ID: {id}` on login
+- **Clean Console**: All debug logs removed for production readiness
+
 ### Code Conventions
 - SwiftUI for all UI components
 - Async/await for API calls
 - Combine for reactive state management
 - Comprehensive error handling with custom APIError types
 - Spanish localization for user-facing messages
+- Multipart form data for all file uploads

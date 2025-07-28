@@ -236,68 +236,7 @@ struct ChartPagination: Codable {
     }
 }
 
-// MARK: - Dashboard Stats (Simplified - DEPRECATED)
-struct DashboardStats: Codable {
-    let totalRecords: Int
-    let weightChange: Double?
-    let averageWeeklyChange: Double?
-    let daysTracking: Int
-    let currentStreak: Int
-    let progressPercentage: Double?
-    
-    enum CodingKeys: String, CodingKey {
-        case totalRecords = "total_records"
-        case weightChange = "weight_change"
-        case averageWeeklyChange = "average_weekly_change"
-        case daysTracking = "days_tracking"
-        case currentStreak = "current_streak"
-        case progressPercentage = "progress_percentage"
-    }
-}
 
-// MARK: - Weight Query Parameters (for GET - deprecated)
-struct WeightQueryParams {
-    let page: Int?
-    let limit: Int?
-    let startDate: Date?
-    let endDate: Date?
-    let sortBy: String?
-    let sortOrder: String?
-    
-    func toQueryItems() -> [URLQueryItem] {
-        var items: [URLQueryItem] = []
-        
-        if let page = page {
-            items.append(URLQueryItem(name: "page", value: String(page)))
-        }
-        
-        if let limit = limit {
-            items.append(URLQueryItem(name: "limit", value: String(limit)))
-        }
-        
-        if let startDate = startDate {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            items.append(URLQueryItem(name: "startDate", value: formatter.string(from: startDate)))
-        }
-        
-        if let endDate = endDate {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            items.append(URLQueryItem(name: "endDate", value: formatter.string(from: endDate)))
-        }
-        
-        if let sortBy = sortBy {
-            items.append(URLQueryItem(name: "sortBy", value: sortBy))
-        }
-        
-        if let sortOrder = sortOrder {
-            items.append(URLQueryItem(name: "sortOrder", value: sortOrder))
-        }
-        
-        return items
-    }
-}
 
 // MARK: - Weight Query Request (for POST)
 struct WeightQueryRequest: Codable {

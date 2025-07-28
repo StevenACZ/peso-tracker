@@ -26,29 +26,24 @@ class DashboardService: ObservableObject {
     
     // MARK: - Initialization
     private init() {
-        print("📊 [DASHBOARD SERVICE] Initializing new dashboard service")
     }
     
     // MARK: - Load Dashboard Data
     @MainActor
     func loadDashboardData() async {
-        print("📊 [DASHBOARD] Loading dashboard data from new endpoint...")
-        print("🔗 [DASHBOARD] Attempting to call endpoint: 'dashboard'")
         isLoading = true
         error = nil
         
         do {
             // Load main dashboard data
-            print("🚀 [DASHBOARD] Making API call to /dashboard")
             dashboardData = try await apiService.get(
                 endpoint: "/dashboard",
                 responseType: DashboardResponse.self
             )
-            print("✅ [DASHBOARD] Successfully received dashboard response")
+            
+            // Show user info on dashboard load (keep this log only)
             if let data = dashboardData {
-                print("👤 [DASHBOARD] User: \(data.user.username) (\(data.user.email))")
-                print("📊 [DASHBOARD] Statistics: \(data.statistics.totalRecords) records, current: \(data.statistics.currentWeight ?? 0)")
-                print("🎯 [DASHBOARD] Active goal: \(data.activeGoal?.targetWeight ?? 0)")
+                print("👤 [DASHBOARD] User: \(data.user.username) (\(data.user.email)) - ID: \(data.user.id)")
             }
             
             // Load chart data for default time range
@@ -57,10 +52,7 @@ class DashboardService: ObservableObject {
             // Load table data for first page
             await loadTableData(page: currentTablePage)
             
-            print("✅ [DASHBOARD] Dashboard data loaded successfully")
-            
         } catch {
-            print("❌ [DASHBOARD] Error loading dashboard data: \(error)")
             self.error = "Error al cargar datos del dashboard: \(error.localizedDescription)"
         }
         
@@ -70,29 +62,18 @@ class DashboardService: ObservableObject {
     // MARK: - Load Chart Data
     @MainActor
     func loadChartData(timeRange: String, page: Int) async {
-        print("📊 [DASHBOARD] Loading chart data - TimeRange: \(timeRange), Page: \(page)")
         let endpoint = "/weights/chart-data?timeRange=\(timeRange)&page=\(page)"
-        print("🔗 [DASHBOARD] Chart endpoint: '\(endpoint)'")
         
         do {
-            print("🚀 [DASHBOARD] Making API call to /\(endpoint)")
             chartData = try await apiService.get(
                 endpoint: endpoint,
                 responseType: ChartDataResponse.self
             )
             
-            if let data = chartData {
-                print("✅ [DASHBOARD] Chart data received: \(data.data.count) points")
-                print("📈 [DASHBOARD] Pagination: \(data.pagination.currentPeriod), page \(data.pagination.currentPage + 1)/\(data.pagination.totalPeriods)")
-            }
-            
             currentChartPage = page
             selectedTimeRange = timeRange
             
-            print("✅ [DASHBOARD] Chart data loaded - \(chartData?.data.count ?? 0) points")
-            
         } catch {
-            print("❌ [DASHBOARD] Error loading chart data: \(error)")
             self.error = "Error al cargar datos del gráfico: \(error.localizedDescription)"
         }
     }
@@ -100,28 +81,17 @@ class DashboardService: ObservableObject {
     // MARK: - Load Table Data
     @MainActor
     func loadTableData(page: Int) async {
-        print("📊 [DASHBOARD] Loading table data - Page: \(page)")
         let endpoint = "/weights/paginated?page=\(page)&limit=5"
-        print("🔗 [DASHBOARD] Table endpoint: '\(endpoint)'")
         
         do {
-            print("🚀 [DASHBOARD] Making API call to /\(endpoint)")
             tableData = try await apiService.get(
                 endpoint: endpoint,
                 responseType: PaginatedResponse<Weight>.self
             )
             
-            if let data = tableData {
-                print("✅ [DASHBOARD] Table data received: \(data.data.count) records")
-                print("📋 [DASHBOARD] Pagination: page \(data.pagination.page)/\(data.pagination.totalPages), total: \(data.pagination.total)")
-            }
-            
             currentTablePage = page
             
-            print("✅ [DASHBOARD] Table data loaded - \(tableData?.data.count ?? 0) records")
-            
         } catch {
-            print("❌ [DASHBOARD] Error loading table data: \(error)")
             self.error = "Error al cargar datos de la tabla: \(error.localizedDescription)"
         }
     }
@@ -249,7 +219,6 @@ class DashboardService: ObservableObject {
     // MARK: - Refresh Data
     @MainActor
     func refreshData() async {
-        print("🔄 [DASHBOARD] Refreshing all data...")
         await loadDashboardData()
     }
     
@@ -267,9 +236,7 @@ class DashboardService: ObservableObject {
     // MARK: - Logout
     @MainActor
     func logout() {
-        print("🚪 [DASHBOARD] Logging out...")
         clearData()
         AuthService.shared.logout()
-        print("✅ [DASHBOARD] Logout completed")
     }
 }

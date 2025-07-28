@@ -46,8 +46,10 @@ class MultipartFormBuilder {
         imageData: Data?,
         imageKey: String = "photo",
         responseType: T.Type,
-        authHeaders: [String: String] = [:]
+        authHeaders: [String: String] = [:],
+        method: HTTPMethod = .POST
     ) async throws -> T {
+        
         
         // Create multipart form data
         let boundary = UUID().uuidString
@@ -65,7 +67,7 @@ class MultipartFormBuilder {
         // Build request
         let request = try httpClient.buildRequest(
             endpoint: endpoint,
-            method: .POST,
+            method: method,
             body: body,
             headers: headers
         )

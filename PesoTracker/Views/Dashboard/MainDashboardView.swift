@@ -24,9 +24,9 @@ struct MainDashboardView: View {
                 // Left Panel - Summary (Sidebar)
                 LeftSidebarPanel(
                     viewModel: dashboardViewModel,
-                    onEditGoal: { /* showEditGoalModal = true */ },
-                    onAddGoal: { /* showAddGoalModal = true */ },
-                    onAdvancedSettings: { /* showAdvancedSettingsModal = true */ },
+                    onEditGoal: { showEditGoalModal = true },
+                    onAddGoal: { showAddGoalModal = true },
+                    onAdvancedSettings: { showAdvancedSettingsModal = true },
                     onLogout: { 
                         dashboardViewModel.logout()
                     }
@@ -37,17 +37,15 @@ struct MainDashboardView: View {
                 // Right Panel - Progress (Main content)
                 RightContentPanel(
                     viewModel: dashboardViewModel,
-                    onViewProgress: { /* showViewProgressModal = true */ },
-                    onAddWeight: { /* showAddWeightModal = true */ },
+                    onViewProgress: { showViewProgressModal = true },
+                    onAddWeight: { showAddWeightModal = true },
                     onEditRecord: { weight in
-                        // Store the weight for editing - TEMPORALMENTE DESHABILITADO
-                        // selectedWeight = weight
-                        // showEditWeightModal = true
+                        selectedWeight = weight
+                        showEditWeightModal = true
                     },
                     onDeleteRecord: { record in
-                        // TEMPORALMENTE DESHABILITADO
-                        // selectedRecord = record
-                        // showDeleteConfirmationModal = true
+                        selectedRecord = record
+                        showDeleteConfirmationModal = true
                     }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -57,8 +55,7 @@ struct MainDashboardView: View {
             .background(Color(NSColor.windowBackgroundColor))
             .clipped()
             
-            // Modal overlays - TEMPORALMENTE DESHABILITADOS
-            /*
+            // Modal overlays
             if showAddWeightModal {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
@@ -143,15 +140,12 @@ struct MainDashboardView: View {
                     isPresented: $showDeleteConfirmationModal,
                     recordToDelete: selectedRecord,
                     onConfirm: {
-                        if let record = selectedRecord {
-                            Task {
-                                await dashboardViewModel.deleteWeight(weightId: record.id)
-                            }
+                        Task {
+                            await dashboardViewModel.handleWeightDeletion()
                         }
                     }
                 )
             }
-            */
         }
         .onAppear {
             Task {

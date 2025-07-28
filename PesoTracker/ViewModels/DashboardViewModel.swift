@@ -220,6 +220,20 @@ class DashboardViewModel: ObservableObject {
         await dashboardService.loadPreviousTablePage()
     }
     
+    // MARK: - Delete Weight with Smart Navigation
+    func handleWeightDeletion() async {
+        // Check if current page will be empty after deletion
+        let canGoPrevious = dashboardService.canGoPreviousTable
+        
+        // Reload dashboard data first
+        await loadDashboardData()
+        
+        // Check if we need to navigate to previous page
+        if weights.isEmpty && canGoPrevious {
+            await dashboardService.loadPreviousTablePage()
+        }
+    }
+    
     // MARK: - Data Validation
     var canShowChart: Bool {
         return !chartPoints.isEmpty

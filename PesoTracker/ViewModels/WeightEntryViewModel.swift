@@ -31,8 +31,7 @@ class WeightEntryViewModel: ObservableObject {
     @Published var hasExistingPhoto = false
     
     // MARK: - Services and Helpers
-    // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
-    // private let weightEntryService = WeightEntryService()
+    private let weightService = WeightService()
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Constants
@@ -184,37 +183,11 @@ class WeightEntryViewModel: ObservableObject {
     }
     
     // MARK: - Photo Management
-    
-    func deleteExistingPhoto() async {
-        // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
-        errorMessage = "Función deshabilitada temporalmente"
-        /*
-        guard let photoId = existingPhotoId else { 
-            errorMessage = "No se encontró el ID de la foto para eliminar"
-            return 
-        }
-        
-        isLoading = true
-        do {
-            try await weightEntryService.deletePhoto(photoId: photoId)
-            hasExistingPhoto = false
-            existingPhotoUrl = nil
-            existingPhotoId = nil
-            selectedImage = nil
-            imageData = nil
-        } catch {
-            errorMessage = "Error al eliminar la foto: \(error.localizedDescription)"
-        }
-        isLoading = false
-        */
-    }
+    // Note: Photo deletion is handled automatically by the API when updating without photo
     
     // MARK: - Save Methods
     
     func saveWeight() async {
-        // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
-        errorMessage = "Función deshabilitada temporalmente"
-        /*
         guard isValid else { return }
         
         isLoading = true
@@ -228,35 +201,20 @@ class WeightEntryViewModel: ObservableObject {
             
             if isEditMode, let weightId = editingWeightId {
                 // Update existing weight
-                print("✏️ [SAVE] Updating existing weight with ID: \(weightId)")
-                weightResult = try await weightEntryService.updateWeight(
+                weightResult = try await weightService.updateWeight(
                     id: weightId,
                     weight: weightValue,
                     date: date,
-                    notes: notes.isEmpty ? nil : notes
+                    notes: notes.isEmpty ? nil : notes,
+                    image: selectedImage
                 )
             } else {
                 // Create new weight entry
-                print("➕ [SAVE] Creating new weight entry")
-                weightResult = try await weightEntryService.createWeight(
+                weightResult = try await weightService.createWeight(
                     weight: weightValue,
                     date: date,
-                    notes: notes.isEmpty ? nil : notes
-                )
-            }
-            
-            // Handle photo upload if new image selected
-            if let image = selectedImage {
-                // If editing and has existing photo, delete it first
-                if isEditMode && hasExistingPhoto, let photoId = existingPhotoId {
-                    try await weightEntryService.deletePhoto(photoId: photoId)
-                }
-                
-                // Upload new photo
-                _ = try await weightEntryService.uploadPhoto(
-                    weightId: weightResult.id,
-                    image: image,
-                    notes: nil
+                    notes: notes.isEmpty ? nil : notes,
+                    image: selectedImage
                 )
             }
             
@@ -270,7 +228,6 @@ class WeightEntryViewModel: ObservableObject {
         }
         
         isLoading = false
-        */
     }
     
     // MARK: - Helper Methods
@@ -298,37 +255,35 @@ class WeightEntryViewModel: ObservableObject {
         self.date = weight.date
         updateDateString()
         
-        print("✏️ [EDIT MODE] Loading weight for editing:")
-        print("   - Weight ID: \(weight.id)")
-        print("   - Weight: \(self.weight)")
-        print("   - Date: \(weight.formattedDate)")
-        print("   - Notes: \(self.notes)")
-        
-        // TEMPORALMENTE DESHABILITADO - Los modales están desactivados
-        /*
-        // Fetch photo data using the new endpoint
-        do {
-            if let photoDetails = try await weightEntryService.getWeightPhoto(weightId: weight.id) {
-                hasExistingPhoto = true
-                existingPhotoUrl = photoDetails.thumbnailUrl
-                existingPhotoId = photoDetails.id
-                
-                print("   - Has Photo: true")
-                print("   - Photo ID: \(photoDetails.id)")
-                print("   - Thumbnail URL: \(photoDetails.thumbnailUrl)")
-            } else {
+        // Handle photo data from the new API structure
+        if let photo = weight.photo {
+            // Full photo data available (from individual endpoint)
+            hasExistingPhoto = true
+            existingPhotoUrl = photo.thumbnailUrl
+            existingPhotoId = photo.id
+        } else if weight.hasPhoto {
+            // Photo exists but we need to fetch full details
+            do {
+                let fullWeight = try await weightService.getWeight(id: weight.id)
+                if let photo = fullWeight.photo {
+                    hasExistingPhoto = true
+                    existingPhotoUrl = photo.thumbnailUrl
+                    existingPhotoId = photo.id
+                } else {
+                    hasExistingPhoto = false
+                    existingPhotoUrl = nil
+                    existingPhotoId = nil
+                }
+            } catch {
                 hasExistingPhoto = false
                 existingPhotoUrl = nil
                 existingPhotoId = nil
-                print("   - Has Photo: false")
             }
-        } catch {
-            print("⚠️ [EDIT MODE] Failed to load photo data: \(error)")
+        } else {
             hasExistingPhoto = false
             existingPhotoUrl = nil
             existingPhotoId = nil
         }
-        */
     }
     
     func loadExistingWeight(_ weightRecord: WeightRecord) {
@@ -362,17 +317,6 @@ class WeightEntryViewModel: ObservableObject {
         print("   ⚠️  Photo deletion will not work - missing photo ID")
     }
     
-    func loadExistingWeightForEdit(weightId: Int, weight: Double, date: Date, notes: String?, photoUrl: String?, photoId: Int?) {
-        isEditMode = true
-        editingWeightId = weightId
-        self.weight = String(format: "%.2f", weight)
-        self.date = date
-        self.notes = notes ?? ""
-        self.existingPhotoUrl = photoUrl
-        self.existingPhotoId = photoId
-        self.hasExistingPhoto = photoUrl != nil && photoId != nil
-        updateDateString()
-    }
     
     // MARK: - Computed Properties
     

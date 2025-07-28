@@ -110,35 +110,18 @@ struct ExistingPhotoActions: View {
     @ObservedObject var viewModel: WeightEntryViewModel
     
     var body: some View {
-        HStack(spacing: 12) {
-            Button(action: {
-                Task {
-                    await viewModel.deleteExistingPhoto()
-                }
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12))
-                    Text("Eliminar")
-                        .font(.system(size: 12))
-                }
-                .foregroundColor(.red)
+        Button(action: {
+            viewModel.selectImage()
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 12))
+                Text("Cambiar foto")
+                    .font(.system(size: 12))
             }
-            .buttonStyle(PlainButtonStyle())
-            
-            Button(action: {
-                viewModel.selectImage()
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 12))
-                    Text("Cambiar")
-                        .font(.system(size: 12))
-                }
-                .foregroundColor(.blue)
-            }
-            .buttonStyle(PlainButtonStyle())
+            .foregroundColor(.blue)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

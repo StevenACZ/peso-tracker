@@ -7,11 +7,13 @@ struct Weight: Codable, Identifiable {
     let notes: String?
     let hasPhoto: Bool
     
-    // Propiedades opcionales para compatibilidad con API antigua (deprecated)
+    // New API structure - nested photo object
+    let photo: WeightPhoto?
+    
+    // API metadata
     let userId: Int?
     let createdAt: Date?
     let updatedAt: Date?
-    let photos: [Photo]?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -19,10 +21,10 @@ struct Weight: Codable, Identifiable {
         case date
         case notes
         case hasPhoto
+        case photo
         case userId
         case createdAt
         case updatedAt
-        case photos
     }
     
     init(from decoder: Decoder) throws {
@@ -38,11 +40,19 @@ struct Weight: Codable, Identifiable {
         }
         
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        hasPhoto = try container.decodeIfPresent(Bool.self, forKey: .hasPhoto) ?? false
         
-        // Optional properties for backward compatibility
+        // Decode photo object and handle hasPhoto
+        photo = try container.decodeIfPresent(WeightPhoto.self, forKey: .photo)
+        
+        // Handle hasPhoto: prioritize explicit field from API, fallback to photo presence
+        if let explicitHasPhoto = try container.decodeIfPresent(Bool.self, forKey: .hasPhoto) {
+            hasPhoto = explicitHasPhoto
+        } else {
+            hasPhoto = photo != nil
+        }
+        
+        // API metadata
         userId = try container.decodeIfPresent(Int.self, forKey: .userId)
-        photos = try container.decodeIfPresent([Photo].self, forKey: .photos)
         
         // Date decoding helper
         let dateFormatter = ISO8601DateFormatter()
@@ -88,8 +98,8 @@ struct Weight: Codable, Identifiable {
         try container.encode(weight, forKey: .weight)
         try container.encodeIfPresent(notes, forKey: .notes)
         try container.encode(hasPhoto, forKey: .hasPhoto)
+        try container.encodeIfPresent(photo, forKey: .photo)
         try container.encodeIfPresent(userId, forKey: .userId)
-        try container.encodeIfPresent(photos, forKey: .photos)
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -106,52 +116,47 @@ struct Weight: Codable, Identifiable {
     }
 }
 
-// MARK: - Weight Request Models
-struct WeightCreateRequest: Codable {
-    let weight: Double
-    let date: Date
-    let notes: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case weight
-        case date
-        case notes
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        
-        try container.encode(weight, forKey: .weight)
-        try container.encodeIfPresent(notes, forKey: .notes)
-        
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        try container.encode(formatter.string(from: date), forKey: .date)
-    }
-}
 
-struct WeightUpdateRequest: Codable {
-    let weight: Double?
-    let date: Date?
-    let notes: String?
+// MARK: - WeightPhoto Model
+struct WeightPhoto: Codable, Identifiable {
+    let id: Int
+    let userId: Int
+    let weightId: Int
+    let thumbnailUrl: String
+    let mediumUrl: String
+    let fullUrl: String
+    let createdAt: Date
+    let updatedAt: Date
     
     enum CodingKeys: String, CodingKey {
-        case weight
-        case date
-        case notes
+        case id
+        case userId
+        case weightId
+        case thumbnailUrl
+        case mediumUrl
+        case fullUrl
+        case createdAt
+        case updatedAt
     }
     
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        try container.encodeIfPresent(weight, forKey: .weight)
-        try container.encodeIfPresent(notes, forKey: .notes)
+        id = try container.decode(Int.self, forKey: .id)
+        userId = try container.decode(Int.self, forKey: .userId)
+        weightId = try container.decode(Int.self, forKey: .weightId)
+        thumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
+        mediumUrl = try container.decode(String.self, forKey: .mediumUrl)
+        fullUrl = try container.decode(String.self, forKey: .fullUrl)
         
-        if let date = date {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            try container.encode(formatter.string(from: date), forKey: .date)
-        }
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        let createdAtString = try container.decode(String.self, forKey: .createdAt)
+        createdAt = dateFormatter.date(from: createdAtString) ?? Date()
+        
+        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
+        updatedAt = dateFormatter.date(from: updatedAtString) ?? Date()
     }
 }
 

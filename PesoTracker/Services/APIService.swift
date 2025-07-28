@@ -68,17 +68,6 @@ class APIService: ObservableObject {
     private init() {
         let baseURL = Constants.API.baseURL
         
-        // Log API service initialization
-        print("🌐 [API SERVICE] Initializing with base URL: \(baseURL)")
-        print("🌐 [API SERVICE] Timeout configured: \(Constants.API.timeout)s")
-        
-        // Check if baseURL looks valid
-        if baseURL == "XCCONFIG_NOT_LOADED" {
-            print("⚠️ [API SERVICE] WARNING: xcconfig not loaded properly!")
-        } else if !baseURL.hasPrefix("http") {
-            print("⚠️ [API SERVICE] WARNING: baseURL doesn't start with http/https: \(baseURL)")
-        }
-        
         // Initialize modular components
         self.httpClient = HTTPClient(baseURL: baseURL)
         self.authHandler = AuthenticationHandler()
@@ -201,7 +190,8 @@ class APIService: ObservableObject {
         imageData: Data?,
         imageKey: String = "photo",
         responseType: T.Type,
-        requiresAuth: Bool = true
+        requiresAuth: Bool = true,
+        method: HTTPMethod = .POST
     ) async throws -> T {
         
         // Get auth headers if required
@@ -214,7 +204,8 @@ class APIService: ObservableObject {
             imageData: imageData,
             imageKey: imageKey,
             responseType: responseType,
-            authHeaders: authHeaders
+            authHeaders: authHeaders,
+            method: method
         )
     }
 }

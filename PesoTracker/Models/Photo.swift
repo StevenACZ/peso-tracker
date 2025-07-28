@@ -3,7 +3,9 @@ import Foundation
 struct Photo: Codable, Identifiable {
     let id: String
     let weightId: String
-    let photoURL: String
+    let thumbnailUrl: String
+    let mediumUrl: String?
+    let fullUrl: String?
     let notes: String?
     let uploadedAt: Date
     let userId: String
@@ -11,7 +13,9 @@ struct Photo: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id
         case weightId
-        case photoURL = "thumbnailUrl"
+        case thumbnailUrl
+        case mediumUrl
+        case fullUrl
         case notes
         case uploadedAt = "createdAt"
         case userId
@@ -34,7 +38,9 @@ struct Photo: Codable, Identifiable {
             weightId = try container.decode(String.self, forKey: .weightId)
         }
         
-        photoURL = try container.decode(String.self, forKey: .photoURL)
+        thumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
+        mediumUrl = try container.decodeIfPresent(String.self, forKey: .mediumUrl)
+        fullUrl = try container.decodeIfPresent(String.self, forKey: .fullUrl)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         
         // Handle userId as either Int or String
@@ -62,7 +68,9 @@ struct Photo: Codable, Identifiable {
         
         try container.encode(id, forKey: .id)
         try container.encode(weightId, forKey: .weightId)
-        try container.encode(photoURL, forKey: .photoURL)
+        try container.encode(thumbnailUrl, forKey: .thumbnailUrl)
+        try container.encodeIfPresent(mediumUrl, forKey: .mediumUrl)
+        try container.encodeIfPresent(fullUrl, forKey: .fullUrl)
         try container.encodeIfPresent(notes, forKey: .notes)
         try container.encode(userId, forKey: .userId)
         
@@ -115,13 +123,17 @@ extension Photo {
         return formatter.string(from: uploadedAt)
     }
     
+    var photoURL: String {
+        // Backward compatibility - use thumbnailUrl as main photoURL
+        return thumbnailUrl
+    }
+    
     var thumbnailURL: String {
-        // Assuming the API provides thumbnail versions
-        return photoURL.replacingOccurrences(of: "/photos/", with: "/photos/thumbnails/")
+        return thumbnailUrl
     }
     
     var fullSizeURL: String {
-        return photoURL
+        return fullUrl ?? thumbnailUrl
     }
 }
 
