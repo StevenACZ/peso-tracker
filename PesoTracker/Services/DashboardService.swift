@@ -20,7 +20,7 @@ class DashboardService: ObservableObject {
     @Published var tableData: PaginatedResponse<Weight>?
     
     // UI State
-    @Published var selectedTimeRange = "1month"
+    @Published var selectedTimeRange = "all"
     @Published var currentChartPage = 0
     @Published var currentTablePage = 1
     
@@ -144,7 +144,8 @@ class DashboardService: ObservableObject {
     }
     
     var weights: [Weight] {
-        return tableData?.data ?? []
+        let unsortedWeights = tableData?.data ?? []
+        return unsortedWeights.sorted { $0.date > $1.date }
     }
     
     var chartPoints: [WeightPoint] {
@@ -230,7 +231,7 @@ class DashboardService: ObservableObject {
         error = nil
         currentChartPage = 0
         currentTablePage = 1
-        selectedTimeRange = "1month"
+        selectedTimeRange = "all"
     }
     
     // MARK: - Logout

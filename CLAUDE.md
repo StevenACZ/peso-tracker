@@ -106,10 +106,11 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 ### Weight Data Architecture
 - **Unified API Approach**: Single endpoints for weight management with automatic photo handling
 - **Smart Photo Loading**: Paginated endpoint returns hasPhoto boolean, individual endpoint provides full photo details
-- **Paginated Data** (`weights[]`): 5 records per page for table display with smart navigation
-- **Chart Data**: Separate optimized endpoint for visualization with time range filtering
+- **Paginated Data** (`weights[]`): 5 records per page for table display with smart navigation, sorted by most recent first
+- **Chart Data**: Separate optimized endpoint for visualization with time range filtering, defaults to 'all' records
 - **Auto-Navigation**: Smart pagination that navigates to previous page when current page becomes empty after deletion
 - **Photo Integration**: Photos are automatically handled through weight endpoints (no separate photo CRUD)
+- **Time Range Options**: Chart supports "Todos" (all), "1 mes", "3 meses", "6 meses", "1 año" - removed "1 semana" option
 
 ### Error Handling Strategy
 - API errors are localized to Spanish

@@ -4,14 +4,14 @@ struct ProgressChartView: View {
     @ObservedObject var viewModel: DashboardViewModel
     
     private let timeRangeMapping: [String: String] = [
-        "1 semana": "1week",
         "1 mes": "1month", 
         "3 meses": "3months",
         "6 meses": "6months",
-        "1 año": "1year"
+        "1 año": "1year",
+        "Todos": "all"
     ]
     
-    private let timeRanges = ["1 semana", "1 mes", "3 meses", "6 meses", "1 año"]
+    private let timeRanges = ["Todos", "1 mes", "3 meses", "6 meses", "1 año"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
