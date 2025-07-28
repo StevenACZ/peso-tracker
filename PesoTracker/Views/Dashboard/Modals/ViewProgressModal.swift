@@ -19,7 +19,6 @@ struct ViewProgressModal: View {
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
             }
             
             // Content placeholder
@@ -37,15 +36,17 @@ struct ViewProgressModal: View {
             .cornerRadius(8)
             
             // Button
-            Button("Cerrar") {
+            Button(action: {
                 isPresented = false
+            }) {
+                Text("Cerrar")
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(6)
             }
             .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 20)
-            .padding(.vertical, 8)
-            .background(.green)
-            .foregroundColor(.white)
-            .cornerRadius(6)
         }
         .padding(24)
         .frame(width: 600, height: 500)

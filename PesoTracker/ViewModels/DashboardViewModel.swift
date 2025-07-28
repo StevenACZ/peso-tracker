@@ -15,7 +15,8 @@ class DashboardViewModel: ObservableObject {
     
     // Dashboard data
     @Published var currentUser: User?
-    @Published var weights: [Weight] = []
+    @Published var weights: [Weight] = [] // Paginated weights for table
+    @Published var allWeights: [Weight] = [] // All weights for charts and stats
     @Published var goals: [Goal] = []
     @Published var photos: [Photo] = []
     
@@ -52,19 +53,22 @@ class DashboardViewModel: ObservableObject {
         dashboardService.$weights
             .assign(to: &$weights)
         
+        dashboardService.$allWeights
+            .assign(to: &$allWeights)
+        
         dashboardService.$goals
             .assign(to: &$goals)
         
         dashboardService.$photos
             .assign(to: &$photos)
         
-        // Update hasData when weights or goals change
+        // Update hasData when allWeights or goals change
         Publishers.CombineLatest(
-            dashboardService.$weights,
+            dashboardService.$allWeights,
             dashboardService.$goals
         )
-        .map { weights, goals in
-            !weights.isEmpty || !goals.isEmpty
+        .map { allWeights, goals in
+            !allWeights.isEmpty || !goals.isEmpty
         }
         .assign(to: &$hasData)
     }
@@ -107,7 +111,7 @@ class DashboardViewModel: ObservableObject {
     
     // MARK: - Data Status Properties
     var hasWeightData: Bool {
-        return !weights.isEmpty
+        return !allWeights.isEmpty
     }
     
     var hasGoalData: Bool {
@@ -177,7 +181,7 @@ class DashboardViewModel: ObservableObject {
         guard hasActiveGoal,
               let currentWeight = currentWeight?.weight,
               let goal = mainGoal,
-              let startWeight = weights.last?.weight else {
+              let startWeight = allWeights.last?.weight else {
             return "No disponible"
         }
         
@@ -185,7 +189,7 @@ class DashboardViewModel: ObservableObject {
         let currentChange = abs(startWeight - currentWeight)
         let remaining = totalChange - currentChange
         
-        return String(format: "%.1f kg restantes", remaining)
+        return String(format: "%.2f kg restantes", remaining)
     }
     
     // MARK: - Goals Information  
@@ -233,12 +237,12 @@ class DashboardViewModel: ObservableObject {
     
     // MARK: - Statistics
     var totalWeightRecords: Int {
-        return weights.count
+        return allWeights.count
     }
     
     var trackingDays: Int {
-        guard let firstRecord = weights.last,
-              let lastRecord = weights.first else { return 0 }
+        guard let firstRecord = allWeights.last,
+              let lastRecord = allWeights.first else { return 0 }
         
         let calendar = Calendar.current
         let components = calendar.dateComponents([.day], from: firstRecord.date, to: lastRecord.date)
@@ -258,7 +262,7 @@ class DashboardViewModel: ObservableObject {
     
     // MARK: - Recent Activity
     var lastWeightEntry: String {
-        guard let lastWeight = weights.first else { return "Sin registros" }
+        guard let lastWeight = allWeights.first else { return "Sin registros" }
         
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -268,8 +272,8 @@ class DashboardViewModel: ObservableObject {
     }
     
     var recentWeights: [Weight] {
-        // Sort weights by date (oldest to newest) and take first 5
-        let sortedWeights = weights.sorted { $0.date < $1.date }
+        // Sort all weights by date (newest to oldest) and take first 5
+        let sortedWeights = allWeights.sorted { $0.date > $1.date }
         return Array(sortedWeights.prefix(5))
     }
     
@@ -291,6 +295,27 @@ class DashboardViewModel: ObservableObject {
             showError = true
         }
         isLoading = false
+    }
+    
+    // MARK: - Pagination Methods
+    var canGoBack: Bool {
+        return dashboardService.canGoBack
+    }
+    
+    var canGoNext: Bool {
+        return dashboardService.canGoNext
+    }
+    
+    var paginationInfo: String {
+        return dashboardService.paginationInfo
+    }
+    
+    func loadNextPage() async {
+        await dashboardService.loadNextPage()
+    }
+    
+    func loadPreviousPage() async {
+        await dashboardService.loadPreviousPage()
     }
 }
 

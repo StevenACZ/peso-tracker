@@ -19,7 +19,6 @@ struct AdvancedSettingsModal: View {
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
             }
             
             // Content placeholder
@@ -38,25 +37,29 @@ struct AdvancedSettingsModal: View {
             
             // Buttons
             HStack(spacing: 12) {
-                Button("Cancelar") {
+                Button(action: {
                     isPresented = false
+                }) {
+                    Text("Cancelar")
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(6)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(6)
                 
-                Button("Guardar Cambios") {
+                Button(action: {
                     // TODO: Save logic
                     isPresented = false
+                }) {
+                    Text("Guardar Cambios")
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.green)
-                .foregroundColor(.white)
-                .cornerRadius(6)
             }
         }
         .padding(24)

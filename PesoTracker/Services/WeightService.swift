@@ -10,8 +10,13 @@ class WeightService: ObservableObject {
     
     // Published properties
     @Published var isLoading = false
-    @Published var weights: [Weight] = []
+    @Published var weights: [Weight] = [] // Paginated weights for table
+    @Published var allWeights: [Weight] = [] // All weights for charts and stats
     @Published var error: String?
+    @Published var currentPage = 1
+    @Published var totalPages = 1
+    @Published var totalRecords = 0
+    @Published var pageLimit = 5
     
     // MARK: - Initialization
     private init() {
@@ -20,7 +25,7 @@ class WeightService: ObservableObject {
     
     // MARK: - Load Weights (with debug logs)
     @MainActor
-    func loadWeights(page: Int = 1, limit: Int = 50) async {
+    func loadWeights(page: Int = 1, limit: Int = 5) async {
         isLoading = true
         error = nil
         
@@ -44,19 +49,25 @@ class WeightService: ObservableObject {
             
             weights = fetchedWeights
             
+            // Update pagination info
+            currentPage = response.pagination.page
+            totalPages = response.pagination.totalPages
+            totalRecords = response.pagination.total
+            pageLimit = response.pagination.limit
+            
             // Log peso information
             if !fetchedWeights.isEmpty {
                 let pesoInicial = fetchedWeights.last!.weight // El más antiguo
                 let pesoActual = fetchedWeights.first!.weight // El más reciente
                 
                 print("📊 [PESOS] Total de registros: \(fetchedWeights.count)")
-                print("📊 [PESOS] Peso inicial: \(String(format: "%.1f", pesoInicial)) kg")
-                print("📊 [PESOS] Peso actual: \(String(format: "%.1f", pesoActual)) kg")
+                print("📊 [PESOS] Peso inicial: \(String(format: "%.2f", pesoInicial)) kg")
+                print("📊 [PESOS] Peso actual: \(String(format: "%.2f", pesoActual)) kg")
                 
                 if fetchedWeights.count > 1 {
                     let diferencia = pesoActual - pesoInicial
                     let tipo = diferencia >= 0 ? "ganado" : "perdido"
-                    print("📊 [PESOS] Total \(tipo): \(String(format: "%.1f", abs(diferencia))) kg")
+                    print("📊 [PESOS] Total \(tipo): \(String(format: "%.2f", abs(diferencia))) kg")
                 }
             } else {
                 print("📊 [PESOS] No hay registros de peso")
@@ -71,6 +82,50 @@ class WeightService: ObservableObject {
         }
         
         isLoading = false
+    }
+    
+    // MARK: - Load All Weights (for charts and statistics)
+    @MainActor
+    func loadAllWeights() async {
+        do {
+            print("⚖️ [ALL WEIGHTS] Obteniendo todos los pesos para gráficos y estadísticas...")
+            
+            // Load all weights without pagination (high limit)
+            let endpoint = "\(Constants.API.Endpoints.weights)?page=1&limit=1000"
+            
+            // Check authentication
+            guard AuthService.shared.isTokenValid() else {
+                throw APIError.authenticationFailed
+            }
+            
+            let response = try await apiService.get(
+                endpoint: endpoint,
+                responseType: PaginatedResponse<Weight>.self
+            )
+            
+            allWeights = response.data
+            
+            // Log information
+            print("📊 [ALL WEIGHTS] Total de pesos cargados: \(allWeights.count)")
+            
+            if !allWeights.isEmpty {
+                let pesoInicial = allWeights.last!.weight // El más antiguo
+                let pesoActual = allWeights.first!.weight // El más reciente
+                
+                print("📊 [ALL WEIGHTS] Peso inicial: \(String(format: "%.2f", pesoInicial)) kg")
+                print("📊 [ALL WEIGHTS] Peso actual: \(String(format: "%.2f", pesoActual)) kg")
+                
+                if allWeights.count > 1 {
+                    let diferencia = pesoActual - pesoInicial
+                    let tipo = diferencia >= 0 ? "ganado" : "perdido"
+                    print("📊 [ALL WEIGHTS] Total \(tipo): \(String(format: "%.2f", abs(diferencia))) kg")
+                }
+            }
+            
+        } catch {
+            print("❌ [ALL WEIGHTS] Error loading all weights: \(error)")
+            // Don't set error here as it's a background operation
+        }
     }
     
     // MARK: - Create Weight
@@ -102,8 +157,9 @@ class WeightService: ObservableObject {
             
             print("✅ [WEIGHT SERVICE] Weight created successfully")
             
-            // Reload weights after creation
+            // Reload both paginated and all weights after creation
             await loadWeights()
+            await loadAllWeights()
             
             return true
             
@@ -143,8 +199,9 @@ class WeightService: ObservableObject {
             
             print("✅ [WEIGHT SERVICE] Weight updated successfully")
             
-            // Reload weights after update
+            // Reload both paginated and all weights after update
             await loadWeights()
+            await loadAllWeights()
             
             return true
             
@@ -168,8 +225,9 @@ class WeightService: ObservableObject {
             
             print("✅ [WEIGHT SERVICE] Weight deleted successfully")
             
-            // Reload weights after deletion
+            // Reload both paginated and all weights after deletion
             await loadWeights()
+            await loadAllWeights()
             
             return true
             
@@ -182,14 +240,14 @@ class WeightService: ObservableObject {
     
     // MARK: - Helper Methods
     func getCurrentWeight() -> Weight? {
-        return weights.first // Assuming weights are sorted by date desc
+        return allWeights.first // Use allWeights for current weight
     }
     
     func getWeightChange() -> Double? {
-        guard weights.count >= 2 else { return nil }
+        guard allWeights.count >= 2 else { return nil }
         
-        let latest = weights.first!.weight
-        let oldest = weights.last!.weight
+        let latest = allWeights.first!.weight
+        let oldest = allWeights.last!.weight
         
         return latest - oldest
     }
@@ -211,20 +269,20 @@ class WeightService: ObservableObject {
         case "1 año":
             startDate = calendar.date(byAdding: .year, value: -1, to: now) ?? now
         default:
-            return weights
+            return allWeights
         }
         
-        return weights.filter { $0.date >= startDate }
+        return allWeights.filter { $0.date >= startDate }
     }
     
     // MARK: - Statistics
     var totalWeightRecords: Int {
-        return weights.count
+        return allWeights.count
     }
     
     var trackingDays: Int {
-        guard let firstRecord = weights.last,
-              let lastRecord = weights.first else { return 0 }
+        guard let firstRecord = allWeights.last,
+              let lastRecord = allWeights.first else { return 0 }
         
         let calendar = Calendar.current
         let components = calendar.dateComponents([.day], from: firstRecord.date, to: lastRecord.date)
@@ -245,6 +303,7 @@ class WeightService: ObservableObject {
     // MARK: - Clear Data
     func clearData() {
         weights = []
+        allWeights = []
         error = nil
     }
 }
@@ -253,22 +312,22 @@ class WeightService: ObservableObject {
 extension WeightService {
     
     var hasWeightData: Bool {
-        return !weights.isEmpty
+        return !allWeights.isEmpty
     }
     
     var formattedCurrentWeight: String {
         guard let weight = getCurrentWeight() else { return "-- kg" }
-        return String(format: "%.1f kg", weight.weight)
+        return String(format: "%.2f kg", weight.weight)
     }
     
     var formattedWeightChange: String {
         guard let change = getWeightChange() else { return "-- kg" }
         let sign = change >= 0 ? "+" : ""
-        return "\(sign)\(String(format: "%.1f", change)) kg"
+        return "\(sign)\(String(format: "%.2f", change)) kg"
     }
     
     var lastWeightEntry: String {
-        guard let lastWeight = weights.first else { return "Sin registros" }
+        guard let lastWeight = allWeights.first else { return "Sin registros" }
         
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -279,5 +338,30 @@ extension WeightService {
     
     var recentWeights: [Weight] {
         return Array(weights.prefix(5)) // Last 5 records
+    }
+    
+    // MARK: - Pagination Methods
+    var canGoBack: Bool {
+        return currentPage > 1
+    }
+    
+    var canGoNext: Bool {
+        return currentPage < totalPages
+    }
+    
+    @MainActor
+    func loadNextPage() async {
+        guard canGoNext else { return }
+        await loadWeights(page: currentPage + 1, limit: pageLimit)
+    }
+    
+    @MainActor
+    func loadPreviousPage() async {
+        guard canGoBack else { return }
+        await loadWeights(page: currentPage - 1, limit: pageLimit)
+    }
+    
+    var paginationInfo: String {
+        return "Página \(currentPage) de \(totalPages) (\(totalRecords) registros)"
     }
 }

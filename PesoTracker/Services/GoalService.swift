@@ -190,7 +190,7 @@ class GoalService: ObservableObject {
         let currentChange = abs(startWeight - currentWeight)
         let remaining = totalChange - currentChange
         
-        return String(format: "%.1f kg restantes", remaining)
+        return String(format: "%.2f kg restantes", remaining)
     }
     
     // MARK: - Statistics
@@ -230,7 +230,7 @@ extension GoalService {
     
     var formattedGoalWeight: String {
         guard let goal = getMainGoal() else { return "-- kg" }
-        return String(format: "%.1f kg", goal.targetWeight)
+        return String(format: "%.2f kg", goal.targetWeight)
     }
     
     var formattedDaysToGoal: String {

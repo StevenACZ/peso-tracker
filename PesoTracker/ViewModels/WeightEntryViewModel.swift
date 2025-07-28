@@ -80,7 +80,7 @@ class WeightEntryViewModel: ObservableObject {
         }
         
         guard weightValue >= minWeight && weightValue <= maxWeight else {
-            weightError = "El peso debe estar entre \(String(format: "%.1f", minWeight)) y \(String(format: "%.0f", maxWeight)) kg"
+            weightError = "El peso debe estar entre \(String(format: "%.2f", minWeight)) y \(String(format: "%.0f", maxWeight)) kg"
             return false
         }
         
@@ -292,7 +292,7 @@ class WeightEntryViewModel: ObservableObject {
     func loadExistingWeightSimple(_ weight: Weight) async {
         isEditMode = true
         editingWeightId = weight.id
-        self.weight = String(format: "%.1f", weight.weight)
+        self.weight = String(format: "%.2f", weight.weight)
         self.notes = weight.notes ?? ""
         self.date = weight.date
         updateDateString()
@@ -361,7 +361,7 @@ class WeightEntryViewModel: ObservableObject {
     func loadExistingWeightForEdit(weightId: Int, weight: Double, date: Date, notes: String?, photoUrl: String?, photoId: Int?) {
         isEditMode = true
         editingWeightId = weightId
-        self.weight = String(format: "%.1f", weight)
+        self.weight = String(format: "%.2f", weight)
         self.date = date
         self.notes = notes ?? ""
         self.existingPhotoUrl = photoUrl

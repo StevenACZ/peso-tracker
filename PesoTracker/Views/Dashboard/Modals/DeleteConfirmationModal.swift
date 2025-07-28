@@ -40,25 +40,29 @@ struct DeleteConfirmationModal: View {
             
             // Buttons
             HStack(spacing: 12) {
-                Button("Cancelar") {
+                Button(action: {
                     isPresented = false
+                }) {
+                    Text("Cancelar")
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(6)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(6)
                 
-                Button("Eliminar") {
+                Button(action: {
                     onConfirm()
                     isPresented = false
+                }) {
+                    Text("Eliminar")
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-                .background(.red)
-                .foregroundColor(.white)
-                .cornerRadius(6)
             }
         }
         .padding(24)

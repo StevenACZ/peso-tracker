@@ -10,7 +10,7 @@ struct WeightPredictionCard: View {
                 .foregroundColor(.secondary)
                 .tracking(0.5)
             
-            if viewModel.hasWeightData && viewModel.weights.count >= 3 {
+            if viewModel.hasWeightData && viewModel.allWeights.count >= 3 {
                 dataView
             } else {
                 emptyView

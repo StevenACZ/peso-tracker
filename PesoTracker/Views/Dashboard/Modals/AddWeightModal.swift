@@ -152,31 +152,35 @@ struct AddWeightModal: View {
                             )
                             
                             HStack(spacing: 16) {
-                                Button("Cancelar") {
+                                Button(action: {
                                     viewModel.showDatePicker = false
+                                }) {
+                                    Text("Cancelar")
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color(NSColor.controlBackgroundColor))
+                                        .foregroundColor(.secondary)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                                        )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color(NSColor.controlBackgroundColor))
-                                .foregroundColor(.secondary)
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(NSColor.separatorColor), lineWidth: 1)
-                                )
                                 
-                                Button("Seleccionar") {
+                                Button(action: {
                                     viewModel.updateDateString()
                                     viewModel.showDatePicker = false
+                                }) {
+                                    Text("Seleccionar")
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(.green)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                        .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                                .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
                             }
                         }
                         .padding(24)
@@ -439,17 +443,19 @@ struct AddWeightModal: View {
     
     private var actionButtons: some View {
         HStack(spacing: 12) {
-            Button("Cancelar") {
+            Button(action: {
                 isPresented = false
+            }) {
+                Text("Cancelar")
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.secondary.opacity(0.1))
+                    .foregroundColor(.secondary)
+                    .cornerRadius(8)
             }
             .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(Color.secondary.opacity(0.1))
-            .foregroundColor(.secondary)
-            .cornerRadius(8)
             
-            Button(viewModel.saveButtonText) {
+            Button(action: {
                 Task {
                     await viewModel.saveWeight()
                     if viewModel.errorMessage == nil {
@@ -457,13 +463,15 @@ struct AddWeightModal: View {
                         onSave?()
                     }
                 }
+            }) {
+                Text(viewModel.saveButtonText)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(viewModel.canSave ? .green : .green.opacity(0.5))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
             }
             .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(viewModel.canSave ? .green : .green.opacity(0.5))
-            .foregroundColor(.white)
-            .cornerRadius(8)
             .disabled(!viewModel.canSave)
         }
     }

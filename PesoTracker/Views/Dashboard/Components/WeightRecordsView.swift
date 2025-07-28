@@ -32,8 +32,13 @@ struct WeightRecordsView: View {
             tableHeader
             
             // Records
-            ForEach(viewModel.recentWeights.indices, id: \.self) { index in
-                weightRecordRow(viewModel.recentWeights[index])
+            ForEach(viewModel.weights.indices, id: \.self) { index in
+                weightRecordRow(viewModel.weights[index])
+            }
+            
+            // Pagination controls
+            if viewModel.hasWeightData {
+                paginationControls
             }
         }
     }
@@ -145,6 +150,52 @@ struct WeightRecordsView: View {
                 .foregroundColor(Color(NSColor.separatorColor)),
             alignment: .bottom
         )
+    }
+    
+    private var paginationControls: some View {
+        HStack(spacing: 12) {
+            Button(action: {
+                Task {
+                    await viewModel.loadPreviousPage()
+                }
+            }) {
+                Text("← Anterior")
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(viewModel.canGoBack ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                    .foregroundColor(viewModel.canGoBack ? .green : .gray)
+                    .cornerRadius(6)
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!viewModel.canGoBack)
+            
+            Spacer()
+            
+            Text(viewModel.paginationInfo)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Button(action: {
+                Task {
+                    await viewModel.loadNextPage()
+                }
+            }) {
+                Text("Siguiente →")
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(viewModel.canGoNext ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                    .foregroundColor(viewModel.canGoNext ? .green : .gray)
+                    .cornerRadius(6)
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!viewModel.canGoNext)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
     }
     
     private var emptyView: some View {

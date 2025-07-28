@@ -147,7 +147,7 @@ extension Weight {
     }
     
     var formattedWeight: String {
-        return String(format: "%.1f kg", weight)
+        return String(format: "%.2f kg", weight)
     }
     
     var formattedDate: String {

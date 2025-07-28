@@ -178,7 +178,7 @@ struct GoalUpdateRequest: Codable {
 // MARK: - Goal Extensions
 extension Goal {
     var formattedTargetWeight: String {
-        return String(format: "%.1f kg", targetWeight)
+        return String(format: "%.2f kg", targetWeight)
     }
     
     var formattedTargetDate: String {

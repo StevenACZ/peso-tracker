@@ -242,6 +242,6 @@ extension UserProfile {
     
     func formattedBMI(currentWeight: Double) -> String? {
         guard let bmi = calculateBMI(currentWeight: currentWeight) else { return nil }
-        return String(format: "%.1f", bmi)
+        return String(format: "%.2f", bmi)
     }
 }

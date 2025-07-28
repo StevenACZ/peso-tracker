@@ -14,7 +14,8 @@ class DashboardService: ObservableObject {
     
     // Published properties for dashboard data
     @Published var isLoading = false
-    @Published var weights: [Weight] = []
+    @Published var weights: [Weight] = [] // Paginated weights for table
+    @Published var allWeights: [Weight] = [] // All weights for charts and stats
     @Published var goals: [Goal] = []
     @Published var photos: [Photo] = []
     @Published var currentUser: User?
@@ -31,9 +32,12 @@ class DashboardService: ObservableObject {
     
     // MARK: - Setup Bindings
     private func setupBindings() {
-        // Solo bind al weight service, no a otros servicios
+        // Bind weight service data
         weightService.$weights
             .assign(to: &$weights)
+        
+        weightService.$allWeights
+            .assign(to: &$allWeights)
         
         weightService.$error
             .compactMap { $0 }
@@ -65,8 +69,9 @@ class DashboardService: ObservableObject {
             }
         }
         
-        // Solo cargar pesos, no otros servicios
-        await weightService.loadWeights()
+        // Cargar pesos paginados y todos los pesos
+        await weightService.loadWeights() // Paginated for table
+        await weightService.loadAllWeights() // All weights for charts and stats
         
         print("✅ [DASHBOARD] Dashboard cargado")
     }
@@ -88,7 +93,8 @@ class DashboardService: ObservableObject {
     @MainActor
     func refreshData() async {
         print("🔄 [DASHBOARD] Refrescando datos...")
-        await weightService.loadWeights()
+        await weightService.loadWeights() // Paginated for table
+        await weightService.loadAllWeights() // All weights for charts and stats
     }
     
     // MARK: - Delegate Methods to Individual Services
@@ -110,7 +116,7 @@ class DashboardService: ObservableObject {
     
     func getProgressPercentage() -> Double {
         guard let currentWeight = getCurrentWeight()?.weight,
-              let startWeight = weights.last?.weight else {
+              let startWeight = allWeights.last?.weight else {
             return 0.0
         }
         
@@ -123,6 +129,29 @@ class DashboardService: ObservableObject {
     
     func hasData() -> Bool {
         return weightService.hasWeightData
+    }
+    
+    // MARK: - Pagination Methods
+    var canGoBack: Bool {
+        return weightService.canGoBack
+    }
+    
+    var canGoNext: Bool {
+        return weightService.canGoNext
+    }
+    
+    var paginationInfo: String {
+        return weightService.paginationInfo
+    }
+    
+    @MainActor
+    func loadNextPage() async {
+        await weightService.loadNextPage()
+    }
+    
+    @MainActor
+    func loadPreviousPage() async {
+        await weightService.loadPreviousPage()
     }
     
     // MARK: - Logout
