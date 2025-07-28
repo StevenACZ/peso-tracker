@@ -60,6 +60,9 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Authentication Flow**: Login/Register with real-time validation
 - **Modular Components**: Reusable UI components in dedicated directories
 - **Color Scheme**: Green-based color palette (updated from blue)
+- **Button Patterns**: Consistent clickable areas using Text wrapping with PlainButtonStyle
+- **Pagination Controls**: Smart navigation with disabled states and visual feedback
+- **Modal Interactions**: Full button clickability across all modal dialogs
 
 ### Security & Data Handling
 - **JWT Token Storage**: Secure keychain storage via KeychainHelper
@@ -72,6 +75,9 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Password Requirements**: 6-128 characters
 - **Username Requirements**: 3-50 characters
 - **Weight Range**: 1.0-1000.0 units
+- **Weight Precision**: 2 decimal places for all displays and calculations
+- **Pagination Limit**: 5 weight records per page for table display
+- **Complete Data Limit**: 1000 records for charts and statistics
 - **Image Compression**: 80% quality, max 1024px
 
 ## Development Notes
@@ -86,6 +92,14 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 1. DashboardService fetches aggregated data from `/dashboard` endpoint
 2. DashboardViewModel manages state and user interactions
 3. UI components reactively update based on ViewModel state
+
+### Weight Data Architecture
+- **Dual Data Streams**: Separate paginated and complete datasets for optimal performance
+- **Paginated Data** (`weights[]`): 5 records per page for table display with navigation controls
+- **Complete Data** (`allWeights[]`): Full user history (up to 1000 records) for charts and statistics
+- **Data Synchronization**: Both streams updated on create/update/delete operations
+- **Statistics Independence**: Charts and analytics use complete dataset regardless of table pagination
+- **Smart Pagination**: Previous/Next controls with disabled states when not applicable
 
 ### Error Handling Strategy
 - API errors are localized to Spanish
