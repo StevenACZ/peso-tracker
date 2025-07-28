@@ -357,3 +357,97 @@ struct ServiceStatus: Codable {
         case responseTime = "response_time"
     }
 }
+
+// MARK: - Progress Response Models
+struct ProgressResponse: Codable {
+    let id: Int
+    let weight: Double
+    let date: Date
+    let notes: String?
+    let photo: ProgressPhoto?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case weight
+        case date
+        case notes
+        case photo
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        weight = try container.decode(Double.self, forKey: .weight)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        photo = try container.decodeIfPresent(ProgressPhoto.self, forKey: .photo)
+        
+        // Handle date parsing
+        let dateString = try container.decode(String.self, forKey: .date)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let parsedDate = formatter.date(from: dateString) {
+            date = parsedDate
+        } else {
+            formatter.formatOptions = [.withInternetDateTime]
+            date = formatter.date(from: dateString) ?? Date()
+        }
+    }
+}
+
+struct ProgressPhoto: Codable {
+    let id: Int
+    let userId: Int
+    let weightId: Int
+    let notes: String?
+    let thumbnailUrl: String
+    let mediumUrl: String
+    let fullUrl: String
+    let createdAt: Date
+    let updatedAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId
+        case weightId
+        case notes
+        case thumbnailUrl
+        case mediumUrl
+        case fullUrl
+        case createdAt
+        case updatedAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        userId = try container.decode(Int.self, forKey: .userId)
+        weightId = try container.decode(Int.self, forKey: .weightId)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        thumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
+        mediumUrl = try container.decode(String.self, forKey: .mediumUrl)
+        fullUrl = try container.decode(String.self, forKey: .fullUrl)
+        
+        // Handle date parsing for createdAt and updatedAt
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        let createdAtString = try container.decode(String.self, forKey: .createdAt)
+        if let parsedDate = formatter.date(from: createdAtString) {
+            createdAt = parsedDate
+        } else {
+            formatter.formatOptions = [.withInternetDateTime]
+            createdAt = formatter.date(from: createdAtString) ?? Date()
+        }
+        
+        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
+        if let parsedDate = formatter.date(from: updatedAtString) {
+            updatedAt = parsedDate
+        } else {
+            formatter.formatOptions = [.withInternetDateTime]
+            updatedAt = formatter.date(from: updatedAtString) ?? Date()
+        }
+    }
+}

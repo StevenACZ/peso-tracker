@@ -19,6 +19,7 @@ class DashboardViewModel: ObservableObject {
     @Published var activeGoal: DashboardGoal?
     @Published var weights: [Weight] = []
     @Published var chartPoints: [WeightPoint] = []
+    @Published var progressData: [ProgressResponse] = []
     
     // UI State
     @Published var selectedTimeRange = "1month"
@@ -241,6 +242,16 @@ class DashboardViewModel: ObservableObject {
     
     var canShowProgress: Bool {
         return hasWeightData && hasGoalData
+    }
+    
+    // MARK: - Load Progress Data
+    func loadProgressData() async {
+        do {
+            progressData = try await dashboardService.loadProgressData()
+        } catch {
+            self.error = "Error al cargar datos de progreso: \(error.localizedDescription)"
+            showError = true
+        }
     }
 }
 

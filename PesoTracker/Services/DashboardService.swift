@@ -234,6 +234,24 @@ class DashboardService: ObservableObject {
         selectedTimeRange = "all"
     }
     
+    // MARK: - Progress Data
+    @MainActor
+    func loadProgressData() async throws -> [ProgressResponse] {
+        do {
+            let progressData = try await apiService.get(
+                endpoint: "/weights/progress",
+                responseType: [ProgressResponse].self
+            )
+            
+            print("📊 [DASHBOARD] Loaded \(progressData.count) progress records")
+            return progressData
+            
+        } catch {
+            print("❌ [DASHBOARD] Error loading progress data: \(error)")
+            throw error
+        }
+    }
+    
     // MARK: - Logout
     @MainActor
     func logout() {
