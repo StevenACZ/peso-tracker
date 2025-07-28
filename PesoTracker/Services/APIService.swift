@@ -59,76 +59,25 @@ class APIService: ObservableObject {
     // MARK: - Singleton
     static let shared = APIService()
     
-    // MARK: - Properties
-    private let session: URLSession
-    private let baseURL: String
-    private let jsonDecoder: JSONDecoder
-    private let jsonEncoder: JSONEncoder
+    // MARK: - Modular Components
+    private let httpClient: HTTPClient
+    private let authHandler: AuthenticationHandler
+    private let multipartBuilder: MultipartFormBuilder
     
     // MARK: - Initialization
     private init() {
-        self.baseURL = Constants.API.baseURL
+        let baseURL = Constants.API.baseURL
         
         // Log API service initialization
         print("🌐 [API SERVICE] Initializing with base URL: \(baseURL)")
         print("🌐 [API SERVICE] Timeout configured: \(Constants.API.timeout)s")
         
-        // Configure URLSession
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = Constants.API.timeout
-        config.timeoutIntervalForResource = Constants.API.timeout
-        self.session = URLSession(configuration: config)
-        
-        // Configure JSON Decoder
-        self.jsonDecoder = JSONDecoder()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = Constants.DateFormats.api
-        self.jsonDecoder.dateDecodingStrategy = .formatted(dateFormatter)
-        
-        // Configure JSON Encoder
-        self.jsonEncoder = JSONEncoder()
-        self.jsonEncoder.dateEncodingStrategy = .formatted(dateFormatter)
+        // Initialize modular components
+        self.httpClient = HTTPClient(baseURL: baseURL)
+        self.authHandler = AuthenticationHandler()
+        self.multipartBuilder = MultipartFormBuilder(httpClient: httpClient)
     }
     
-    // MARK: - JWT Token Management
-    private func getJWTToken() -> String? {
-        return KeychainHelper.shared.get(key: Constants.Keychain.jwtToken)
-    }
-    
-    private func setAuthorizationHeader(for request: inout URLRequest) {
-        if let token = getJWTToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: Constants.API.Headers.authorization)
-        }
-    }
-    
-    // MARK: - Request Building
-    private func buildRequest(
-        endpoint: String,
-        method: HTTPMethod,
-        body: Data? = nil,
-        requiresAuth: Bool = true
-    ) throws -> URLRequest {
-        
-        guard let url = URL(string: baseURL + endpoint) else {
-            throw APIError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = method.rawValue
-        request.setValue(Constants.API.Headers.applicationJSON, forHTTPHeaderField: Constants.API.Headers.contentType)
-        
-        // Add authorization header if required
-        if requiresAuth {
-            setAuthorizationHeader(for: &request)
-        }
-        
-        // Add body if provided
-        if let body = body {
-            request.httpBody = body
-        }
-        
-        return request
-    }
     
     // MARK: - Generic Request Method
     func request<T: Codable>(
@@ -142,64 +91,22 @@ class APIService: ObservableObject {
         // Encode body if provided
         var requestBody: Data?
         if let body = body {
-            do {
-                requestBody = try jsonEncoder.encode(body)
-            } catch {
-                throw APIError.encodingError(error)
-            }
+            requestBody = try httpClient.encodeBody(body)
         }
         
+        // Get auth headers if required
+        let headers = requiresAuth ? authHandler.getAuthHeaders() : [:]
+        
         // Build request
-        let request = try buildRequest(
+        let request = try httpClient.buildRequest(
             endpoint: endpoint,
             method: method,
             body: requestBody,
-            requiresAuth: requiresAuth
+            headers: headers
         )
         
         // Execute request
-        do {
-            let (data, response) = try await session.data(for: request)
-            
-            // Validate HTTP response
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
-            
-            // Handle HTTP status codes
-            switch httpResponse.statusCode {
-            case 200...299:
-                // Success - decode response
-                do {
-                    let decodedResponse = try jsonDecoder.decode(T.self, from: data)
-                    return decodedResponse
-                } catch {
-                    throw APIError.decodingError(error)
-                }
-                
-            case 401:
-                // Unauthorized - token expired or invalid
-                throw APIError.authenticationFailed
-                
-            case 403:
-                // Forbidden - token expired
-                // Clear the expired token
-                KeychainHelper.shared.delete(key: Constants.Keychain.jwtToken)
-                throw APIError.tokenExpired
-                
-            default:
-                // Server error
-                let errorMessage = String(data: data, encoding: .utf8)
-                throw APIError.serverError(httpResponse.statusCode, errorMessage)
-            }
-            
-        } catch {
-            if error is APIError {
-                throw error
-            } else {
-                throw APIError.networkError(error)
-            }
-        }
+        return try await httpClient.performRequest(request, responseType: responseType)
     }
     
     // MARK: - Convenience Methods
@@ -290,79 +197,17 @@ class APIService: ObservableObject {
         requiresAuth: Bool = true
     ) async throws -> T {
         
-        guard let url = URL(string: baseURL + endpoint) else {
-            throw APIError.invalidURL
-        }
+        // Get auth headers if required
+        let authHeaders = requiresAuth ? authHandler.getAuthHeaders() : [:]
         
-        var request = URLRequest(url: url)
-        request.httpMethod = HTTPMethod.POST.rawValue
-        
-        // Add authorization header if required
-        if requiresAuth {
-            setAuthorizationHeader(for: &request)
-        }
-        
-        // Create multipart form data
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: Constants.API.Headers.contentType)
-        
-        var body = Data()
-        
-        // Add text parameters
-        for (key, value) in parameters {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(value)\r\n".data(using: .utf8)!)
-        }
-        
-        // Add image data if provided
-        if let imageData = imageData {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(imageKey)\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-            body.append(imageData)
-            body.append("\r\n".data(using: .utf8)!)
-        }
-        
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = body
-        
-        // Execute request
-        do {
-            let (data, response) = try await session.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
-            
-            switch httpResponse.statusCode {
-            case 200...299:
-                do {
-                    let decodedResponse = try jsonDecoder.decode(T.self, from: data)
-                    return decodedResponse
-                } catch {
-                    throw APIError.decodingError(error)
-                }
-                
-            case 401:
-                throw APIError.authenticationFailed
-                
-            case 403:
-                // Forbidden - token expired
-                KeychainHelper.shared.delete(key: Constants.Keychain.jwtToken)
-                throw APIError.tokenExpired
-                
-            default:
-                let errorMessage = String(data: data, encoding: .utf8)
-                throw APIError.serverError(httpResponse.statusCode, errorMessage)
-            }
-            
-        } catch {
-            if error is APIError {
-                throw error
-            } else {
-                throw APIError.networkError(error)
-            }
-        }
+        // Delegate to multipart builder
+        return try await multipartBuilder.uploadMultipart(
+            endpoint: endpoint,
+            parameters: parameters,
+            imageData: imageData,
+            imageKey: imageKey,
+            responseType: responseType,
+            authHeaders: authHeaders
+        )
     }
 }

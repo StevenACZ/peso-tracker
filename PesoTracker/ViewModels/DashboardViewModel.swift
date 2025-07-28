@@ -8,6 +8,11 @@ class DashboardViewModel: ObservableObject {
     // MARK: - Properties
     private let dashboardService = DashboardService.shared
     
+    // MARK: - Modular Components
+    private let dataFormatter = DashboardDataFormatter()
+    private let statisticsCalculator = DashboardStatisticsCalculator()
+    private let validator = DashboardValidator()
+    
     // Published properties
     @Published var isLoading = false
     @Published var error: String?
@@ -84,125 +89,106 @@ class DashboardViewModel: ObservableObject {
         await dashboardService.refreshData()
     }
     
-    // MARK: - Data Access Methods
+    // MARK: - Data Access Methods (Delegated to Statistics Calculator)
     var currentWeight: Weight? {
-        return dashboardService.getCurrentWeight()
+        return statisticsCalculator.getCurrentWeight(from: allWeights)
     }
     
     var weightChange: Double? {
-        return dashboardService.getWeightChange()
+        return statisticsCalculator.getWeightChange(from: allWeights)
     }
     
     var mainGoal: Goal? {
-        return dashboardService.getMainGoal()
+        return statisticsCalculator.getMainGoal(from: goals)
     }
     
     var progressPercentage: Double {
-        return dashboardService.getProgressPercentage()
+        return statisticsCalculator.getProgressPercentage(allWeights: allWeights, goals: goals)
     }
     
     var daysToGoal: Int? {
-        return dashboardService.getDaysToGoal()
+        return statisticsCalculator.getDaysToGoal(from: goals)
     }
     
     func getWeightsForChart() -> [Weight] {
-        return dashboardService.getWeightsForChart(timeRange: selectedTimeRange)
+        return statisticsCalculator.getWeightsForChart(from: allWeights, timeRange: selectedTimeRange)
     }
     
-    // MARK: - Data Status Properties
+    // MARK: - Data Status Properties (Delegated to Validator)
     var hasWeightData: Bool {
-        return !allWeights.isEmpty
+        return validator.hasWeightData(allWeights: allWeights)
     }
     
     var hasGoalData: Bool {
-        return !goals.isEmpty
+        return validator.hasGoalData(goals: goals)
     }
     
     var hasPhotoData: Bool {
-        return !photos.isEmpty
+        return validator.hasPhotoData(photos: photos)
     }
     
-    // MARK: - Formatted Data for UI
+    // MARK: - Formatted Data for UI (Delegated to Data Formatter)
     var formattedCurrentWeight: String {
-        return dashboardService.formattedCurrentWeight
+        return dataFormatter.formattedCurrentWeight(currentUser: currentUser, allWeights: allWeights)
     }
     
     var formattedWeightChange: String {
-        return dashboardService.formattedWeightChange
+        return dataFormatter.formattedWeightChange(from: allWeights)
     }
     
     var formattedGoalWeight: String {
-        return dashboardService.formattedGoalWeight
+        return dataFormatter.formattedGoalWeight(from: goals)
     }
     
     var formattedProgressPercentage: String {
-        return dashboardService.formattedProgressPercentage
+        return dataFormatter.formattedProgressPercentage(progressPercentage: progressPercentage)
     }
     
     var formattedDaysToGoal: String {
-        return dashboardService.formattedDaysToGoal
+        return dataFormatter.formattedDaysToGoal(daysToGoal: daysToGoal)
     }
     
     var formattedUserName: String {
-        return currentUser?.username ?? "Usuario"
+        return dataFormatter.formattedUserName(from: currentUser)
     }
     
     var formattedUserEmail: String {
-        return currentUser?.email ?? ""
+        return dataFormatter.formattedUserEmail(from: currentUser)
     }
     
-    // MARK: - Photos Data
+    // MARK: - Photos Data (Delegated to Statistics Calculator)
     var recentPhotos: [Photo] {
-        return Array(photos.prefix(5)) // Last 5 photos
+        return statisticsCalculator.getRecentPhotos(from: photos)
     }
     
     var totalPhotos: Int {
-        return photos.count
+        return statisticsCalculator.getTotalPhotos(from: photos)
     }
     
-    // MARK: - Goal Information
+    // MARK: - Goal Information (Delegated to Validator and Formatter)
     var hasActiveGoal: Bool {
-        return mainGoal != nil && !(mainGoal?.isCompleted ?? true)
+        return validator.hasActiveGoal(goals: goals)
     }
     
     var goalStatus: String {
-        guard let goal = mainGoal else { return "Sin meta activa" }
-        
-        if goal.isCompleted {
-            return "Meta completada"
-        } else if goal.isOverdue {
-            return "Meta vencida"
-        } else {
-            return "Meta activa"
-        }
+        return dataFormatter.formattedGoalStatus(from: goals)
     }
     
     var goalProgress: String {
-        guard hasActiveGoal,
-              let currentWeight = currentWeight?.weight,
-              let goal = mainGoal,
-              let startWeight = allWeights.last?.weight else {
-            return "No disponible"
-        }
-        
-        let totalChange = abs(startWeight - goal.targetWeight)
-        let currentChange = abs(startWeight - currentWeight)
-        let remaining = totalChange - currentChange
-        
-        return String(format: "%.2f kg restantes", remaining)
+        return dataFormatter.formattedGoalProgress(allWeights: allWeights, goals: goals)
     }
     
-    // MARK: - Goals Information  
+    // MARK: - Goals Information (Delegated to Statistics Calculator)
     var totalGoals: Int {
-        return goals.count
+        return statisticsCalculator.getTotalGoals(from: goals)
     }
     
     var completedGoals: Int {
-        return goals.filter { $0.isCompleted }.count
+        return statisticsCalculator.getCompletedGoals(from: goals)
     }
     
     var activeGoals: Int {
-        return goals.filter { !$0.isCompleted && !$0.isOverdue }.count
+        return statisticsCalculator.getActiveGoals(from: goals)
     }
     
     // MARK: - Actions
@@ -222,59 +208,40 @@ class DashboardViewModel: ObservableObject {
         print("📊 [DASHBOARD VM] Time range updated to: \(newRange)")
     }
     
-    // MARK: - Data Validation
+    // MARK: - Data Validation (Delegated to Validator)
     var canShowChart: Bool {
-        return getWeightsForChart().count >= 2
+        return validator.canShowChart(allWeights: allWeights, timeRange: selectedTimeRange)
     }
     
     var canShowProgress: Bool {
-        return hasData && hasActiveGoal
+        return validator.canShowProgress(allWeights: allWeights, goals: goals)
     }
     
     var canShowPhotos: Bool {
-        return hasPhotoData
+        return validator.canShowPhotos(photos: photos)
     }
     
-    // MARK: - Statistics
+    // MARK: - Statistics (Delegated to Statistics Calculator and Formatter)
     var totalWeightRecords: Int {
-        return allWeights.count
+        return statisticsCalculator.getTotalWeightRecords(from: allWeights)
     }
     
     var trackingDays: Int {
-        guard let firstRecord = allWeights.last,
-              let lastRecord = allWeights.first else { return 0 }
-        
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.day], from: firstRecord.date, to: lastRecord.date)
-        return max(components.day ?? 0, 1)
+        return statisticsCalculator.calculateTrackingDays(from: allWeights)
     }
     
     var averageWeeklyChange: String {
-        guard trackingDays > 7,
-              let weightChange = weightChange else { return "No disponible" }
-        
-        let weeks = Double(trackingDays) / 7.0
-        let weeklyChange = weightChange / weeks
-        let sign = weeklyChange >= 0 ? "+" : ""
-        
-        return "\(sign)\(String(format: "%.2f", weeklyChange)) kg/semana"
+        let weeklyChange = statisticsCalculator.calculateAverageWeeklyChange(from: allWeights)
+        return dataFormatter.formattedAverageWeeklyChange(trackingDays: trackingDays, weightChange: weeklyChange)
     }
     
-    // MARK: - Recent Activity
+    // MARK: - Recent Activity (Delegated to Formatter and Statistics Calculator)
     var lastWeightEntry: String {
-        guard let lastWeight = allWeights.first else { return "Sin registros" }
-        
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        
-        return "Último registro: \(formatter.string(from: lastWeight.date))"
+        return dataFormatter.formattedLastWeightEntry(from: allWeights)
     }
     
     var recentWeights: [Weight] {
-        // Sort all weights by date (oldest to newest) for table display
-        let sortedWeights = allWeights.sorted { $0.date < $1.date }
-        return Array(sortedWeights.prefix(5))
+        return statisticsCalculator.getRecentWeights(from: allWeights)
     }
     
     // MARK: - Weight Management
@@ -297,7 +264,7 @@ class DashboardViewModel: ObservableObject {
         isLoading = false
     }
     
-    // MARK: - Pagination Methods
+    // MARK: - Pagination Methods (Delegated to Service and Formatter)
     var canGoBack: Bool {
         return dashboardService.canGoBack
     }
