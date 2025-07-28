@@ -16,12 +16,16 @@ class WeightEntryViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    // MARK: - Delegated Properties (from components)
+    // MARK: - Form Validation Properties
     @Published var selectedImage: NSImage?
     @Published var imageData: Data?
     @Published var weightError: String?
     @Published var dateError: String?
     @Published var isValid = false
+    
+    // MARK: - Component Handlers
+    private let validator = WeightFormValidator()
+    private let imageHandler = ImageHandler()
     
     // MARK: - Editing State
     @Published var isEditMode = false
@@ -33,11 +37,6 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Services and Helpers
     private let weightService = WeightService()
     private var cancellables = Set<AnyCancellable>()
-    
-    // MARK: - Constants
-    private let minWeight: Double = 1.0
-    private let maxWeight: Double = 1000.0
-    private let maxImageSize: Int = 10 * 1024 * 1024 // 10MB
     
     init() {
         setupValidation()
@@ -56,8 +55,18 @@ class WeightEntryViewModel: ObservableObject {
                 return weightValid && dateValid
             }
             .assign(to: &$isValid)
+        
+        // Bind image handler properties
+        imageHandler.$selectedImage
+            .assign(to: &$selectedImage)
+        
+        imageHandler.$imageData
+            .assign(to: &$imageData)
+        
+        imageHandler.$errorMessage
+            .compactMap { $0 }
+            .assign(to: &$errorMessage)
     }
-    
     
     // MARK: - Validation Methods
     
@@ -74,8 +83,8 @@ class WeightEntryViewModel: ObservableObject {
             return false
         }
         
-        guard weightValue >= minWeight && weightValue <= maxWeight else {
-            weightError = "El peso debe estar entre \(String(format: "%.2f", minWeight)) y \(String(format: "%.0f", maxWeight)) kg"
+        guard weightValue >= 1.0 && weightValue <= 1000.0 else {
+            weightError = "El peso debe estar entre 1.0 y 1000.0 kg"
             return false
         }
         
@@ -103,67 +112,18 @@ class WeightEntryViewModel: ObservableObject {
         return true
     }
     
-    // MARK: - Image Handling
     
+    // MARK: - Image Handling (Delegated)
     func selectImage() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.jpeg, .png, .gif]
-        panel.allowsMultipleSelection = false
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.prompt = "Seleccionar"
-        panel.message = "Selecciona una foto de progreso"
-        
-        if panel.runModal() == .OK, let url = panel.url {
-            loadImage(from: url)
-        }
-    }
-    
-    func loadImage(from url: URL) {
-        do {
-            let data = try Data(contentsOf: url)
-            
-            guard data.count <= maxImageSize else {
-                errorMessage = "La imagen es muy grande. El tamaño máximo es 10MB."
-                return
-            }
-            
-            guard let image = NSImage(data: data) else {
-                errorMessage = "No se pudo cargar la imagen. Asegúrate de que sea un archivo de imagen válido."
-                return
-            }
-            
-            selectedImage = image
-            imageData = data
-            errorMessage = nil
-        } catch {
-            errorMessage = "Error al cargar la imagen: \(error.localizedDescription)"
-        }
+        imageHandler.selectImage()
     }
     
     func removeImage() {
-        selectedImage = nil
-        imageData = nil
+        imageHandler.removeImage()
     }
     
-    // MARK: - Drag and Drop Support
-    
     func handleDrop(providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
-        
-        if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-            provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { [weak self] (item, error) in
-                DispatchQueue.main.async {
-                    if let data = item as? Data,
-                       let url = URL(dataRepresentation: data, relativeTo: nil) {
-                        self?.loadImage(from: url)
-                    }
-                }
-            }
-            return true
-        }
-        
-        return false
+        return imageHandler.handleDrop(providers: providers)
     }
     
     // MARK: - Date Handling Methods
@@ -245,6 +205,7 @@ class WeightEntryViewModel: ObservableObject {
         hasExistingPhoto = false
         
         updateDateString()
+        imageHandler.removeImage()
     }
     
     func loadExistingWeightSimple(_ weight: Weight) async {
