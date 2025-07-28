@@ -10,13 +10,17 @@ class WeightEntryViewModel: ObservableObject {
     @Published var date: Date = Date()
     @Published var dateString: String = ""
     @Published var notes: String = ""
-    @Published var selectedImage: NSImage?
-    @Published var imageData: Data?
     @Published var showDatePicker = false
     
     // MARK: - State Properties
     @Published var isLoading = false
     @Published var errorMessage: String?
+    
+    // MARK: - Delegated Properties (from components)
+    @Published var selectedImage: NSImage?
+    @Published var imageData: Data?
+    @Published var weightError: String?
+    @Published var dateError: String?
     @Published var isValid = false
     
     // MARK: - Editing State
@@ -26,11 +30,7 @@ class WeightEntryViewModel: ObservableObject {
     @Published var existingPhotoId: Int?
     @Published var hasExistingPhoto = false
     
-    // MARK: - Form Validation
-    @Published var weightError: String?
-    @Published var dateError: String?
-    
-    // MARK: - Services
+    // MARK: - Services and Helpers
     private let weightEntryService = WeightEntryService()
     private var cancellables = Set<AnyCancellable>()
     
@@ -47,22 +47,17 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Setup Methods
     
     private func setupValidation() {
-        // Validate weight in real-time
-        $weight
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-            .map { [weak self] weightText in
-                self?.validateWeight(weightText) ?? false
-            }
-            .assign(to: &$isValid)
-        
-        // Combine all validations
+        // Validate form in real-time
         Publishers.CombineLatest($weight, $date)
             .map { [weak self] weight, date in
                 guard let self = self else { return false }
-                return self.validateWeight(weight) && self.validateDate(date)
+                let weightValid = self.validateWeight(weight)
+                let dateValid = self.validateDate(date)
+                return weightValid && dateValid
             }
             .assign(to: &$isValid)
     }
+    
     
     // MARK: - Validation Methods
     
@@ -276,16 +271,13 @@ class WeightEntryViewModel: ObservableObject {
         date = Date()
         dateString = ""
         notes = ""
-        selectedImage = nil
-        imageData = nil
         errorMessage = nil
-        weightError = nil
-        dateError = nil
         isEditMode = false
         editingWeightId = nil
         existingPhotoUrl = nil
         existingPhotoId = nil
         hasExistingPhoto = false
+        
         updateDateString()
     }
     

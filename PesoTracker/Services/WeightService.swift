@@ -47,7 +47,8 @@ class WeightService: ObservableObject {
             
             let fetchedWeights = response.data
             
-            weights = fetchedWeights
+            // Sort weights by date (oldest to newest) for table display
+            weights = fetchedWeights.sorted { $0.date < $1.date }
             
             // Update pagination info
             currentPage = response.pagination.page
@@ -103,7 +104,8 @@ class WeightService: ObservableObject {
                 responseType: PaginatedResponse<Weight>.self
             )
             
-            allWeights = response.data
+            // Sort all weights by date (oldest to newest) for consistent ordering
+            allWeights = response.data.sorted { $0.date < $1.date }
             
             // Log information
             print("📊 [ALL WEIGHTS] Total de pesos cargados: \(allWeights.count)")

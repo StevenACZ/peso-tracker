@@ -272,8 +272,8 @@ class DashboardViewModel: ObservableObject {
     }
     
     var recentWeights: [Weight] {
-        // Sort all weights by date (newest to oldest) and take first 5
-        let sortedWeights = allWeights.sorted { $0.date > $1.date }
+        // Sort all weights by date (oldest to newest) for table display
+        let sortedWeights = allWeights.sorted { $0.date < $1.date }
         return Array(sortedWeights.prefix(5))
     }
     
