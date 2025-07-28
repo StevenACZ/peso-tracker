@@ -4,7 +4,7 @@ struct RightContentPanel: View {
     @ObservedObject var viewModel: DashboardViewModel
     let onViewProgress: () -> Void
     let onAddWeight: () -> Void
-    let onEditRecord: (WeightRecord) -> Void
+    let onEditRecord: (Weight) -> Void
     let onDeleteRecord: (WeightRecord) -> Void
     
     var body: some View {

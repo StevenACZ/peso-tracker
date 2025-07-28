@@ -15,6 +15,7 @@ struct MainDashboardView: View {
     
     // Selected record for editing/deleting
     @State private var selectedRecord: WeightRecord?
+    @State private var selectedWeight: Weight?
     
     var body: some View {
         ZStack {
@@ -38,8 +39,9 @@ struct MainDashboardView: View {
                     viewModel: dashboardViewModel,
                     onViewProgress: { showViewProgressModal = true },
                     onAddWeight: { showAddWeightModal = true },
-                    onEditRecord: { record in
-                        selectedRecord = record
+                    onEditRecord: { weight in
+                        // Store the weight for editing
+                        selectedWeight = weight
                         showEditWeightModal = true
                     },
                     onDeleteRecord: { record in
@@ -62,7 +64,11 @@ struct MainDashboardView: View {
                         showAddWeightModal = false
                     }
                 
-                AddWeightModal(isPresented: $showAddWeightModal)
+                AddWeightModal(isPresented: $showAddWeightModal, onSave: {
+                    Task {
+                        await dashboardViewModel.loadDashboardData()
+                    }
+                })
             }
             
             if showEditWeightModal {
@@ -75,7 +81,12 @@ struct MainDashboardView: View {
                 AddWeightModal(
                     isPresented: $showEditWeightModal,
                     isEditing: true,
-                    record: selectedRecord
+                    selectedWeight: selectedWeight,
+                    onSave: {
+                        Task {
+                            await dashboardViewModel.loadDashboardData()
+                        }
+                    }
                 )
             }
             
@@ -130,8 +141,11 @@ struct MainDashboardView: View {
                     isPresented: $showDeleteConfirmationModal,
                     recordToDelete: selectedRecord,
                     onConfirm: {
-                        // TODO: Delete record logic
-                        print("Deleting record: \(selectedRecord?.weight ?? "")")
+                        if let record = selectedRecord {
+                            Task {
+                                await dashboardViewModel.deleteWeight(weightId: record.id)
+                            }
+                        }
                     }
                 )
             }

@@ -72,7 +72,7 @@ struct DeleteConfirmationModal: View {
 #Preview {
     DeleteConfirmationModal(
         isPresented: .constant(true),
-        recordToDelete: WeightRecord(date: "2024-01-15", weight: "82 kg", notes: "Test", hasPhotos: false),
+        recordToDelete: WeightRecord(id: 1, date: "2024-01-15", weight: "82 kg", notes: "Test", hasPhotos: false),
         onConfirm: {}
     )
 }

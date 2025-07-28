@@ -268,7 +268,29 @@ class DashboardViewModel: ObservableObject {
     }
     
     var recentWeights: [Weight] {
-        return Array(weights.prefix(5)) // Last 5 records
+        // Sort weights by date (oldest to newest) and take first 5
+        let sortedWeights = weights.sorted { $0.date < $1.date }
+        return Array(sortedWeights.prefix(5))
+    }
+    
+    // MARK: - Weight Management
+    func deleteWeight(weightId: Int) async {
+        isLoading = true
+        do {
+            let weightService = WeightEntryService()
+            try await weightService.deleteWeight(weightId: weightId)
+            
+            // Remove from local array
+            weights.removeAll { $0.id == weightId }
+            
+            // Refresh data to ensure consistency
+            await loadDashboardData()
+            
+        } catch {
+            self.error = "Error al eliminar el peso: \(error.localizedDescription)"
+            showError = true
+        }
+        isLoading = false
     }
 }
 

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WeightRecord {
+    let id: Int
     let date: String
     let weight: String
     let notes: String
@@ -9,7 +10,7 @@ struct WeightRecord {
 
 struct WeightRecordsView: View {
     @ObservedObject var viewModel: DashboardViewModel
-    let onEditRecord: (WeightRecord) -> Void
+    let onEditRecord: (Weight) -> Void
     let onDeleteRecord: (WeightRecord) -> Void
     
     var body: some View {
@@ -99,14 +100,8 @@ struct WeightRecordsView: View {
             // Actions
             HStack(spacing: 8) {
                 Button(action: { 
-                    // Convert Weight to WeightRecord for compatibility
-                    let record = WeightRecord(
-                        date: weight.formattedDate,
-                        weight: weight.formattedWeight,
-                        notes: weight.notes ?? "",
-                        hasPhotos: weight.hasPhotos
-                    )
-                    onEditRecord(record)
+                    // Pass the full Weight object for better data handling
+                    onEditRecord(weight)
                 }) {
                     Text("Editar")
                         .padding(.horizontal, 8)
@@ -121,6 +116,7 @@ struct WeightRecordsView: View {
                 Button(action: { 
                     // Convert Weight to WeightRecord for compatibility
                     let record = WeightRecord(
+                        id: weight.id,
                         date: weight.formattedDate,
                         weight: weight.formattedWeight,
                         notes: weight.notes ?? "",
