@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsDropdown: View {
     let onAdvancedSettings: () -> Void
+    let onCalculateBMI: () -> Void
     let onLogout: () -> Void
     let onDismiss: () -> Void
     
@@ -21,6 +22,36 @@ struct SettingsDropdown: View {
                             .frame(width: 16)
                         
                         Text("Opciones Avanzadas")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .background(Color.clear)
+                .onHover { isHovered in
+                    // Add subtle hover effect
+                }
+                
+                Divider()
+                    .padding(.horizontal, 8)
+                
+                // Calculate BMI
+                Button(action: {
+                    onCalculateBMI()
+                    onDismiss()
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "figure.walk")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                            .frame(width: 16)
+                        
+                        Text("Calcular IMC")
                             .font(.system(size: 14))
                             .foregroundColor(.primary)
                         
@@ -95,6 +126,7 @@ struct Triangle: Shape {
 #Preview {
     SettingsDropdown(
         onAdvancedSettings: {},
+        onCalculateBMI: {},
         onLogout: {},
         onDismiss: {}
     )

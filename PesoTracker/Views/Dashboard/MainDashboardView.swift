@@ -10,6 +10,7 @@ struct MainDashboardView: View {
     @State private var showAddGoalModal = false
     @State private var showEditGoalModal = false
     @State private var showAdvancedSettingsModal = false
+    @State private var showBMICalculatorModal = false
     @State private var showViewProgressModal = false
     @State private var showDeleteConfirmationModal = false
     
@@ -27,6 +28,7 @@ struct MainDashboardView: View {
                     onEditGoal: { showEditGoalModal = true },
                     onAddGoal: { showAddGoalModal = true },
                     onAdvancedSettings: { showAdvancedSettingsModal = true },
+                    onCalculateBMI: { showBMICalculatorModal = true },
                     onLogout: { 
                         dashboardViewModel.logout()
                     }
@@ -133,6 +135,16 @@ struct MainDashboardView: View {
                     }
                 
                 AdvancedSettingsModal(isPresented: $showAdvancedSettingsModal)
+            }
+            
+            if showBMICalculatorModal {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showBMICalculatorModal = false
+                    }
+                
+                BMICalculatorModal(isPresented: $showBMICalculatorModal)
             }
             
             if showViewProgressModal {

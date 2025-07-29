@@ -5,6 +5,7 @@ struct LeftSidebarPanel: View {
     let onEditGoal: () -> Void
     let onAddGoal: () -> Void
     let onAdvancedSettings: () -> Void
+    let onCalculateBMI: () -> Void
     let onLogout: () -> Void
     
     @State private var showSettingsDropdown = false
@@ -59,6 +60,10 @@ struct LeftSidebarPanel: View {
                                 onAdvancedSettings()
                                 showSettingsDropdown = false
                             },
+                            onCalculateBMI: {
+                                onCalculateBMI()
+                                showSettingsDropdown = false
+                            },
                             onLogout: {
                                 onLogout()
                                 showSettingsDropdown = false
@@ -69,7 +74,7 @@ struct LeftSidebarPanel: View {
                         )
                         .position(
                             x: geometry.size.width - 100,
-                            y: geometry.size.height - 105
+                            y: geometry.size.height - 125
                         )
                     }
                 }
@@ -105,6 +110,7 @@ struct LeftSidebarPanel: View {
         onEditGoal: {},
         onAddGoal: {},
         onAdvancedSettings: {},
+        onCalculateBMI: {},
         onLogout: {}
     )
     .frame(width: 350, height: 600)

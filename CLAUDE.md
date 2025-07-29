@@ -159,6 +159,25 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Dashboard Integration**: Automatic refresh after goal creation/update
 - **Legacy Cleanup**: Removed all milestone, GoalType, and old endpoint references
 
+### BMI Calculator Implementation
+- **BMICalculatorModal**: Complete BMI calculator with professional medical interface
+- **Settings Integration**: Added "Calcular IMC" option to settings dropdown menu
+- **Comprehensive Form**: Height (cm), Weight (kg), Age, and Gender (radio buttons)
+- **Medical Classifications**: 6-tier BMI categories with color-coded results
+  - Bajo peso (<18): Light blue
+  - Peso normal (18-25): Green
+  - Exceso de peso (25-30): Yellow/Orange
+  - Obesidad Grado I (30-35): Orange
+  - Obesidad Grado II (35-40): Light red
+  - Obesidad Grado III (40+): Red
+- **Smart Results Display**: Shows BMI value, classification badge, and ideal weight range
+- **Adaptive Layout**: Modal height adjusts based on calculation state (340px → 520px)
+- **Conditional Spacing**: 16px separation when results shown, buttons at bottom when empty
+- **Input Validation**: Realistic limits for height (<250cm) and weight (<500kg)
+- **Ideal Weight Calculator**: Automatic calculation of healthy weight range (BMI 18.5-24.9)
+- **Professional Styling**: Aligned inputs, squared classification badges, green app colors
+- **Responsive Design**: Optimized 480px width with proper field alignment
+
 ### Code Conventions
 - SwiftUI for all UI components
 - Async/await for API calls
