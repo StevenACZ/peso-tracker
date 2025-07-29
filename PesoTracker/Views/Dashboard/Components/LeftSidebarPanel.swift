@@ -25,6 +25,7 @@ struct LeftSidebarPanel: View {
                         onEditGoal: onEditGoal,
                         onAddGoal: onAddGoal
                     )
+                    .padding(.bottom, 8)
                     
                     WeightPredictionCard(
                         viewModel: viewModel

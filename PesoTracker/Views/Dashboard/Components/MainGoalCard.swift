@@ -29,7 +29,7 @@ struct MainGoalCard: View {
             if viewModel.hasActiveGoal {
                 Button(action: onEditGoal) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 12))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(PlainButtonStyle())
