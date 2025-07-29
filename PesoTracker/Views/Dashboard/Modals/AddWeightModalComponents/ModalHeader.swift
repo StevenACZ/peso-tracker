@@ -7,7 +7,7 @@ struct ModalHeader: View {
     var body: some View {
         HStack {
             HStack(spacing: 8) {
-                Image(systemName: "plus.circle.fill")
+                Image(systemName: isEditing ? "pencil.circle.fill" : "plus.circle.fill")
                     .font(.system(size: 20))
                     .foregroundColor(.green)
                 
