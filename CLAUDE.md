@@ -143,6 +143,22 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Navigation Indicators**: Visual dots showing current photo position with navigation arrows
 - **Complete/Close Logic**: Button changes to "Completar" (green) on last photo, "Cerrar" otherwise
 
+### Goal Management Implementation
+- **AddGoalModal**: Complete modal for creating and editing weight goals
+- **Real API Integration**: Connected to `POST /goals` and `PATCH /goals/:id` endpoints
+- **GoalService**: Dedicated service for goal CRUD operations with error handling
+- **Simplified Goal Model**: Streamlined to match current API response structure
+- **Custom Date Picker**: Reused DatePickerPopover component from weight modal
+- **Form Validation**: Weight limits (0.1-1000 kg), required fields, and error states
+- **Loading States**: ProgressView during API operations with disabled form
+- **Spanish Localization**: All text and date formatting in Spanish
+- **Adaptive Theming**: Full support for light/dark mode
+- **Clean UI**: Green button styling, no gray borders, PlainButtonStyle usage
+- **Data Format**: Sends `targetWeight` (Double) and `targetDate` (yyyy-MM-dd string)
+- **Response Handling**: Parses API response with Int IDs and String weights
+- **Dashboard Integration**: Automatic refresh after goal creation/update
+- **Legacy Cleanup**: Removed all milestone, GoalType, and old endpoint references
+
 ### Code Conventions
 - SwiftUI for all UI components
 - Async/await for API calls

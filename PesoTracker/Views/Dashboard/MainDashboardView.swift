@@ -96,7 +96,14 @@ struct MainDashboardView: View {
                         showAddGoalModal = false
                     }
                 
-                AddGoalModal(isPresented: $showAddGoalModal)
+                AddGoalModal(
+                    isPresented: $showAddGoalModal,
+                    onSave: {
+                        Task {
+                            await dashboardViewModel.loadDashboardData()
+                        }
+                    }
+                )
             }
             
             if showEditGoalModal {
@@ -106,7 +113,16 @@ struct MainDashboardView: View {
                         showEditGoalModal = false
                     }
                 
-                AddGoalModal(isPresented: $showEditGoalModal, isEditing: true)
+                AddGoalModal(
+                    isPresented: $showEditGoalModal,
+                    isEditing: true,
+                    existingGoal: dashboardViewModel.activeGoal,
+                    onSave: {
+                        Task {
+                            await dashboardViewModel.loadDashboardData()
+                        }
+                    }
+                )
             }
             
             if showAdvancedSettingsModal {

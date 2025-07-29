@@ -3,6 +3,8 @@ import SwiftUI
 struct AddGoalModal: View {
     @Binding var isPresented: Bool
     let isEditing: Bool
+    let existingGoal: DashboardGoal?
+    let onSave: () -> Void
     
     @State private var targetWeight: String = ""
     @State private var targetDate: Date = Date()
@@ -10,9 +12,13 @@ struct AddGoalModal: View {
     @State private var isLoading = false
     @State private var error: String?
     
-    init(isPresented: Binding<Bool>, isEditing: Bool = false) {
+    @StateObject private var goalService = GoalService.shared
+    
+    init(isPresented: Binding<Bool>, isEditing: Bool = false, existingGoal: DashboardGoal? = nil, onSave: @escaping () -> Void = {}) {
         self._isPresented = isPresented
         self.isEditing = isEditing
+        self.existingGoal = existingGoal
+        self.onSave = onSave
     }
     
     // Date formatter for display
@@ -161,22 +167,40 @@ struct AddGoalModal: View {
             return
         }
         
+        guard weight <= 1000.0 else {
+            error = "El peso debe ser menor a 1000 kg"
+            return
+        }
+        
         isLoading = true
         error = nil
         
-        // TODO: Implement API call to save goal
         Task {
             do {
-                // Simulate API call
-                try await Task.sleep(nanoseconds: 1_000_000_000)
+                if isEditing, let existingGoal = existingGoal {
+                    // Update existing goal
+                    _ = try await goalService.updateGoal(
+                        goalId: existingGoal.id,
+                        targetWeight: weight,
+                        targetDate: targetDate
+                    )
+                } else {
+                    // Create new goal
+                    _ = try await goalService.createGoal(
+                        targetWeight: weight,
+                        targetDate: targetDate
+                    )
+                }
                 
                 await MainActor.run {
                     isLoading = false
                     isPresented = false
+                    onSave() // Refresh dashboard data
                 }
+                
             } catch {
                 await MainActor.run {
-                    self.error = "Error al guardar la meta"
+                    self.error = goalService.error ?? "Error al guardar la meta"
                     isLoading = false
                 }
             }
@@ -184,10 +208,11 @@ struct AddGoalModal: View {
     }
     
     private func loadExistingGoal() {
-        if isEditing {
-            // TODO: Load existing goal data
-            // For now, set some example data
-            targetWeight = "75.0"
+        if isEditing, let existingGoal = existingGoal {
+            targetWeight = String(format: "%.1f", existingGoal.targetWeight)
+            targetDate = existingGoal.targetDate
+        } else {
+            // Set default date to 3 months from now for new goals
             targetDate = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
         }
     }
@@ -265,5 +290,5 @@ struct GoalDatePickerPopover: View {
 }
 
 #Preview {
-    AddGoalModal(isPresented: .constant(true))
+    AddGoalModal(isPresented: .constant(true), onSave: {})
 }

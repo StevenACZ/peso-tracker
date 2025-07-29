@@ -1,56 +1,29 @@
 import Foundation
 
-enum GoalType: String, Codable, CaseIterable {
-    case main = "main"
-    case milestone = "milestone"
-    
-    var displayName: String {
-        switch self {
-        case .main:
-            return "Meta Principal"
-        case .milestone:
-            return "Milestone"
-        }
-    }
-}
-
+// MARK: - Goal Model (Simplified for current API)
 struct Goal: Codable, Identifiable {
-    let id: String
-    let targetWeight: Double
+    let id: Int
+    let userId: Int
+    let targetWeight: String // API devuelve como string
     let targetDate: Date
-    let type: GoalType
-    let parentGoalId: String?
-    let milestoneNumber: Int?
-    let isCompleted: Bool
-    let userId: String
     let createdAt: Date
     let updatedAt: Date
-    let completedAt: Date?
     
     enum CodingKeys: String, CodingKey {
         case id
-        case targetWeight = "target_weight"
-        case targetDate = "target_date"
-        case type
-        case parentGoalId = "parent_goal_id"
-        case milestoneNumber = "milestone_number"
-        case isCompleted = "is_completed"
-        case userId = "user_id"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case completedAt = "completed_at"
+        case userId
+        case targetWeight
+        case targetDate
+        case createdAt
+        case updatedAt
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        id = try container.decode(String.self, forKey: .id)
-        targetWeight = try container.decode(Double.self, forKey: .targetWeight)
-        type = try container.decode(GoalType.self, forKey: .type)
-        parentGoalId = try container.decodeIfPresent(String.self, forKey: .parentGoalId)
-        milestoneNumber = try container.decodeIfPresent(Int.self, forKey: .milestoneNumber)
-        isCompleted = try container.decode(Bool.self, forKey: .isCompleted)
-        userId = try container.decode(String.self, forKey: .userId)
+        id = try container.decode(Int.self, forKey: .id)
+        userId = try container.decode(Int.self, forKey: .userId)
+        targetWeight = try container.decode(String.self, forKey: .targetWeight)
         
         // Date decoding helper
         let dateFormatter = ISO8601DateFormatter()
@@ -82,103 +55,16 @@ struct Goal: Codable, Identifiable {
             dateFormatter.formatOptions = [.withInternetDateTime]
             updatedAt = dateFormatter.date(from: updatedAtString) ?? Date()
         }
-        
-        // Decode completedAt (optional)
-        if let completedAtString = try container.decodeIfPresent(String.self, forKey: .completedAt) {
-            if let parsedDate = dateFormatter.date(from: completedAtString) {
-                completedAt = parsedDate
-            } else {
-                dateFormatter.formatOptions = [.withInternetDateTime]
-                completedAt = dateFormatter.date(from: completedAtString)
-            }
-        } else {
-            completedAt = nil
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        
-        try container.encode(id, forKey: .id)
-        try container.encode(targetWeight, forKey: .targetWeight)
-        try container.encode(type, forKey: .type)
-        try container.encodeIfPresent(parentGoalId, forKey: .parentGoalId)
-        try container.encodeIfPresent(milestoneNumber, forKey: .milestoneNumber)
-        try container.encode(isCompleted, forKey: .isCompleted)
-        try container.encode(userId, forKey: .userId)
-        
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        try container.encode(formatter.string(from: targetDate), forKey: .targetDate)
-        try container.encode(formatter.string(from: createdAt), forKey: .createdAt)
-        try container.encode(formatter.string(from: updatedAt), forKey: .updatedAt)
-        
-        if let completedAt = completedAt {
-            try container.encode(formatter.string(from: completedAt), forKey: .completedAt)
-        }
-    }
-}
-
-// MARK: - Goal Request Models
-struct GoalCreateRequest: Codable {
-    let targetWeight: Double
-    let targetDate: Date
-    let type: GoalType
-    let parentGoalId: String?
-    let milestoneNumber: Int?
-    
-    enum CodingKeys: String, CodingKey {
-        case targetWeight = "target_weight"
-        case targetDate = "target_date"
-        case type
-        case parentGoalId = "parent_goal_id"
-        case milestoneNumber = "milestone_number"
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        
-        try container.encode(targetWeight, forKey: .targetWeight)
-        try container.encode(type, forKey: .type)
-        try container.encodeIfPresent(parentGoalId, forKey: .parentGoalId)
-        try container.encodeIfPresent(milestoneNumber, forKey: .milestoneNumber)
-        
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        try container.encode(formatter.string(from: targetDate), forKey: .targetDate)
-    }
-}
-
-struct GoalUpdateRequest: Codable {
-    let targetWeight: Double?
-    let targetDate: Date?
-    let isCompleted: Bool?
-    
-    enum CodingKeys: String, CodingKey {
-        case targetWeight = "target_weight"
-        case targetDate = "target_date"
-        case isCompleted = "is_completed"
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        
-        try container.encodeIfPresent(targetWeight, forKey: .targetWeight)
-        try container.encodeIfPresent(isCompleted, forKey: .isCompleted)
-        
-        if let targetDate = targetDate {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            try container.encode(formatter.string(from: targetDate), forKey: .targetDate)
-        }
     }
 }
 
 // MARK: - Goal Extensions
 extension Goal {
     var formattedTargetWeight: String {
-        return String(format: "%.2f kg", targetWeight)
+        if let weight = Double(targetWeight) {
+            return String(format: "%.1f kg", weight)
+        }
+        return "\(targetWeight) kg"
     }
     
     var formattedTargetDate: String {
@@ -188,39 +74,8 @@ extension Goal {
         return formatter.string(from: targetDate)
     }
     
-    var isMainGoal: Bool {
-        return type == .main
-    }
-    
-    var isMilestone: Bool {
-        return type == .milestone
-    }
-    
-    var displayTitle: String {
-        switch type {
-        case .main:
-            return "Meta Principal"
-        case .milestone:
-            if let number = milestoneNumber {
-                return "Milestone #\(number)"
-            } else {
-                return "Milestone"
-            }
-        }
-    }
-    
-    func progressPercentage(currentWeight: Double, startWeight: Double) -> Double {
-        guard startWeight != targetWeight else { return 100.0 }
-        
-        let totalProgress = abs(startWeight - targetWeight)
-        let currentProgress = abs(startWeight - currentWeight)
-        
-        let percentage = (currentProgress / totalProgress) * 100.0
-        return min(max(percentage, 0.0), 100.0)
-    }
-    
-    var isOverdue: Bool {
-        return !isCompleted && targetDate < Date()
+    var targetWeightAsDouble: Double? {
+        return Double(targetWeight)
     }
     
     var daysRemaining: Int {
@@ -230,5 +85,9 @@ extension Goal {
         
         let components = calendar.dateComponents([.day], from: today, to: target)
         return components.day ?? 0
+    }
+    
+    var isOverdue: Bool {
+        return targetDate < Date()
     }
 }

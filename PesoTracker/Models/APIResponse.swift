@@ -272,30 +272,7 @@ struct WeightQueryRequest: Codable {
     }
 }
 
-// MARK: - Goal Query Parameters
-struct GoalQueryParams {
-    let type: GoalType?
-    let isCompleted: Bool?
-    let limit: Int?
-    
-    func toQueryItems() -> [URLQueryItem] {
-        var items: [URLQueryItem] = []
-        
-        if let type = type {
-            items.append(URLQueryItem(name: "type", value: type.rawValue))
-        }
-        
-        if let isCompleted = isCompleted {
-            items.append(URLQueryItem(name: "isCompleted", value: String(isCompleted)))
-        }
-        
-        if let limit = limit {
-            items.append(URLQueryItem(name: "limit", value: String(limit)))
-        }
-        
-        return items
-    }
-}
+
 
 // MARK: - Health Check Response
 struct HealthCheckResponse: Codable {
