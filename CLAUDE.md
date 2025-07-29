@@ -129,6 +129,20 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **User Info Log**: `👤 [DASHBOARD] User: {username} ({email}) - ID: {id}` on login
 - **Clean Console**: All debug logs removed for production readiness
 
+### Progress Modal Implementation
+- **ViewProgressModal**: Complete modal for viewing weight progress with photos
+- **Real API Integration**: Connected to `/weights/progress` endpoint for actual user data
+- **Dynamic Photo Navigation**: Tap-based navigation on image halves (left/right) for intuitive browsing
+- **Progress Data Models**: `ProgressResponse` and `ProgressPhoto` models for API data structure
+- **AsyncImage Loading**: Real photos loaded from server using `mediumUrl` for optimal quality/speed
+- **Smart States**: Loading, error, and empty states with user-friendly messages
+- **Mobile-Optimized**: 320px image height perfect for mobile photo aspect ratios
+- **Spanish Localization**: Dates formatted in Spanish locale, weights displayed in kg format
+- **Visual Progress**: Dynamic progress bar fills based on current photo position
+- **Adaptive Theming**: Supports both light and dark mode automatically
+- **Navigation Indicators**: Visual dots showing current photo position with navigation arrows
+- **Complete/Close Logic**: Button changes to "Completar" (green) on last photo, "Cerrar" otherwise
+
 ### Code Conventions
 - SwiftUI for all UI components
 - Async/await for API calls
