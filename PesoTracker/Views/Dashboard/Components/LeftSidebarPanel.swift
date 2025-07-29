@@ -50,36 +50,7 @@ struct LeftSidebarPanel: View {
                 }
             )
         }
-        .overlay(
-            // Settings dropdown overlay
-            Group {
-                if showSettingsDropdown {
-                    GeometryReader { geometry in
-                        SettingsDropdown(
-                            onAdvancedSettings: {
-                                onAdvancedSettings()
-                                showSettingsDropdown = false
-                            },
-                            onCalculateBMI: {
-                                onCalculateBMI()
-                                showSettingsDropdown = false
-                            },
-                            onLogout: {
-                                onLogout()
-                                showSettingsDropdown = false
-                            },
-                            onDismiss: {
-                                showSettingsDropdown = false
-                            }
-                        )
-                        .position(
-                            x: geometry.size.width - 100,
-                            y: geometry.size.height - 125
-                        )
-                    }
-                }
-            }
-        )
+        .overlay(settingsDropdownOverlay)
         .onTapGesture {
             if showSettingsDropdown {
                 showSettingsDropdown = false
@@ -101,6 +72,29 @@ struct LeftSidebarPanel: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
+    }
+    
+    @ViewBuilder
+    private var settingsDropdownOverlay: some View {
+        if showSettingsDropdown {
+            GeometryReader { geometry in
+                SettingsDropdown(
+                    onAdvancedSettings: { handleSettingsAction(onAdvancedSettings) },
+                    onCalculateBMI: { handleSettingsAction(onCalculateBMI) },
+                    onLogout: { handleSettingsAction(onLogout) },
+                    onDismiss: { showSettingsDropdown = false }
+                )
+                .position(
+                    x: geometry.size.width - 100,
+                    y: geometry.size.height - 125
+                )
+            }
+        }
+    }
+    
+    private func handleSettingsAction(_ action: @escaping () -> Void) {
+        action()
+        showSettingsDropdown = false
     }
 }
 

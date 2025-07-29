@@ -1,5 +1,40 @@
 import SwiftUI
 
+// MARK: - Reusable Menu Item Component
+struct DropdownMenuItem: View {
+    let icon: String
+    let title: String
+    let color: Color
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(color)
+                    .frame(width: 16)
+                
+                Text(title)
+                    .font(.system(size: 14))
+                    .foregroundColor(color)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(isHovered ? Color.secondary.opacity(0.1) : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
 struct SettingsDropdown: View {
     let onAdvancedSettings: () -> Void
     let onCalculateBMI: () -> Void
@@ -10,89 +45,38 @@ struct SettingsDropdown: View {
         VStack(spacing: 0) {
             // Main dropdown content
             VStack(spacing: 0) {
-                // Advanced Settings
-                Button(action: {
+                DropdownMenuItem(
+                    icon: "gearshape",
+                    title: "Opciones Avanzadas",
+                    color: .primary
+                ) {
                     onAdvancedSettings()
                     onDismiss()
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 14))
-                            .foregroundColor(.primary)
-                            .frame(width: 16)
-                        
-                        Text("Opciones Avanzadas")
-                            .font(.system(size: 14))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(PlainButtonStyle())
-                .background(Color.clear)
-                .onHover { isHovered in
-                    // Add subtle hover effect
                 }
                 
                 Divider()
                     .padding(.horizontal, 8)
                 
-                // Calculate BMI
-                Button(action: {
+                DropdownMenuItem(
+                    icon: "figure.walk",
+                    title: "Calcular IMC",
+                    color: .primary
+                ) {
                     onCalculateBMI()
                     onDismiss()
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "figure.walk")
-                            .font(.system(size: 14))
-                            .foregroundColor(.primary)
-                            .frame(width: 16)
-                        
-                        Text("Calcular IMC")
-                            .font(.system(size: 14))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(PlainButtonStyle())
-                .background(Color.clear)
-                .onHover { isHovered in
-                    // Add subtle hover effect
                 }
                 
                 Divider()
                     .padding(.horizontal, 8)
                 
-                // Logout
-                Button(action: {
+                DropdownMenuItem(
+                    icon: "rectangle.portrait.and.arrow.right",
+                    title: "Cerrar Sesión",
+                    color: .red
+                ) {
                     onLogout()
                     onDismiss()
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.red)
-                            .frame(width: 16)
-                        
-                        Text("Cerrar Sesión")
-                            .font(.system(size: 14))
-                            .foregroundColor(.red)
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
-                .background(Color.clear)
             }
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
