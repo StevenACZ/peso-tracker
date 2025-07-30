@@ -58,7 +58,7 @@ struct SettingsDropdown: View {
                     .padding(.horizontal, 8)
                 
                 DropdownMenuItem(
-                    icon: "figure.walk",
+                    icon: "person.and.background.dotted",
                     title: "Calcular IMC",
                     color: .primary
                 ) {

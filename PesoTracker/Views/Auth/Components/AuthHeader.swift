@@ -7,9 +7,10 @@ struct AuthHeader: View {
             
             // Logo centered
             HStack(spacing: 8) {
-                Image(systemName: "figure.walk.circle.fill")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.green)
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
                 
                 Text("PesoTracker")
                     .font(.system(size: 16, weight: .medium))

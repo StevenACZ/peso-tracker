@@ -47,10 +47,11 @@ struct ContentView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 24) {
-                // App Icon - green like in dashboard
-                Image(systemName: "figure.walk.circle.fill")
-                    .font(.system(size: 100))
-                    .foregroundColor(.green)
+                // App Logo - custom logo
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 60, height: 60)
                 
                 // App Name
                 Text("PesoTracker")
