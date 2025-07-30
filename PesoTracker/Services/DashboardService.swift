@@ -13,6 +13,7 @@ class DashboardService: ObservableObject {
     // Published properties for dashboard data
     @Published var isLoading = false
     @Published var isChartLoading = false
+    @Published var isTableLoading = false
     @Published var error: String?
     
     // Dashboard data from new API
@@ -86,6 +87,7 @@ class DashboardService: ObservableObject {
     // MARK: - Load Table Data
     @MainActor
     func loadTableData(page: Int) async {
+        isTableLoading = true
         let endpoint = "/weights/paginated?page=\(page)&limit=5"
         
         do {
@@ -99,6 +101,8 @@ class DashboardService: ObservableObject {
         } catch {
             self.error = "Error al cargar datos de la tabla: \(error.localizedDescription)"
         }
+        
+        isTableLoading = false
     }
     
     // MARK: - Chart Navigation
@@ -125,13 +129,15 @@ class DashboardService: ObservableObject {
     @MainActor
     func loadNextTablePage() async {
         guard let pagination = tableData?.pagination,
-              currentTablePage < pagination.totalPages else { return }
+              currentTablePage < pagination.totalPages,
+              !isTableLoading else { return }
         await loadTableData(page: currentTablePage + 1)
     }
     
     @MainActor
     func loadPreviousTablePage() async {
-        guard currentTablePage > 1 else { return }
+        guard currentTablePage > 1,
+              !isTableLoading else { return }
         await loadTableData(page: currentTablePage - 1)
     }
     

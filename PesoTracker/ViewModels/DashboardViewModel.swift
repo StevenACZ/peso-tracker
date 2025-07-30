@@ -11,6 +11,7 @@ class DashboardViewModel: ObservableObject {
     // Published properties
     @Published var isLoading = false
     @Published var isChartLoading = false
+    @Published var isTableLoading = false
     @Published var error: String?
     @Published var showError = false
     
@@ -43,6 +44,9 @@ class DashboardViewModel: ObservableObject {
         
         dashboardService.$isChartLoading
             .assign(to: &$isChartLoading)
+        
+        dashboardService.$isTableLoading
+            .assign(to: &$isTableLoading)
         
         dashboardService.$error
             .compactMap { $0 }

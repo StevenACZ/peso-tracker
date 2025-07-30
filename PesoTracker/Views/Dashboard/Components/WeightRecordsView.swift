@@ -31,9 +31,34 @@ struct WeightRecordsView: View {
             // Table header
             tableHeader
             
-            // Records
-            ForEach(viewModel.weights.indices, id: \.self) { index in
-                weightRecordRow(viewModel.weights[index])
+            // Records with loading overlay
+            ZStack {
+                VStack(spacing: 0) {
+                    ForEach(viewModel.weights.indices, id: \.self) { index in
+                        weightRecordRow(viewModel.weights[index])
+                    }
+                }
+                
+                // Loading overlay
+                if viewModel.isTableLoading {
+                    Color.black.opacity(0.3)
+                        .overlay(
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .scaleEffect(1.5)
+                                    .tint(.green)
+                                Text("Cargando información...")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                            )
+                        )
+                }
             }
             
             // Pagination controls
@@ -162,13 +187,19 @@ struct WeightRecordsView: View {
                 Text("← Anterior")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(viewModel.canGoPreviousTable ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                    .foregroundColor(viewModel.canGoPreviousTable ? .green : .gray)
+                    .background(
+                        (viewModel.canGoPreviousTable && !viewModel.isTableLoading) ? 
+                        Color.green.opacity(0.1) : Color.gray.opacity(0.1)
+                    )
+                    .foregroundColor(
+                        (viewModel.canGoPreviousTable && !viewModel.isTableLoading) ? 
+                        .green : .gray
+                    )
                     .cornerRadius(6)
                     .font(.system(size: 12))
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canGoPreviousTable)
+            .disabled(!viewModel.canGoPreviousTable || viewModel.isTableLoading)
             
             Spacer()
             
@@ -186,13 +217,19 @@ struct WeightRecordsView: View {
                 Text("Siguiente →")
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(viewModel.canGoNextTable ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                    .foregroundColor(viewModel.canGoNextTable ? .green : .gray)
+                    .background(
+                        (viewModel.canGoNextTable && !viewModel.isTableLoading) ? 
+                        Color.green.opacity(0.1) : Color.gray.opacity(0.1)
+                    )
+                    .foregroundColor(
+                        (viewModel.canGoNextTable && !viewModel.isTableLoading) ? 
+                        .green : .gray
+                    )
                     .cornerRadius(6)
                     .font(.system(size: 12))
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canGoNextTable)
+            .disabled(!viewModel.canGoNextTable || viewModel.isTableLoading)
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
