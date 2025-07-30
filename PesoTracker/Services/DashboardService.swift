@@ -12,6 +12,7 @@ class DashboardService: ObservableObject {
     
     // Published properties for dashboard data
     @Published var isLoading = false
+    @Published var isChartLoading = false
     @Published var error: String?
     
     // Dashboard data from new API
@@ -62,6 +63,8 @@ class DashboardService: ObservableObject {
     // MARK: - Load Chart Data
     @MainActor
     func loadChartData(timeRange: String, page: Int) async {
+        isChartLoading = true
+        
         let endpoint = "/weights/chart-data?timeRange=\(timeRange)&page=\(page)"
         
         do {
@@ -76,6 +79,8 @@ class DashboardService: ObservableObject {
         } catch {
             self.error = "Error al cargar datos del gráfico: \(error.localizedDescription)"
         }
+        
+        isChartLoading = false
     }
     
     // MARK: - Load Table Data

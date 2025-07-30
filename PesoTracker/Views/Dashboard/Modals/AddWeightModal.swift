@@ -21,8 +21,13 @@ struct AddWeightModal: View {
     var body: some View {
         VStack(spacing: 24) {
             ModalHeader(isEditing: isEditing, isPresented: $isPresented)
-            formContent
-            FormActionButtons(viewModel: viewModel, isPresented: $isPresented, onSave: onSave)
+            
+            if viewModel.isLoadingData {
+                loadingContent
+            } else {
+                formContent
+                FormActionButtons(viewModel: viewModel, isPresented: $isPresented, onSave: onSave)
+            }
         }
         .padding(24)
         .frame(width: 480)
@@ -55,6 +60,20 @@ struct AddWeightModal: View {
         }
     }
     
+    
+    // MARK: - Loading Content
+    
+    private var loadingContent: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.2)
+            
+            Text("Cargando datos...")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+        .frame(height: 200)
+    }
     
     // MARK: - Form Content
     

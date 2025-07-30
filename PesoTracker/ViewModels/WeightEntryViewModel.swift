@@ -14,6 +14,7 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - State Properties
     @Published var isLoading = false
+    @Published var isLoadingData = false
     @Published var errorMessage: String?
     
     // MARK: - Form Validation Properties
@@ -199,6 +200,7 @@ class WeightEntryViewModel: ObservableObject {
         notes = ""
         errorMessage = nil
         isEditMode = false
+        isLoadingData = false
         editingWeightId = nil
         existingPhotoUrl = nil
         existingPhotoId = nil
@@ -209,6 +211,8 @@ class WeightEntryViewModel: ObservableObject {
     }
     
     func loadExistingWeightSimple(_ weight: Weight) async {
+        isLoadingData = true
+        
         isEditMode = true
         editingWeightId = weight.id
         self.weight = String(format: "%.2f", weight.weight)
@@ -245,6 +249,8 @@ class WeightEntryViewModel: ObservableObject {
             existingPhotoUrl = nil
             existingPhotoId = nil
         }
+        
+        isLoadingData = false
     }
     
     func loadExistingWeight(_ weightRecord: WeightRecord) {

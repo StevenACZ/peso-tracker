@@ -56,6 +56,7 @@ struct ProgressChartView: View {
                             .foregroundColor(timeRangeMapping[range] == viewModel.selectedTimeRange ? .primary : .secondary)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .disabled(viewModel.isChartLoading)
                 }
             }
             .background(Color.gray.opacity(0.1))
@@ -98,12 +99,30 @@ struct ProgressChartView: View {
                     .cornerRadius(8)
                 
                 // Chart based on real data
-                if !viewModel.chartPoints.isEmpty {
+                if !viewModel.chartPoints.isEmpty && !viewModel.isChartLoading {
                     chartPath(in: geometry.size)
                         .stroke(.green, lineWidth: 2)
                         .background(
                             chartPath(in: geometry.size, filled: true)
                                 .fill(LinearGradient(colors: [.green.opacity(0.3), .green.opacity(0.1)], startPoint: .top, endPoint: .bottom))
+                        )
+                }
+                
+                // Loading overlay
+                if viewModel.isChartLoading {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.05))
+                        .frame(height: 200)
+                        .cornerRadius(8)
+                        .overlay(
+                            VStack(spacing: 12) {
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                
+                                Text("Cargando gráfico...")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                            }
                         )
                 }
             }
@@ -131,7 +150,7 @@ struct ProgressChartView: View {
                 .foregroundColor(viewModel.canGoPreviousChart ? .primary : .secondary)
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canGoPreviousChart)
+            .disabled(!viewModel.canGoPreviousChart || viewModel.isChartLoading)
             
             Spacer()
             
@@ -159,7 +178,7 @@ struct ProgressChartView: View {
                 .foregroundColor(viewModel.canGoNextChart ? .primary : .secondary)
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canGoNextChart)
+            .disabled(!viewModel.canGoNextChart || viewModel.isChartLoading)
         }
     }
     
@@ -220,14 +239,27 @@ struct ProgressChartView: View {
             .frame(height: 200)
             .cornerRadius(8)
             .overlay(
-                VStack(spacing: 12) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 32))
-                        .foregroundColor(.secondary.opacity(0.4))
-                    
-                    Text("Sin datos en este período")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                ZStack {
+                    if viewModel.isChartLoading {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            
+                            Text("Cargando gráfico...")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 32))
+                                .foregroundColor(.secondary.opacity(0.4))
+                            
+                            Text("Sin datos en este período")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
                 .padding()
             )
