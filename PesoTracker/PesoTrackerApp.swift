@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct PesoTrackerApp: App {
+    @StateObject private var themeViewModel = ThemeViewModel()
     
     init() {
         // Log build configuration on app startup
@@ -19,6 +20,8 @@ struct PesoTrackerApp: App {
         WindowGroup {
             ContentView()
                 .frame(minWidth: 1000, minHeight: 700)
+                .environmentObject(themeViewModel)
+                .preferredColorScheme(themeViewModel.effectiveColorScheme)
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 1200, height: 800)

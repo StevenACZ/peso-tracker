@@ -78,6 +78,12 @@ struct Constants {
         static let cachedUsername = "cached_username"
         static let cachedUserEmail = "cached_user_email"
         static let cachedUserId = "cached_user_id"
+        
+        // Theme Settings
+        static let themePreference = "theme_preference"
+        
+        // Data Export Settings
+        static let lastExportPath = "last_export_path"
     }
     
     // MARK: - UI Constants
