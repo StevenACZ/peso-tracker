@@ -82,6 +82,7 @@ struct UserProfile: Codable {
         // Date decoding
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         
         let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
         if let parsedDate = dateFormatter.date(from: updatedAtString) {
@@ -103,6 +104,7 @@ struct UserProfile: Codable {
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(identifier: "UTC")
         try container.encode(formatter.string(from: updatedAt), forKey: .updatedAt)
     }
 }

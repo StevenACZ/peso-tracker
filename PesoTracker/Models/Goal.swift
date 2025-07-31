@@ -28,6 +28,7 @@ struct Goal: Codable, Identifiable {
         // Date decoding helper
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         
         // Decode targetDate
         let targetDateString = try container.decode(String.self, forKey: .targetDate)
@@ -71,6 +72,7 @@ extension Goal {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.string(from: targetDate)
     }
     

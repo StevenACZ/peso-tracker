@@ -220,6 +220,7 @@ class AuthService: ObservableObject {
             let decoder = JSONDecoder()
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = Constants.DateFormats.api
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
             decoder.dateDecodingStrategy = .formatted(dateFormatter)
             
             let user = try decoder.decode(User.self, from: userData)

@@ -57,6 +57,7 @@ struct Weight: Codable, Identifiable {
         // Date decoding helper
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         
         // Decode date (required)
         let dateString = try container.decode(String.self, forKey: .date)
@@ -103,6 +104,7 @@ struct Weight: Codable, Identifiable {
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(identifier: "UTC")
         
         try container.encode(formatter.string(from: date), forKey: .date)
         
@@ -151,6 +153,7 @@ struct WeightPhoto: Codable, Identifiable {
         
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         
         let createdAtString = try container.decode(String.self, forKey: .createdAt)
         createdAt = dateFormatter.date(from: createdAtString) ?? Date()
@@ -179,6 +182,7 @@ extension Weight {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.string(from: date)
     }
 }

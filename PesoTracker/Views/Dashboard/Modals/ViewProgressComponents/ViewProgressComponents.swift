@@ -196,6 +196,7 @@ struct ProgressWeightInfo: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.locale = Locale(identifier: "es_ES")
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter
     }()
     

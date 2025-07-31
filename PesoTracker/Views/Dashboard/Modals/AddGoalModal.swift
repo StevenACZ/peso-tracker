@@ -25,6 +25,7 @@ struct AddGoalModal: View {
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yyyy"
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter
     }()
     

@@ -16,6 +16,7 @@ class WeightService {
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         let dateString = dateFormatter.string(from: date)
         
         var parameters: [String: String] = [
@@ -53,6 +54,7 @@ class WeightService {
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         let dateString = dateFormatter.string(from: date)
         
         var parameters: [String: String] = [

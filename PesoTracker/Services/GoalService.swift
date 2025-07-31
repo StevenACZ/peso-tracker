@@ -34,6 +34,7 @@ class GoalService: ObservableObject {
             // Create a simple request matching the API format
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
             
             let request = SimpleGoalRequest(
                 targetWeight: targetWeight,
@@ -68,6 +69,7 @@ class GoalService: ObservableObject {
             // Create a simple request matching the API format
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
             
             let request = SimpleGoalRequest(
                 targetWeight: targetWeight,

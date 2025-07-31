@@ -22,6 +22,7 @@ class HTTPClient {
         self.jsonDecoder = JSONDecoder()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = Constants.DateFormats.api
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         self.jsonDecoder.dateDecodingStrategy = .formatted(dateFormatter)
         
         // Configure JSON Encoder

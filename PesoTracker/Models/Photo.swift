@@ -53,6 +53,7 @@ struct Photo: Codable, Identifiable {
         // Date decoding
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         
         let uploadedAtString = try container.decode(String.self, forKey: .uploadedAt)
         if let parsedDate = dateFormatter.date(from: uploadedAtString) {
@@ -76,6 +77,7 @@ struct Photo: Codable, Identifiable {
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(identifier: "UTC")
         try container.encode(formatter.string(from: uploadedAt), forKey: .uploadedAt)
     }
 }
@@ -120,6 +122,7 @@ extension Photo {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.string(from: uploadedAt)
     }
     

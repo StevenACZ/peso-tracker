@@ -35,6 +35,7 @@ struct User: Codable, Identifiable {
         if let dateString = try? container.decode(String.self, forKey: .createdAt) {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            formatter.timeZone = TimeZone(identifier: "UTC")
             
             if let date = formatter.date(from: dateString) {
                 createdAt = date
@@ -58,6 +59,7 @@ struct User: Codable, Identifiable {
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(identifier: "UTC")
         try container.encode(formatter.string(from: createdAt), forKey: .createdAt)
     }
 }
@@ -95,6 +97,7 @@ struct AuthResponse: Codable {
         if let dateString = try? container.decode(String.self, forKey: .expiresAt) {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            formatter.timeZone = TimeZone(identifier: "UTC")
             
             if let date = formatter.date(from: dateString) {
                 expiresAt = date

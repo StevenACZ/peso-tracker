@@ -132,12 +132,14 @@ class WeightEntryViewModel: ObservableObject {
     func updateDateString() {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yyyy"
+        formatter.timeZone = TimeZone(identifier: "UTC")
         dateString = formatter.string(from: date)
     }
     
     func parseDateString() {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yyyy"
+        formatter.timeZone = TimeZone(identifier: "UTC")
         if let parsedDate = formatter.date(from: dateString) {
             date = parsedDate
         }
@@ -266,6 +268,7 @@ class WeightEntryViewModel: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
+        formatter.timeZone = TimeZone(identifier: "UTC")
         if let parsedDate = formatter.date(from: weightRecord.date) {
             date = parsedDate
             updateDateString()
@@ -290,6 +293,7 @@ class WeightEntryViewModel: ObservableObject {
     var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yyyy"
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.string(from: date)
     }
     
