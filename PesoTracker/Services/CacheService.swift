@@ -15,7 +15,8 @@ class CacheService {
     // MARK: - Private Properties
     private var tableCache: [String: PaginatedResponse<Weight>] = [:]
     private var chartCache: [String: ChartDataResponse] = [:]
-    private var accessOrder: [String] = [] // For LRU tracking (both table and chart)
+    private var progressCache: [ProgressResponse]? = nil // Single cache for progress data
+    private var accessOrder: [String] = [] // For LRU tracking (table and chart only)
     private let cacheQueue = DispatchQueue(label: "com.pesotracker.cache.queue", attributes: .concurrent)
     
     // MARK: - Private Initializer
@@ -85,12 +86,15 @@ class CacheService {
         cacheQueue.async(flags: .barrier) {
             let previousTableCount = self.tableCache.count
             let previousChartCount = self.chartCache.count
+            let hadProgressCache = self.progressCache != nil
             
             self.tableCache.removeAll()
             self.chartCache.removeAll()
+            self.progressCache = nil // Clear progress cache on weight changes
             self.accessOrder.removeAll()
             
-            self.logCacheOperation("Cache invalidated after weight change (cleared \(previousTableCount) table pages and \(previousChartCount) chart entries)")
+            let progressMessage = hadProgressCache ? " and progress data" : ""
+            self.logCacheOperation("Cache invalidated after weight change (cleared \(previousTableCount) table pages, \(previousChartCount) chart entries\(progressMessage))")
         }
     }
     
@@ -147,6 +151,43 @@ class CacheService {
             self.performCleanupIfNeeded()
             
             self.logCacheOperation("Chart \(timeRange) page \(page) cached for future use")
+        }
+    }
+    
+    // MARK: - Progress Cache Methods
+    
+    /// Checks if progress data exists in cache
+    /// - Returns: true if progress data exists in cache, false otherwise
+    func hasProgressData() -> Bool {
+        return cacheQueue.sync {
+            let exists = progressCache != nil
+            logCacheOperation("Checking progress cache: \(exists ? "HIT" : "MISS")")
+            return exists
+        }
+    }
+    
+    /// Retrieves cached progress data
+    /// - Returns: Array of ProgressResponse if found, nil otherwise
+    func getProgressData() -> [ProgressResponse]? {
+        return cacheQueue.sync {
+            let data = progressCache
+            
+            if data != nil {
+                logCacheOperation("Progress data loaded from cache (INSTANT)")
+            } else {
+                logCacheOperation("Progress data not found in cache")
+            }
+            
+            return data
+        }
+    }
+    
+    /// Stores progress data in cache
+    /// - Parameter data: The progress data array to cache
+    func setProgressData(_ data: [ProgressResponse]) {
+        cacheQueue.async(flags: .barrier) {
+            self.progressCache = data
+            self.logCacheOperation("Progress data cached for future use (\(data.count) records)")
         }
     }
     
@@ -292,10 +333,15 @@ class CacheService {
         cacheQueue.async(flags: .barrier) {
             let clearedTableCount = self.tableCache.count
             let clearedChartCount = self.chartCache.count
+            let hadProgressCache = self.progressCache != nil
+            
             self.tableCache.removeAll()
             self.chartCache.removeAll()
+            self.progressCache = nil
             self.accessOrder.removeAll()
-            self.logCacheOperation("App termination cleanup: cleared \(clearedTableCount) table pages and \(clearedChartCount) chart entries")
+            
+            let progressMessage = hadProgressCache ? " and progress data" : ""
+            self.logCacheOperation("App termination cleanup: cleared \(clearedTableCount) table pages, \(clearedChartCount) chart entries\(progressMessage)")
         }
     }
     
@@ -304,10 +350,15 @@ class CacheService {
         cacheQueue.async(flags: .barrier) {
             let clearedTableCount = self.tableCache.count
             let clearedChartCount = self.chartCache.count
+            let hadProgressCache = self.progressCache != nil
+            
             self.tableCache.removeAll()
             self.chartCache.removeAll()
+            self.progressCache = nil
             self.accessOrder.removeAll()
-            self.logCacheOperation("Manual cache clear: cleared \(clearedTableCount) table pages and \(clearedChartCount) chart entries")
+            
+            let progressMessage = hadProgressCache ? " and progress data" : ""
+            self.logCacheOperation("Manual cache clear: cleared \(clearedTableCount) table pages, \(clearedChartCount) chart entries\(progressMessage)")
         }
     }
     
@@ -356,9 +407,13 @@ extension CacheService {
         return cacheQueue.sync {
             let memoryUsage = calculateApproximateMemoryUsage()
             let totalCacheSize = tableCache.count + chartCache.count
+            let progressRecords = progressCache?.count ?? 0
+            
             return [
                 "totalTablePages": tableCache.count,
                 "totalChartEntries": chartCache.count,
+                "progressRecords": progressRecords,
+                "hasProgressCache": progressCache != nil,
                 "totalCacheItems": totalCacheSize,
                 "maxCacheSize": maxCacheSize,
                 "cachedTablePages": Array(tableCache.keys).sorted(),
@@ -383,6 +438,10 @@ extension CacheService {
         let totalChartRecords = chartCache.values.reduce(0) { $0 + $1.data.count }
         let chartMemoryUsage = totalChartRecords * 100 + (chartCache.count * 150)
         
-        return tableMemoryUsage + chartMemoryUsage
+        // Rough estimation for progress cache: each ProgressResponse ~400 bytes (includes photo URLs)
+        let progressRecords = progressCache?.count ?? 0
+        let progressMemoryUsage = progressRecords * 400
+        
+        return tableMemoryUsage + chartMemoryUsage + progressMemoryUsage
     }
 }

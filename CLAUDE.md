@@ -14,7 +14,7 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Settings Dropdown**: `Views/Dashboard/Components/SettingsDropdown.swift` - Contains logout, BMI calculator, advanced settings
 - **Weight Table**: `Views/Dashboard/Components/WeightRecordsView.swift` - Paginated with smart cache
 - **Add/Edit Weight**: `Views/Dashboard/Modals/AddWeightModal.swift` - Photo upload, validation
-- **Progress Modal**: `Views/Dashboard/Modals/ViewProgressModal.swift` - Photo navigation
+- **Progress Modal**: `Views/Dashboard/Modals/ViewProgressModal.swift` - Smart cached photo navigation with lazy loading
 - **BMI Calculator**: `Views/Dashboard/Modals/BMICalculatorModal.swift` - Medical classifications
 - **Goal Management**: `Views/Dashboard/Modals/AddGoalModal.swift` - Create/edit goals
 
@@ -161,12 +161,14 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **User Info Log**: `👤 [DASHBOARD] User: {username} ({email}) - ID: {id}` on login
 - **Clean Console**: All debug logs removed for production readiness
 
-### Progress Modal Implementation
+### Progress Modal Implementation ✅ WITH SMART CACHE
 - **ViewProgressModal**: Complete modal for viewing weight progress with photos
-- **Real API Integration**: Connected to `/weights/progress` endpoint for actual user data
+- **Smart Cache Integration**: Connected to cached progress data for instant loading on subsequent visits
+- **Real API Integration**: Connected to `/weights/progress` endpoint with automatic caching
+- **Lazy Image Loading**: Custom `LazyAsyncImage` component with optimized loading and error handling
 - **Dynamic Photo Navigation**: Tap-based navigation on image halves (left/right) for intuitive browsing
 - **Progress Data Models**: `ProgressResponse` and `ProgressPhoto` models for API data structure
-- **AsyncImage Loading**: Real photos loaded from server using `mediumUrl` for optimal quality/speed
+- **Optimized Image Loading**: Real photos loaded from server using `mediumUrl` with lazy loading strategy
 - **Smart States**: Loading, error, and empty states with user-friendly messages
 - **Mobile-Optimized**: 320px image height perfect for mobile photo aspect ratios
 - **Spanish Localization**: Dates formatted in Spanish locale, weights displayed in kg format
@@ -174,6 +176,7 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Adaptive Theming**: Supports both light and dark mode automatically
 - **Navigation Indicators**: Visual dots showing current photo position with navigation arrows
 - **Complete/Close Logic**: Button changes to "Completar" (green) on last photo, "Cerrar" otherwise
+- **Cache Behavior**: First visit loads from API and caches data, subsequent visits load instantly from cache
 
 ### Goal Management Implementation
 - **AddGoalModal**: Complete modal for creating and editing weight goals
@@ -212,9 +215,10 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 
 ### Smart Cache System Implementation ✅ COMPLETE
 - **CacheService**: Thread-safe singleton with concurrent queue for optimal performance
-- **Dual Cache Support**: Both table pagination and chart data caching with unified LRU management
+- **Triple Cache Support**: Table pagination, chart data, and progress data caching with unified management
 - **Table Cache**: Stores `PaginatedResponse<Weight>` data with keys `"table_page_X"`
 - **Chart Cache**: Stores `ChartDataResponse` data with keys `"chart_timeRange_page_X"`
+- **Progress Cache**: Stores `[ProgressResponse]` data as single cache entry for instant modal loading
 - **LRU Strategy**: Least Recently Used cleanup when limits exceeded (50 total items max, 10MB limit)
 - **Memory Management**: Automatic cleanup on app termination, inactive state, and memory pressure
 - **Cache Invalidation**: Automatic clearing on weight create/update/delete operations and user logout
@@ -231,13 +235,15 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Memory Limits**: Automatic LRU cleanup when exceeding 50 total items or 10MB usage
 - **App Lifecycle**: Cache cleared on app termination and cleaned during memory pressure
 - **Performance Impact**: Significant improvement in navigation speed for previously visited pages
-- **Memory Efficiency**: Approximate usage calculation (500 bytes per Weight record, 100 bytes per WeightPoint)
+- **Memory Efficiency**: Approximate usage calculation (500 bytes per Weight record, 100 bytes per WeightPoint, 400 bytes per ProgressResponse)
 
 ### Cache Integration Points
-- **DashboardService**: Cache check before setting loading states in `loadTableData()` and `loadChartData()`
+- **DashboardService**: Cache check before setting loading states in `loadTableData()`, `loadChartData()`, and `loadProgressData()`
 - **WeightService**: Automatic cache invalidation after successful create/update/delete operations
+- **Progress Modal**: Instant loading from cache on subsequent visits, lazy image loading for optimal performance
 - **Settings Logout**: Complete cache clearing integrated into logout flow
 - **Memory Management**: Configurable limits and automatic cleanup strategies
+- **Image Optimization**: LazyAsyncImage component prevents unnecessary network requests during navigation
 
 ### UI Component Locations
 - **Settings Dropdown**: `Views/Dashboard/Components/SettingsDropdown.swift` - Contains logout button with cache clearing

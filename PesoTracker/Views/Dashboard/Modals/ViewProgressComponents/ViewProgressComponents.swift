@@ -121,7 +121,7 @@ struct ProgressPhotoViewer: View {
         ZStack {
             // Main image or placeholder
             if let currentData = currentData, let photo = currentData.photo {
-                AsyncImage(url: URL(string: photo.mediumUrl)) { image in
+                LazyAsyncImage(url: URL(string: photo.mediumUrl)) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -129,8 +129,14 @@ struct ProgressPhotoViewer: View {
                     Rectangle()
                         .fill(Color.black.opacity(0.8))
                         .overlay(
-                            ProgressView()
-                                .tint(.white)
+                            VStack(spacing: 8) {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(1.2)
+                                Text("Cargando imagen...")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
                         )
                 }
                 .frame(height: 320)
@@ -143,9 +149,14 @@ struct ProgressPhotoViewer: View {
                     .frame(height: 320)
                     .cornerRadius(12)
                     .overlay(
-                        Image(systemName: "photo")
-                            .font(.system(size: 32))
-                            .foregroundColor(.white.opacity(0.6))
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo")
+                                .font(.system(size: 32))
+                                .foregroundColor(.white.opacity(0.6))
+                            Text("Sin imagen")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
                     )
                     .onTapGesture(perform: onNavigate)
             }
@@ -168,6 +179,53 @@ struct ProgressPhotoViewer: View {
             .allowsHitTesting(false)
         }
         .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Lazy Async Image Component
+struct LazyAsyncImage<Content: View, Placeholder: View>: View {
+    let url: URL?
+    let content: (Image) -> Content
+    let placeholder: () -> Placeholder
+    
+    @State private var isVisible = false
+    
+    var body: some View {
+        Group {
+            if isVisible {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        content(image)
+                    case .failure(_):
+                        Rectangle()
+                            .fill(Color.black.opacity(0.8))
+                            .overlay(
+                                VStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.orange.opacity(0.8))
+                                    Text("Error al cargar")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                            )
+                    case .empty:
+                        placeholder()
+                    @unknown default:
+                        placeholder()
+                    }
+                }
+            } else {
+                placeholder()
+                    .onAppear {
+                        // Small delay to ensure smooth navigation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isVisible = true
+                        }
+                    }
+            }
+        }
     }
 }
 

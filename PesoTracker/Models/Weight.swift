@@ -163,6 +163,7 @@ struct WeightPhoto: Codable, Identifiable {
     }
 }
 
+
 // MARK: - Weight Extensions
 extension Weight {
     // Backward compatibility - delegate to hasPhoto

@@ -280,13 +280,23 @@ class DashboardService: ObservableObject {
     // MARK: - Progress Data
     @MainActor
     func loadProgressData() async throws -> [ProgressResponse] {
+        // Check cache first
+        if let cachedData = CacheService.shared.getProgressData() {
+            // Cache hit - return data immediately
+            return cachedData
+        }
+        
+        // Cache miss - proceed with API call
         do {
             let progressData = try await apiService.get(
                 endpoint: "/weights/progress",
                 responseType: [ProgressResponse].self
             )
             
-            print("📊 [DASHBOARD] Loaded \(progressData.count) progress records")
+            // Store in cache after successful API call
+            CacheService.shared.setProgressData(progressData)
+            
+            print("📊 [DASHBOARD] Loaded \(progressData.count) progress records from API")
             return progressData
             
         } catch {
