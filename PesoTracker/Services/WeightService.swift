@@ -3,6 +3,7 @@ import AppKit
 
 class WeightService {
     private let apiService = APIService.shared
+    private let cacheService = CacheService.shared
     
     // MARK: - Create Weight
     func createWeight(
@@ -33,13 +34,19 @@ class WeightService {
         }
         
         
-        return try await apiService.uploadMultipart(
+        let result = try await apiService.uploadMultipart(
             endpoint: "weights",
             parameters: parameters,
             imageData: imageData,
             imageKey: "photo",
             responseType: Weight.self
         )
+        
+        // Invalidate cache after successful weight creation
+        cacheService.invalidateTableCache()
+        print("[WEIGHT SERVICE] Cache invalidated after successful weight creation")
+        
+        return result
     }
     
     // MARK: - Update Weight
@@ -70,7 +77,7 @@ class WeightService {
             parameters["photoNotes"] = photoNotes
         }
         
-        return try await apiService.uploadMultipart(
+        let result = try await apiService.uploadMultipart(
             endpoint: "weights/\(id)",
             parameters: parameters,
             imageData: imageData,
@@ -78,6 +85,12 @@ class WeightService {
             responseType: Weight.self,
             method: .PATCH
         )
+        
+        // Invalidate cache after successful weight update
+        cacheService.invalidateTableCache()
+        print("[WEIGHT SERVICE] Cache invalidated after successful weight update")
+        
+        return result
     }
     
     // MARK: - Get Weight
@@ -90,10 +103,16 @@ class WeightService {
     
     // MARK: - Delete Weight
     func deleteWeight(id: Int) async throws -> DeleteResponse {
-        return try await apiService.delete(
+        let result = try await apiService.delete(
             endpoint: "weights/\(id)",
             responseType: DeleteResponse.self
         )
+        
+        // Invalidate cache after successful weight deletion
+        cacheService.invalidateTableCache()
+        print("[WEIGHT SERVICE] Cache invalidated after successful weight deletion")
+        
+        return result
     }
     
     // MARK: - Helper Methods
@@ -112,6 +131,7 @@ class WeightService {
             imageData = try compressImage(image)
         }
         
+        // This calls the main createWeight method which already handles cache invalidation
         return try await createWeight(
             weight: weight,
             date: date,
@@ -136,6 +156,7 @@ class WeightService {
             imageData = try compressImage(image)
         }
         
+        // This calls the main updateWeight method which already handles cache invalidation
         return try await updateWeight(
             id: id,
             weight: weight,

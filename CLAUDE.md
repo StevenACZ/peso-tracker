@@ -4,7 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PesoTracker is a weight tracking macOS application built with SwiftUI. It features user authentication, weight tracking, goal setting, photo uploads, and progress visualization through an integrated dashboard.
+PesoTracker is a weight tracking macOS application built with SwiftUI. It features user authentication, weight tracking, goal setting, photo uploads, progress visualization, and intelligent caching system for optimal performance.
+
+## Quick Reference - Key Locations
+
+### Main UI Components
+- **Login/Register**: `Views/Auth/` - AuthViewModel handles state
+- **Dashboard**: `Views/Dashboard/MainDashboardView.swift` - Split layout (35% sidebar, 65% content)
+- **Settings Dropdown**: `Views/Dashboard/Components/SettingsDropdown.swift` - Contains logout, BMI calculator, advanced settings
+- **Weight Table**: `Views/Dashboard/Components/WeightRecordsView.swift` - Paginated with smart cache
+- **Add/Edit Weight**: `Views/Dashboard/Modals/AddWeightModal.swift` - Photo upload, validation
+- **Progress Modal**: `Views/Dashboard/Modals/ViewProgressModal.swift` - Photo navigation
+- **BMI Calculator**: `Views/Dashboard/Modals/BMICalculatorModal.swift` - Medical classifications
+- **Goal Management**: `Views/Dashboard/Modals/AddGoalModal.swift` - Create/edit goals
+
+### Core Services
+- **Authentication**: `Services/AuthService.swift` - JWT token management
+- **API Communication**: `Services/APIService.swift` - Generic HTTP client
+- **Dashboard Data**: `Services/DashboardService.swift` - Unified endpoint, logout functionality
+- **Weight Operations**: `Services/WeightService.swift` - CRUD with cache invalidation
+- **Smart Cache**: `Services/CacheService.swift` - Thread-safe pagination cache
+- **Goal Management**: `Services/GoalService.swift` - Goal CRUD operations
+
+### ViewModels
+- **Auth State**: `ViewModels/AuthViewModel.swift` - Login/register/logout
+- **Dashboard State**: `ViewModels/DashboardViewModel.swift` - Data aggregation, pagination
+- **Weight Forms**: `ViewModels/WeightEntryViewModel.swift` - Add/edit with validation
+
+### Data Models
+- **User**: `Models/User.swift` - Flexible ID handling (String/Int)
+- **Weight**: `Models/Weight.swift` - With nested WeightPhoto support
+- **Goal**: `Models/Goal.swift` - Simplified structure
+- **API Responses**: `Models/APIResponse.swift` - Paginated and error responses
 
 ## Development Commands
 
@@ -31,8 +62,9 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 #### Services (`/Services/`)
 - **APIService**: Generic HTTP client with JWT authentication, error handling, and multipart upload support (POST/PATCH)
 - **AuthService**: Handles user authentication, token management, and session validation
-- **DashboardService**: Manages dashboard data fetching and aggregation from unified `/dashboard` endpoint
-- **WeightService**: Unified weight management service with CRUD operations and photo upload support
+- **DashboardService**: Manages dashboard data fetching and aggregation from unified `/dashboard` endpoint. **Logout**: `DashboardService.logout()` clears data, cache, and JWT token
+- **WeightService**: Unified weight management service with CRUD operations, photo upload support, and automatic cache invalidation
+- **CacheService**: Thread-safe singleton for table pagination caching with LRU cleanup, memory management, and automatic invalidation
 
 #### ViewModels (`/ViewModels/`)
 - **AuthViewModel**: Manages authentication state, form validation, and user session
@@ -178,6 +210,31 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Professional Styling**: Aligned inputs, squared classification badges, green app colors
 - **Responsive Design**: Optimized 480px width with proper field alignment
 
+### Smart Cache System Implementation
+- **CacheService**: Thread-safe singleton with concurrent queue for optimal performance
+- **Table Pagination Cache**: Stores `PaginatedResponse<Weight>` data for instant page navigation
+- **Cache Keys**: Format `"table_page_X"` for consistent page identification
+- **LRU Strategy**: Least Recently Used cleanup when limits exceeded (50 pages max, 10MB limit)
+- **Memory Management**: Automatic cleanup on app termination, inactive state, and memory pressure
+- **Cache Invalidation**: Automatic clearing on weight create/update/delete operations and user logout
+- **Thread Safety**: All operations use concurrent dispatch queue with barrier flags for writes
+- **Logging**: Comprehensive cache operation logging with `[TABLE CACHE]` prefix
+- **Debug Support**: `getCacheStatus()` provides cache statistics and memory usage information
+
+### Cache Behavior
+- **Cache Hit**: Instant data loading from memory with "INSTANT" log indicator
+- **Cache Miss**: Normal API call with data cached for future use
+- **Auto-Invalidation**: Cache cleared when data changes (create/edit/delete weight)
+- **Logout Clearing**: Complete cache cleanup when user logs out via settings dropdown
+- **Memory Limits**: Automatic LRU cleanup when exceeding 50 pages or 10MB usage
+- **App Lifecycle**: Cache cleared on app termination and cleaned on memory pressure
+
+### UI Component Locations
+- **Settings Dropdown**: `Views/Dashboard/Components/SettingsDropdown.swift` - Contains logout button
+- **Left Sidebar**: `Views/Dashboard/Components/LeftSidebarPanel.swift` - Settings dropdown trigger
+- **Weight Table**: `Views/Dashboard/Components/WeightRecordsView.swift` - Cached pagination data
+- **Add/Edit Modals**: `Views/Dashboard/Modals/AddWeightModal.swift` - Triggers cache invalidation
+
 ### Code Conventions
 - SwiftUI for all UI components
 - Async/await for API calls
@@ -185,3 +242,4 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - Comprehensive error handling with custom APIError types
 - Spanish localization for user-facing messages
 - Multipart form data for all file uploads
+- Thread-safe cache operations with concurrent queues

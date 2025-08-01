@@ -87,16 +87,33 @@ class DashboardService: ObservableObject {
     // MARK: - Load Table Data
     @MainActor
     func loadTableData(page: Int) async {
+        // Check cache first before setting loading state
+        if let cachedData = CacheService.shared.getTableData(page) {
+            // Cache hit - return data immediately without loading state
+            self.tableData = cachedData
+            self.currentTablePage = page
+            print("[TABLE CACHE] Page \(page) loaded from cache (INSTANT)")
+            return
+        }
+        
+        // Cache miss - proceed with API call
+        print("[TABLE CACHE] Page \(page) - First visit, calling API...")
         isTableLoading = true
         let endpoint = "/weights/paginated?page=\(page)&limit=5"
         
         do {
-            tableData = try await apiService.get(
+            let apiData = try await apiService.get(
                 endpoint: endpoint,
                 responseType: PaginatedResponse<Weight>.self
             )
             
-            currentTablePage = page
+            // Store in cache after successful API call
+            CacheService.shared.setTableData(page, data: apiData)
+            print("[TABLE CACHE] Page \(page) cached for future use")
+            
+            // Update UI
+            self.tableData = apiData
+            self.currentTablePage = page
             
         } catch {
             self.error = "Error al cargar datos de la tabla: \(error.localizedDescription)"
@@ -267,6 +284,7 @@ class DashboardService: ObservableObject {
     @MainActor
     func logout() {
         clearData()
+        CacheService.shared.clearCache()
         AuthService.shared.logout()
     }
 }

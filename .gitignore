@@ -210,8 +210,7 @@ vendor/bundle/
 # Add any project-specific files that should not be tracked
 
 # Kiro IDE files (if any)
-.kiro/cache/
-.kiro/temp/
+.kiro/
 .claude/
 
 # README: xcconfig files are kept public as they contain public endpoints
