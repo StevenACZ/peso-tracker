@@ -31,33 +31,14 @@ struct WeightRecordsView: View {
             // Table header
             tableHeader
             
-            // Records with loading overlay
-            ZStack {
+            // Records or skeleton loading
+            if viewModel.isTableLoading {
+                skeletonLoadingView
+            } else {
                 VStack(spacing: 0) {
                     ForEach(viewModel.weights.indices, id: \.self) { index in
                         weightRecordRow(viewModel.weights[index])
                     }
-                }
-                
-                // Loading overlay
-                if viewModel.isTableLoading {
-                    Color.black.opacity(0.3)
-                        .overlay(
-                            VStack(spacing: 16) {
-                                ProgressView()
-                                    .scaleEffect(1.5)
-                                    .tint(.green)
-                                Text("Cargando información...")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                            }
-                            .padding(32)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(NSColor.controlBackgroundColor))
-                                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                            )
-                        )
                 }
             }
             
@@ -235,6 +216,50 @@ struct WeightRecordsView: View {
         .padding(.top, 8)
     }
     
+    private var skeletonLoadingView: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<5, id: \.self) { _ in
+                skeletonRow
+            }
+        }
+    }
+    
+    private var skeletonRow: some View {
+        HStack {
+            // Date skeleton
+            SkeletonView(width: 80, height: 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Weight skeleton
+            SkeletonView(width: 60, height: 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Notes skeleton
+            SkeletonView(width: 100, height: 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Photo skeleton
+            SkeletonView(width: 16, height: 12)
+                .frame(width: 50, alignment: .center)
+            
+            // Actions skeleton
+            HStack(spacing: 8) {
+                SkeletonView(width: 45, height: 20)
+                SkeletonView(width: 55, height: 20)
+            }
+            .frame(width: 120, alignment: .trailing)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.clear)
+        .overlay(
+            Rectangle()
+                .frame(height: 0.5)
+                .foregroundColor(Color(NSColor.separatorColor)),
+            alignment: .bottom
+        )
+    }
+    
     private var emptyView: some View {
         HStack {
             Spacer()
@@ -257,6 +282,53 @@ struct WeightRecordsView: View {
             .padding(.vertical, 60)
             Spacer()
         }
+    }
+}
+
+// MARK: - Skeleton Loading Component
+struct SkeletonView: View {
+    let width: CGFloat
+    let height: CGFloat
+    
+    @State private var isAnimating = false
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.gray.opacity(0.3),
+                        Color.gray.opacity(0.1),
+                        Color.gray.opacity(0.3)
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(width: width, height: height)
+            .mask(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: .black, location: 0.3),
+                                .init(color: .black, location: 0.7),
+                                .init(color: .clear, location: 1)
+                            ]),
+                            startPoint: isAnimating ? .leading : .trailing,
+                            endPoint: isAnimating ? .trailing : .leading
+                        )
+                    )
+            )
+            .onAppear {
+                withAnimation(
+                    Animation.easeInOut(duration: 1.5)
+                        .repeatForever(autoreverses: false)
+                ) {
+                    isAnimating.toggle()
+                }
+            }
     }
 }
 
