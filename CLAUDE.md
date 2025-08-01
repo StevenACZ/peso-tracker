@@ -23,7 +23,7 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **API Communication**: `Services/APIService.swift` - Generic HTTP client
 - **Dashboard Data**: `Services/DashboardService.swift` - Unified endpoint, logout functionality
 - **Weight Operations**: `Services/WeightService.swift` - CRUD with cache invalidation
-- **Smart Cache**: `Services/CacheService.swift` - Thread-safe pagination cache
+- **Smart Cache**: `Services/CacheService.swift` - Thread-safe dual cache (table + chart) with LRU management
 - **Goal Management**: `Services/GoalService.swift` - Goal CRUD operations
 
 ### ViewModels
@@ -210,30 +210,41 @@ PesoTracker is a weight tracking macOS application built with SwiftUI. It featur
 - **Professional Styling**: Aligned inputs, squared classification badges, green app colors
 - **Responsive Design**: Optimized 480px width with proper field alignment
 
-### Smart Cache System Implementation
+### Smart Cache System Implementation ✅ COMPLETE
 - **CacheService**: Thread-safe singleton with concurrent queue for optimal performance
-- **Table Pagination Cache**: Stores `PaginatedResponse<Weight>` data for instant page navigation
-- **Cache Keys**: Format `"table_page_X"` for consistent page identification
-- **LRU Strategy**: Least Recently Used cleanup when limits exceeded (50 pages max, 10MB limit)
+- **Dual Cache Support**: Both table pagination and chart data caching with unified LRU management
+- **Table Cache**: Stores `PaginatedResponse<Weight>` data with keys `"table_page_X"`
+- **Chart Cache**: Stores `ChartDataResponse` data with keys `"chart_timeRange_page_X"`
+- **LRU Strategy**: Least Recently Used cleanup when limits exceeded (50 total items max, 10MB limit)
 - **Memory Management**: Automatic cleanup on app termination, inactive state, and memory pressure
 - **Cache Invalidation**: Automatic clearing on weight create/update/delete operations and user logout
 - **Thread Safety**: All operations use concurrent dispatch queue with barrier flags for writes
-- **Logging**: Comprehensive cache operation logging with `[TABLE CACHE]` prefix
-- **Debug Support**: `getCacheStatus()` provides cache statistics and memory usage information
+- **Logging**: Comprehensive cache operation logging with `[SMART CACHE]` prefix
+- **Debug Support**: `getCacheStatus()` provides detailed cache statistics and memory usage information
+- **App Lifecycle Integration**: NSApplication observers for proper cleanup on termination/inactive states
 
-### Cache Behavior
+### Cache Behavior - Production Ready
 - **Cache Hit**: Instant data loading from memory with "INSTANT" log indicator
 - **Cache Miss**: Normal API call with data cached for future use
-- **Auto-Invalidation**: Cache cleared when data changes (create/edit/delete weight)
-- **Logout Clearing**: Complete cache cleanup when user logs out via settings dropdown
-- **Memory Limits**: Automatic LRU cleanup when exceeding 50 pages or 10MB usage
-- **App Lifecycle**: Cache cleared on app termination and cleaned on memory pressure
+- **Auto-Invalidation**: Complete cache clearing when data changes (create/edit/delete weight)
+- **Logout Integration**: Complete cache cleanup when user logs out via `DashboardService.logout()`
+- **Memory Limits**: Automatic LRU cleanup when exceeding 50 total items or 10MB usage
+- **App Lifecycle**: Cache cleared on app termination and cleaned during memory pressure
+- **Performance Impact**: Significant improvement in navigation speed for previously visited pages
+- **Memory Efficiency**: Approximate usage calculation (500 bytes per Weight record, 100 bytes per WeightPoint)
+
+### Cache Integration Points
+- **DashboardService**: Cache check before setting loading states in `loadTableData()` and `loadChartData()`
+- **WeightService**: Automatic cache invalidation after successful create/update/delete operations
+- **Settings Logout**: Complete cache clearing integrated into logout flow
+- **Memory Management**: Configurable limits and automatic cleanup strategies
 
 ### UI Component Locations
-- **Settings Dropdown**: `Views/Dashboard/Components/SettingsDropdown.swift` - Contains logout button
+- **Settings Dropdown**: `Views/Dashboard/Components/SettingsDropdown.swift` - Contains logout button with cache clearing
 - **Left Sidebar**: `Views/Dashboard/Components/LeftSidebarPanel.swift` - Settings dropdown trigger
-- **Weight Table**: `Views/Dashboard/Components/WeightRecordsView.swift` - Cached pagination data
-- **Add/Edit Modals**: `Views/Dashboard/Modals/AddWeightModal.swift` - Triggers cache invalidation
+- **Weight Table**: `Views/Dashboard/Components/WeightRecordsView.swift` - Smart cached pagination data
+- **Progress Chart**: `Views/Dashboard/Components/ProgressChartView.swift` - Smart cached chart data
+- **Add/Edit Modals**: `Views/Dashboard/Modals/AddWeightModal.swift` - Triggers automatic cache invalidation
 
 ### Code Conventions
 - SwiftUI for all UI components

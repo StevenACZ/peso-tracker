@@ -64,18 +64,33 @@ class DashboardService: ObservableObject {
     // MARK: - Load Chart Data
     @MainActor
     func loadChartData(timeRange: String, page: Int) async {
+        // Check cache first before setting loading state
+        if let cachedData = CacheService.shared.getChartData(timeRange: timeRange, page: page) {
+            // Cache hit - return data immediately without loading state
+            self.chartData = cachedData
+            self.currentChartPage = page
+            self.selectedTimeRange = timeRange
+            return
+        }
+        
+        // Cache miss - proceed with API call
         isChartLoading = true
         
         let endpoint = "/weights/chart-data?timeRange=\(timeRange)&page=\(page)"
         
         do {
-            chartData = try await apiService.get(
+            let apiData = try await apiService.get(
                 endpoint: endpoint,
                 responseType: ChartDataResponse.self
             )
             
-            currentChartPage = page
-            selectedTimeRange = timeRange
+            // Store in cache after successful API call
+            CacheService.shared.setChartData(timeRange: timeRange, page: page, data: apiData)
+            
+            // Update UI
+            self.chartData = apiData
+            self.currentChartPage = page
+            self.selectedTimeRange = timeRange
             
         } catch {
             self.error = "Error al cargar datos del gráfico: \(error.localizedDescription)"
