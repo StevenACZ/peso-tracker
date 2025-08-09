@@ -43,5 +43,14 @@
 	<!-- Network Usage Description (for macOS) -->
 	<key>NSNetworkUsageDescription</key>
 	<string>Esta aplicación necesita acceso a internet para sincronizar tus datos de peso y progreso.</string>
+	
+	<!-- App Transport Security -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

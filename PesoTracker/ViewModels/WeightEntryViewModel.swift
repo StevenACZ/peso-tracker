@@ -23,6 +23,7 @@ class WeightEntryViewModel: ObservableObject {
     @Published var weightError: String?
     @Published var dateError: String?
     @Published var isValid = false
+    @Published var hasAttemptedSave = false
     
     // MARK: - Component Handlers
     private let validator = WeightFormValidator()
@@ -32,6 +33,7 @@ class WeightEntryViewModel: ObservableObject {
     @Published var isEditMode = false
     @Published var editingWeightId: Int?
     @Published var existingPhotoUrl: String?
+    @Published var existingFullSizePhotoUrl: String?
     @Published var existingPhotoId: Int?
     @Published var hasExistingPhoto = false
     
@@ -72,20 +74,30 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Validation Methods
     
     private func validateWeight(_ weightText: String) -> Bool {
+        // Always clear error first
         weightError = nil
         
+        // Check if weight is empty
         guard !weightText.isEmpty else {
-            weightError = "El peso es requerido"
+            if hasAttemptedSave {
+                weightError = "El peso es requerido"
+            }
             return false
         }
         
+        // Check if weight is valid number
         guard let weightValue = Double(weightText.replacingOccurrences(of: ",", with: ".")) else {
-            weightError = "Ingresa un peso válido"
+            if hasAttemptedSave {
+                weightError = "Ingresa un peso válido"
+            }
             return false
         }
         
+        // Check weight range
         guard weightValue >= 1.0 && weightValue <= 1000.0 else {
-            weightError = "El peso debe estar entre 1.0 y 1000.0 kg"
+            if hasAttemptedSave {
+                weightError = "El peso debe estar entre 1.0 y 1000.0 kg"
+            }
             return false
         }
         
@@ -151,6 +163,9 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Save Methods
     
     func saveWeight() async {
+        // Mark that user has attempted to save (for error display)
+        hasAttemptedSave = true
+        
         guard isValid else { return }
         
         isLoading = true
@@ -160,11 +175,9 @@ class WeightEntryViewModel: ObservableObject {
             // Convert weight string to double
             let weightValue = Double(weight.replacingOccurrences(of: ",", with: ".")) ?? 0.0
             
-            let weightResult: Weight
-            
             if isEditMode, let weightId = editingWeightId {
                 // Update existing weight
-                weightResult = try await weightService.updateWeight(
+                _ = try await weightService.updateWeight(
                     id: weightId,
                     weight: weightValue,
                     date: date,
@@ -173,7 +186,7 @@ class WeightEntryViewModel: ObservableObject {
                 )
             } else {
                 // Create new weight entry
-                weightResult = try await weightService.createWeight(
+                _ = try await weightService.createWeight(
                     weight: weightValue,
                     date: date,
                     notes: notes.isEmpty ? nil : notes,
@@ -205,8 +218,10 @@ class WeightEntryViewModel: ObservableObject {
         isLoadingData = false
         editingWeightId = nil
         existingPhotoUrl = nil
+        existingFullSizePhotoUrl = nil
         existingPhotoId = nil
         hasExistingPhoto = false
+        hasAttemptedSave = false // Reset save attempt flag
         
         updateDateString()
         imageHandler.removeImage()
@@ -227,6 +242,7 @@ class WeightEntryViewModel: ObservableObject {
             // Full photo data available (from individual endpoint)
             hasExistingPhoto = true
             existingPhotoUrl = photo.thumbnailUrl
+            existingFullSizePhotoUrl = photo.fullUrl
             existingPhotoId = photo.id
         } else if weight.hasPhoto {
             // Photo exists but we need to fetch full details
@@ -235,20 +251,24 @@ class WeightEntryViewModel: ObservableObject {
                 if let photo = fullWeight.photo {
                     hasExistingPhoto = true
                     existingPhotoUrl = photo.thumbnailUrl
+                    existingFullSizePhotoUrl = photo.fullUrl
                     existingPhotoId = photo.id
                 } else {
                     hasExistingPhoto = false
                     existingPhotoUrl = nil
+                    existingFullSizePhotoUrl = nil
                     existingPhotoId = nil
                 }
             } catch {
                 hasExistingPhoto = false
                 existingPhotoUrl = nil
+                existingFullSizePhotoUrl = nil
                 existingPhotoId = nil
             }
         } else {
             hasExistingPhoto = false
             existingPhotoUrl = nil
+            existingFullSizePhotoUrl = nil
             existingPhotoId = nil
         }
         
@@ -277,6 +297,7 @@ class WeightEntryViewModel: ObservableObject {
         // Note: This method doesn't have photo ID info, so photo deletion won't work
         existingPhotoId = nil
         existingPhotoUrl = nil
+        existingFullSizePhotoUrl = nil
         
         print("✏️ [EDIT MODE] Loaded weight for editing (limited photo info):")
         print("   - Weight ID: \(weightRecord.id)")

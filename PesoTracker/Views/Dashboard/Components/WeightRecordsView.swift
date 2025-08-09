@@ -12,6 +12,7 @@ struct WeightRecordsView: View {
     @ObservedObject var viewModel: DashboardViewModel
     let onEditRecord: (Weight) -> Void
     let onDeleteRecord: (WeightRecord) -> Void
+    let onPhotoTap: (Int) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -97,9 +98,25 @@ struct WeightRecordsView: View {
             // Photo indicator
             Group {
                 if weight.hasPhoto {
+                    Button(action: {
+                        onPhotoTap(weight.id)
+                    }) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .onHover { isHovered in
+                        if isHovered {
+                            NSCursor.pointingHand.set()
+                        } else {
+                            NSCursor.arrow.set()
+                        }
+                    }
+                } else if weight.hasPhoto {
                     Image(systemName: "photo.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.gray)
                 } else {
                     Text("-")
                         .font(.system(size: 12))
@@ -336,7 +353,8 @@ struct SkeletonView: View {
     WeightRecordsView(
         viewModel: DashboardViewModel(),
         onEditRecord: { _ in },
-        onDeleteRecord: { _ in }
+        onDeleteRecord: { _ in },
+        onPhotoTap: { _ in }
     )
     .padding()
 }

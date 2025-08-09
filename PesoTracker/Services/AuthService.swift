@@ -23,10 +23,23 @@ class AuthService: ObservableObject {
     private func checkAuthenticationStatus() {
         if let token = keychainHelper.get(key: Constants.Keychain.jwtToken),
            !token.isEmpty {
-            print("🔐 [AUTH SERVICE] Valid token found in keychain")
-            isAuthenticated = true
-            // Load user data if available
-            loadCurrentUser()
+            print("🔐 [AUTH SERVICE] Token found in keychain - validating with server...")
+            
+            // Validate token with server
+            Task {
+                let isValid = await validateTokenWithServer()
+                await MainActor.run {
+                    if isValid {
+                        print("🔐 [AUTH SERVICE] Token validation successful")
+                        self.isAuthenticated = true
+                        // Load user data if available
+                        self.loadCurrentUser()
+                    } else {
+                        print("🔐 [AUTH SERVICE] Token validation failed - performing auto-logout")
+                        self.performAutoLogout()
+                    }
+                }
+            }
         } else {
             print("🔐 [AUTH SERVICE] No valid token found")
             isAuthenticated = false
@@ -40,6 +53,51 @@ class AuthService: ObservableObject {
             currentUser = loadUserDataLocally()
             print("🔐 [AUTH SERVICE] Loaded cached user data for ID: \(userID)")
         }
+    }
+    
+    // MARK: - Token Validation
+    private func validateTokenWithServer() async -> Bool {
+        do {
+            // Make a lightweight API call to validate the token
+            // Use a simple endpoint that requires auth but returns minimal data
+            let _ = try await apiService.get(
+                endpoint: "/weights/paginated?page=1&limit=1",
+                responseType: PaginatedResponse<Weight>.self,
+                requiresAuth: true
+            )
+            return true
+        } catch {
+            print("🔐 [AUTH SERVICE] Token validation failed: \(error)")
+            return false
+        }
+    }
+    
+    // MARK: - Auto Logout
+    private func performAutoLogout() {
+        print("🔐 [AUTH SERVICE] Performing automatic logout due to invalid token")
+        
+        // Clear keychain
+        keychainHelper.delete(key: Constants.Keychain.jwtToken)
+        keychainHelper.delete(key: Constants.Keychain.userID)
+        
+        // Update authentication state
+        isAuthenticated = false
+        currentUser = nil
+        
+        // Clear any cached data
+        clearUserData()
+        
+        // Clear cache service
+        CacheService.shared.clearCache()
+        
+        print("🔐 [AUTH SERVICE] Auto-logout completed - redirecting to login")
+    }
+    
+    // MARK: - Public Auto Logout (for external services)
+    @MainActor
+    func forceLogoutDueToExpiredToken() {
+        print("🔐 [AUTH SERVICE] Force logout triggered by expired token from API")
+        performAutoLogout()
     }
     
     // MARK: - Login

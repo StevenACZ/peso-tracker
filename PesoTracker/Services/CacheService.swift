@@ -16,7 +16,8 @@ class CacheService {
     private var tableCache: [String: PaginatedResponse<Weight>] = [:]
     private var chartCache: [String: ChartDataResponse] = [:]
     private var progressCache: [ProgressResponse]? = nil // Single cache for progress data
-    private var accessOrder: [String] = [] // For LRU tracking (table and chart only)
+    private var weightCache: [String: Weight] = [:] // Individual weight cache
+    private var accessOrder: [String] = [] // For LRU tracking (table, chart, and weight)
     private let cacheQueue = DispatchQueue(label: "com.pesotracker.cache.queue", attributes: .concurrent)
     
     // MARK: - Private Initializer
@@ -86,15 +87,18 @@ class CacheService {
         cacheQueue.async(flags: .barrier) {
             let previousTableCount = self.tableCache.count
             let previousChartCount = self.chartCache.count
+            let previousWeightCount = self.weightCache.count
             let hadProgressCache = self.progressCache != nil
             
             self.tableCache.removeAll()
             self.chartCache.removeAll()
+            self.weightCache.removeAll()
             self.progressCache = nil // Clear progress cache on weight changes
             self.accessOrder.removeAll()
             
             let progressMessage = hadProgressCache ? " and progress data" : ""
-            self.logCacheOperation("Cache invalidated after weight change (cleared \(previousTableCount) table pages, \(previousChartCount) chart entries\(progressMessage))")
+            let weightMessage = previousWeightCount > 0 ? ", \(previousWeightCount) individual weights" : ""
+            self.logCacheOperation("Cache invalidated after weight change (cleared \(previousTableCount) table pages, \(previousChartCount) chart entries\(weightMessage)\(progressMessage))")
         }
     }
     
@@ -191,6 +195,71 @@ class CacheService {
         }
     }
     
+    // MARK: - Individual Weight Cache Methods
+    
+    /// Checks if a specific weight exists in cache
+    /// - Parameter weightId: The weight ID to check
+    /// - Returns: true if weight exists in cache, false otherwise
+    func hasWeight(_ weightId: Int) -> Bool {
+        return cacheQueue.sync {
+            let key = weightKey(for: weightId)
+            let exists = weightCache[key] != nil
+            logCacheOperation("Checking cache for weight \(weightId): \(exists ? "HIT" : "MISS")")
+            return exists
+        }
+    }
+    
+    /// Retrieves cached weight data for a specific weight ID
+    /// - Parameter weightId: The weight ID to retrieve
+    /// - Returns: Weight if found, nil otherwise
+    func getWeight(_ weightId: Int) -> Weight? {
+        return cacheQueue.sync {
+            let key = weightKey(for: weightId)
+            let weight = weightCache[key]
+            
+            if weight != nil {
+                // Update LRU order
+                updateAccessOrder(for: key)
+                logCacheOperation("Weight \(weightId) loaded from cache (INSTANT)")
+            } else {
+                logCacheOperation("Weight \(weightId) not found in cache")
+            }
+            
+            return weight
+        }
+    }
+    
+    /// Stores weight data in cache
+    /// - Parameter weight: The weight to cache
+    func setWeight(_ weight: Weight) {
+        cacheQueue.async(flags: .barrier) {
+            let key = self.weightKey(for: weight.id)
+            self.weightCache[key] = weight
+            self.updateAccessOrder(for: key)
+            
+            // Check if cleanup is needed
+            self.performCleanupIfNeeded()
+            
+            self.logCacheOperation("Weight \(weight.id) cached for future use")
+        }
+    }
+    
+    /// Invalidates cached data for a specific weight
+    /// - Parameter weightId: The weight ID to invalidate
+    func invalidateWeight(_ weightId: Int) {
+        cacheQueue.async(flags: .barrier) {
+            let key = self.weightKey(for: weightId)
+            self.weightCache.removeValue(forKey: key)
+            
+            // Remove from access order
+            if let index = self.accessOrder.firstIndex(of: key) {
+                self.accessOrder.remove(at: index)
+            }
+            
+            self.logCacheOperation("Weight \(weightId) cache invalidated after update")
+        }
+    }
+    
     // MARK: - Private Methods
     
     /// Generates a consistent cache key for table pages
@@ -207,6 +276,13 @@ class CacheService {
     /// - Returns: String key in format "chart_timeRange_page_X"
     private func chartKey(for timeRange: String, page: Int) -> String {
         return "chart_\(timeRange)_page_\(page)"
+    }
+    
+    /// Generates a consistent cache key for individual weights
+    /// - Parameter weightId: The weight ID
+    /// - Returns: String key in format "weight_X"
+    private func weightKey(for weightId: Int) -> String {
+        return "weight_\(weightId)"
     }
     
     /// Logs cache operations with consistent formatting

@@ -86,7 +86,8 @@ class WeightService {
             method: .PATCH
         )
         
-        // Invalidate cache after successful weight update
+        // Invalidate specific weight cache and table cache after successful weight update
+        cacheService.invalidateWeight(id)
         cacheService.invalidateTableCache()
         print("[WEIGHT SERVICE] Cache invalidated after successful weight update")
         
@@ -95,10 +96,21 @@ class WeightService {
     
     // MARK: - Get Weight
     func getWeight(id: Int) async throws -> Weight {
-        return try await apiService.get(
+        // Check cache first
+        if let cachedWeight = cacheService.getWeight(id) {
+            return cachedWeight
+        }
+        
+        // If not in cache, fetch from API
+        let weight = try await apiService.get(
             endpoint: "weights/\(id)",
             responseType: Weight.self
         )
+        
+        // Cache the result
+        cacheService.setWeight(weight)
+        
+        return weight
     }
     
     // MARK: - Delete Weight
@@ -108,7 +120,8 @@ class WeightService {
             responseType: DeleteResponse.self
         )
         
-        // Invalidate cache after successful weight deletion
+        // Invalidate specific weight cache and table cache after successful weight deletion
+        cacheService.invalidateWeight(id)
         cacheService.invalidateTableCache()
         print("[WEIGHT SERVICE] Cache invalidated after successful weight deletion")
         

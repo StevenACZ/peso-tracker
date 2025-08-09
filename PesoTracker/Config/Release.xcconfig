@@ -2,7 +2,7 @@
 
 // API Configuration
 API_PROTOCOL = https
-API_HOST = peso-tracker-backend.onrender.com
+API_HOST = 192.168.18.105/peso-tracker-api
 API_PORT = 
 
 // Build settings

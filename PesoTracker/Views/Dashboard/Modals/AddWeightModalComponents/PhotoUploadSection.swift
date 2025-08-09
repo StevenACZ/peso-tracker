@@ -5,25 +5,32 @@ struct PhotoUploadSection: View {
     @ObservedObject var viewModel: WeightEntryViewModel
     @State private var isImageHovered = false
     
+    let onImageTap: (NSImage) -> Void
+    let onImageURLTap: (URL) -> Void
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Foto")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.primary)
             
-            if let selectedImage = viewModel.selectedImage {
-                // New Selected Image Preview
-                NewImagePreview(viewModel: viewModel, selectedImage: selectedImage)
-            } else if viewModel.hasExistingPhoto && viewModel.isEditMode {
-                // Existing Photo Preview
-                ExistingPhotoPreview(viewModel: viewModel)
-            } else {
-                // Photo Upload Area
-                PhotoUploadArea(
-                    viewModel: viewModel,
-                    isImageHovered: $isImageHovered
-                )
+            // Fixed height container for consistent modal size
+            VStack {
+                if let selectedImage = viewModel.selectedImage {
+                    // New Selected Image Preview
+                    NewImagePreview(viewModel: viewModel, selectedImage: selectedImage, onImageTap: onImageTap)
+                } else if viewModel.hasExistingPhoto && viewModel.isEditMode {
+                    // Existing Photo Preview
+                    ExistingPhotoPreview(viewModel: viewModel, onImageURLTap: onImageURLTap)
+                } else {
+                    // Photo Upload Area
+                    PhotoUploadArea(
+                        viewModel: viewModel,
+                        isImageHovered: $isImageHovered
+                    )
+                }
             }
+            .frame(height: 160) // Fixed height to prevent modal resizing
         }
     }
 }
@@ -31,21 +38,31 @@ struct PhotoUploadSection: View {
 struct NewImagePreview: View {
     @ObservedObject var viewModel: WeightEntryViewModel
     let selectedImage: NSImage
+    let onImageTap: (NSImage) -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
+            // Image preview area
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.1))
                     .frame(height: 120)
                 
-                Image(nsImage: selectedImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 100)
-                    .cornerRadius(6)
+                Button(action: {
+                    onImageTap(selectedImage)
+                }) {
+                    Image(nsImage: selectedImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 100)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             
+            Spacer()
+            
+            // Button area at bottom
             Button(action: {
                 viewModel.removeImage()
             }) {
@@ -64,30 +81,43 @@ struct NewImagePreview: View {
 
 struct ExistingPhotoPreview: View {
     @ObservedObject var viewModel: WeightEntryViewModel
+    let onImageURLTap: (URL) -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
+            // Image preview area
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.1))
                     .frame(height: 120)
                 
                 if let photoUrl = viewModel.existingPhotoUrl, let url = URL(string: photoUrl) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 100)
-                            .cornerRadius(6)
-                    } placeholder: {
-                        VStack(spacing: 8) {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Cargando...")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                    Button(action: {
+                        // Use full size URL for zoom if available, otherwise use existing URL
+                        if let fullSizePhotoUrl = viewModel.existingFullSizePhotoUrl,
+                           let fullSizeURL = URL(string: fullSizePhotoUrl) {
+                            onImageURLTap(fullSizeURL)
+                        } else {
+                            onImageURLTap(url)
+                        }
+                    }) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 100)
+                                .cornerRadius(6)
+                        } placeholder: {
+                            VStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Cargando...")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
+                    .buttonStyle(PlainButtonStyle())
                 } else {
                     VStack(spacing: 8) {
                         Image(systemName: "photo.fill")
@@ -101,6 +131,9 @@ struct ExistingPhotoPreview: View {
                 }
             }
             
+            Spacer()
+            
+            // Button area at bottom
             ExistingPhotoActions(viewModel: viewModel)
         }
     }

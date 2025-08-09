@@ -92,12 +92,14 @@ class HTTPClient {
                 
             case 401:
                 // Unauthorized - token expired or invalid
+                print("🔐 [HTTP CLIENT] 401 Unauthorized - triggering auto-logout")
+                await triggerAutoLogout()
                 throw APIError.authenticationFailed
                 
             case 403:
                 // Forbidden - token expired
-                // Clear the expired token
-                KeychainHelper.shared.delete(key: Constants.Keychain.jwtToken)
+                print("🔐 [HTTP CLIENT] 403 Forbidden - triggering auto-logout")
+                await triggerAutoLogout()
                 throw APIError.tokenExpired
                 
             default:
@@ -121,6 +123,13 @@ class HTTPClient {
             return try jsonEncoder.encode(body)
         } catch {
             throw APIError.encodingError(error)
+        }
+    }
+    
+    // MARK: - Auto Logout Helper
+    private func triggerAutoLogout() async {
+        await MainActor.run {
+            AuthService.shared.forceLogoutDueToExpiredToken()
         }
     }
 }

@@ -52,7 +52,7 @@ struct DatePickerPopover: View {
                     .datePickerStyle(.graphical)
                     .accentColor(.green)
                     .background(Color.clear)
-                    .onChange(of: viewModel.date) { _ in
+                    .onChange(of: viewModel.date) {
                         viewModel.updateDateString()
                     }
                 

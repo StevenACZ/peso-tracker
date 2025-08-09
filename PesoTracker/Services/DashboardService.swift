@@ -55,6 +55,7 @@ class DashboardService: ObservableObject {
             await loadTableData(page: currentTablePage)
             
         } catch {
+            await handleAuthenticationError(error)
             self.error = "Error al cargar datos del dashboard: \(error.localizedDescription)"
         }
         
@@ -93,6 +94,7 @@ class DashboardService: ObservableObject {
             self.selectedTimeRange = timeRange
             
         } catch {
+            await handleAuthenticationError(error)
             self.error = "Error al cargar datos del gráfico: \(error.localizedDescription)"
         }
         
@@ -131,6 +133,7 @@ class DashboardService: ObservableObject {
             self.currentTablePage = page
             
         } catch {
+            await handleAuthenticationError(error)
             self.error = "Error al cargar datos de la tabla: \(error.localizedDescription)"
         }
         
@@ -300,8 +303,24 @@ class DashboardService: ObservableObject {
             return progressData
             
         } catch {
+            await handleAuthenticationError(error)
             print("❌ [DASHBOARD] Error loading progress data: \(error)")
             throw error
+        }
+    }
+    
+    // MARK: - Authentication Error Handler
+    private func handleAuthenticationError(_ error: Error) async {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .authenticationFailed, .tokenExpired:
+                print("🔐 [DASHBOARD] Authentication error detected - auto-logout will be triggered by HTTPClient")
+                // The HTTPClient has already triggered the auto-logout
+                // We don't need to do anything else here
+                break
+            default:
+                break
+            }
         }
     }
     

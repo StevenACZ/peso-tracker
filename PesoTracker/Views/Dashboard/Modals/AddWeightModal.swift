@@ -7,15 +7,19 @@ struct AddWeightModal: View {
     let record: WeightRecord?
     let selectedWeight: Weight?
     let onSave: (() -> Void)?
+    let onImageTap: ((NSImage) -> Void)?
+    let onImageURLTap: ((URL) -> Void)?
     
     @StateObject private var viewModel = WeightEntryViewModel()
     
-    init(isPresented: Binding<Bool>, isEditing: Bool = false, record: WeightRecord? = nil, selectedWeight: Weight? = nil, onSave: (() -> Void)? = nil) {
+    init(isPresented: Binding<Bool>, isEditing: Bool = false, record: WeightRecord? = nil, selectedWeight: Weight? = nil, onSave: (() -> Void)? = nil, onImageTap: ((NSImage) -> Void)? = nil, onImageURLTap: ((URL) -> Void)? = nil) {
         self._isPresented = isPresented
         self.isEditing = isEditing
         self.record = record
         self.selectedWeight = selectedWeight
         self.onSave = onSave
+        self.onImageTap = onImageTap
+        self.onImageURLTap = onImageURLTap
     }
     
     var body: some View {
@@ -94,7 +98,11 @@ struct AddWeightModal: View {
             }
             
             NotesSection(viewModel: viewModel)
-            PhotoUploadSection(viewModel: viewModel)
+            PhotoUploadSection(
+                viewModel: viewModel,
+                onImageTap: onImageTap ?? { _ in },
+                onImageURLTap: onImageURLTap ?? { _ in }
+            )
         }
     }
     

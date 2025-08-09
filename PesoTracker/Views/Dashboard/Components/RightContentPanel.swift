@@ -6,6 +6,7 @@ struct RightContentPanel: View {
     let onAddWeight: () -> Void
     let onEditRecord: (Weight) -> Void
     let onDeleteRecord: (WeightRecord) -> Void
+    let onPhotoTap: (Int) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -18,7 +19,8 @@ struct RightContentPanel: View {
             WeightRecordsView(
                 viewModel: viewModel,
                 onEditRecord: onEditRecord,
-                onDeleteRecord: onDeleteRecord
+                onDeleteRecord: onDeleteRecord,
+                onPhotoTap: onPhotoTap
             )
             
             Spacer()
@@ -72,6 +74,7 @@ struct RightContentPanel: View {
         onViewProgress: {},
         onAddWeight: {},
         onEditRecord: { _ in },
-        onDeleteRecord: { _ in }
+        onDeleteRecord: { _ in },
+        onPhotoTap: { _ in }
     )
 }
