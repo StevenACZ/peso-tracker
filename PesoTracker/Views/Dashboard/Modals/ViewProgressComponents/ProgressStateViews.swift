@@ -77,7 +77,7 @@ struct ProgressActionButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        CustomButton(action: action) {
             Text(title)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
@@ -86,6 +86,6 @@ struct ProgressActionButton: View {
                 .background(Color(red: 0.2, green: 0.7, blue: 0.3))
                 .cornerRadius(8)
         }
-        .buttonStyle(PlainButtonStyle())
+        
     }
 }

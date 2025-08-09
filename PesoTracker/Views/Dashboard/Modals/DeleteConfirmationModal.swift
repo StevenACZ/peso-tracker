@@ -87,7 +87,7 @@ struct DeleteConfirmationModal: View {
             
             // Buttons
             HStack(spacing: 12) {
-                Button(action: {
+                CustomButton(action: {
                     isPresented = false
                 }) {
                     Text("Cancelar")
@@ -96,9 +96,9 @@ struct DeleteConfirmationModal: View {
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(6)
                 }
-                .buttonStyle(PlainButtonStyle())
                 
-                Button(action: {
+                
+                CustomButton(action: {
                     Task {
                         await deleteWeight()
                     }
@@ -117,7 +117,7 @@ struct DeleteConfirmationModal: View {
                     .foregroundColor(.white)
                     .cornerRadius(6)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
                 .disabled(isDeleting)
             }
         }

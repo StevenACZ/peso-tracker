@@ -27,12 +27,11 @@ struct MainGoalCard: View {
             Spacer()
             
             if viewModel.hasActiveGoal {
-                Button(action: onEditGoal) {
+                CustomButton(action: onEditGoal) {
                     Image(systemName: "pencil")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }
@@ -121,7 +120,7 @@ struct MainGoalCard: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             
-            Button(action: onAddGoal) {
+            CustomButton(action: onAddGoal) {
                 Text("Agregar Meta Principal")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
@@ -130,7 +129,6 @@ struct MainGoalCard: View {
                     .background(.green)
                     .cornerRadius(8)
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)

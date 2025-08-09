@@ -26,12 +26,14 @@ struct LoginForm: View {
             // Forgot password link
             HStack {
                 Spacer()
-                Button("¿Olvidaste tu contraseña?") {
+                CustomButton(action: {
                     // TODO: Implement forgot password
+                }) {
+                    Text("¿Olvidaste tu contraseña?")
                 }
                 .font(.system(size: 14))
                 .foregroundColor(.blue)
-                .buttonStyle(PlainButtonStyle())
+                
             }
         }
     }

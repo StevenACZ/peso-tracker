@@ -14,14 +14,14 @@ struct AdvancedSettingsModal: View {
                 
                 Spacer()
                 
-                Button(action: {
+                CustomButton(action: {
                     isPresented = false
                 }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
             }
             
             // Content
@@ -42,7 +42,7 @@ struct AdvancedSettingsModal: View {
                     VStack(spacing: 8) {
                         ForEach(themeViewModel.allThemes, id: \.rawValue) { theme in
                             HStack {
-                                Button(action: {
+                                CustomButton(action: {
                                     themeViewModel.updateTheme(theme)
                                 }) {
                                     HStack(spacing: 8) {
@@ -57,7 +57,7 @@ struct AdvancedSettingsModal: View {
                                         Spacer()
                                     }
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                
                                 .contentShape(Rectangle())
                             }
                             .padding(.horizontal, 12)
@@ -106,8 +106,10 @@ struct AdvancedSettingsModal: View {
                                 
                                 Spacer()
                                 
-                                Button("Seleccionar") {
+                                CustomButton(action: {
                                     exportViewModel.selectExportFolder()
+                                }) {
+                                    Text("Seleccionar")
                                 }
                                 .font(.system(size: 12))
                                 .padding(.horizontal, 8)
@@ -115,7 +117,7 @@ struct AdvancedSettingsModal: View {
                                 .background(.blue)
                                 .foregroundColor(.white)
                                 .cornerRadius(4)
-                                .buttonStyle(PlainButtonStyle())
+                                
                             }
                         }
                         
@@ -132,7 +134,7 @@ struct AdvancedSettingsModal: View {
                         }
                         
                         // Export Button
-                        Button(action: {
+                        CustomButton(action: {
                             exportViewModel.startDataExport()
                         }) {
                             HStack {
@@ -154,7 +156,7 @@ struct AdvancedSettingsModal: View {
                             .foregroundColor(.white)
                             .cornerRadius(6)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        
                         .disabled(!exportViewModel.canStartExport)
                         
                         // Export Complete Message
@@ -182,7 +184,7 @@ struct AdvancedSettingsModal: View {
             
             // Buttons
             HStack(spacing: 12) {
-                Button(action: {
+                CustomButton(action: {
                     isPresented = false
                 }) {
                     Text("Cerrar")
@@ -192,7 +194,7 @@ struct AdvancedSettingsModal: View {
                         .foregroundColor(.white)
                         .cornerRadius(6)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
             }
         }
         .padding(24)

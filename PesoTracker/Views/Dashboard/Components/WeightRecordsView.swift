@@ -98,20 +98,12 @@ struct WeightRecordsView: View {
             // Photo indicator
             Group {
                 if weight.hasPhoto {
-                    Button(action: {
+                    CustomButton(action: {
                         onPhotoTap(weight.id)
                     }) {
                         Image(systemName: "photo.fill")
                             .font(.system(size: 12))
                             .foregroundColor(.blue)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .onHover { isHovered in
-                        if isHovered {
-                            NSCursor.pointingHand.set()
-                        } else {
-                            NSCursor.arrow.set()
-                        }
                     }
                 } else if weight.hasPhoto {
                     Image(systemName: "photo.fill")
@@ -127,7 +119,7 @@ struct WeightRecordsView: View {
             
             // Actions
             HStack(spacing: 8) {
-                Button(action: { 
+                CustomButton(action: { 
                     // Pass the full Weight object for better data handling
                     onEditRecord(weight)
                 }) {
@@ -139,9 +131,8 @@ struct WeightRecordsView: View {
                         .cornerRadius(4)
                         .font(.system(size: 10))
                 }
-                .buttonStyle(PlainButtonStyle())
                 
-                Button(action: { 
+                CustomButton(action: { 
                     // Convert Weight to WeightRecord for compatibility
                     let record = WeightRecord(
                         id: weight.id,
@@ -160,7 +151,6 @@ struct WeightRecordsView: View {
                         .cornerRadius(4)
                         .font(.system(size: 10))
                 }
-                .buttonStyle(PlainButtonStyle())
             }
             .frame(width: 120, alignment: .trailing)
         }
@@ -177,7 +167,7 @@ struct WeightRecordsView: View {
     
     private var paginationControls: some View {
         HStack(spacing: 12) {
-            Button(action: {
+            CustomButton(action: {
                 Task {
                     await viewModel.loadPreviousTablePage()
                 }
@@ -196,7 +186,6 @@ struct WeightRecordsView: View {
                     .cornerRadius(6)
                     .font(.system(size: 12))
             }
-            .buttonStyle(PlainButtonStyle())
             .disabled(!viewModel.canGoPreviousTable || viewModel.isTableLoading)
             
             Spacer()
@@ -207,7 +196,7 @@ struct WeightRecordsView: View {
             
             Spacer()
             
-            Button(action: {
+            CustomButton(action: {
                 Task {
                     await viewModel.loadNextTablePage()
                 }
@@ -226,7 +215,6 @@ struct WeightRecordsView: View {
                     .cornerRadius(6)
                     .font(.system(size: 12))
             }
-            .buttonStyle(PlainButtonStyle())
             .disabled(!viewModel.canGoNextTable || viewModel.isTableLoading)
         }
         .padding(.horizontal, 12)

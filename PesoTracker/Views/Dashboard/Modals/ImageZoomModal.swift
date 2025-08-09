@@ -40,7 +40,7 @@ struct ImageZoomModal: View {
                 HStack {
                     Spacer()
                     
-                    Button(action: {
+                    CustomButton(action: {
                         isPresented = false
                     }) {
                         Image(systemName: "xmark.circle.fill")
@@ -49,7 +49,6 @@ struct ImageZoomModal: View {
                             .background(Color.green.opacity(0.3))
                             .clipShape(Circle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding()
                 
@@ -91,7 +90,7 @@ struct ImageZoomModal: View {
                 // Bottom controls
                 HStack(spacing: 20) {
                     // Reset zoom button
-                    Button(action: resetZoom) {
+                    CustomButton(action: resetZoom) {
                         HStack(spacing: 6) {
                             Image(systemName: "arrow.counterclockwise")
                             Text("Resetear")
@@ -102,7 +101,6 @@ struct ImageZoomModal: View {
                         .background(Color.green.opacity(0.2))
                         .cornerRadius(8)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
                     // Zoom info
                     Text("\(Int(scale * 100))%")

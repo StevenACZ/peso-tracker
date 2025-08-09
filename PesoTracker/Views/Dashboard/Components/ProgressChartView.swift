@@ -43,7 +43,7 @@ struct ProgressChartView: View {
             // Time range picker
             HStack(spacing: 2) {
                 ForEach(timeRanges, id: \.self) { range in
-                    Button(action: {
+                    CustomButton(action: {
                         Task {
                             await viewModel.updateTimeRange(timeRangeMapping[range] ?? "1month")
                         }
@@ -55,7 +55,6 @@ struct ProgressChartView: View {
                             .font(.system(size: 12))
                             .foregroundColor(timeRangeMapping[range] == viewModel.selectedTimeRange ? .primary : .secondary)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     .disabled(viewModel.isChartLoading)
                 }
             }
@@ -132,7 +131,7 @@ struct ProgressChartView: View {
     
     private var chartPaginationControls: some View {
         HStack {
-            Button(action: {
+            CustomButton(action: {
                 Task {
                     await viewModel.loadPreviousChartPage()
                 }
@@ -149,7 +148,6 @@ struct ProgressChartView: View {
                 .cornerRadius(6)
                 .foregroundColor(viewModel.canGoPreviousChart ? .primary : .secondary)
             }
-            .buttonStyle(PlainButtonStyle())
             .disabled(!viewModel.canGoPreviousChart || viewModel.isChartLoading)
             
             Spacer()
@@ -160,7 +158,7 @@ struct ProgressChartView: View {
             
             Spacer()
             
-            Button(action: {
+            CustomButton(action: {
                 Task {
                     await viewModel.loadNextChartPage()
                 }
@@ -177,7 +175,6 @@ struct ProgressChartView: View {
                 .cornerRadius(6)
                 .foregroundColor(viewModel.canGoNextChart ? .primary : .secondary)
             }
-            .buttonStyle(PlainButtonStyle())
             .disabled(!viewModel.canGoNextChart || viewModel.isChartLoading)
         }
     }

@@ -39,7 +39,7 @@ struct RightContentPanel: View {
             HStack(spacing: 12) {
                 // Solo mostrar "Ver Progreso" si hay datos
                 if viewModel.canShowProgress {
-                    Button(action: onViewProgress) {
+                    CustomButton(action: onViewProgress) {
                         HStack(spacing: 4) {
                             Text("Ver Progreso")
                             Image(systemName: "chart.bar.fill")
@@ -50,10 +50,9 @@ struct RightContentPanel: View {
                         .cornerRadius(8)
                         .font(.system(size: 12))
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 
-                Button(action: onAddWeight) {
+                CustomButton(action: onAddWeight) {
                     Text("Agregar Peso")
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -62,7 +61,6 @@ struct RightContentPanel: View {
                         .cornerRadius(8)
                         .font(.system(size: 12, weight: .medium))
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }

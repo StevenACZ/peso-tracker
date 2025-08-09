@@ -18,7 +18,7 @@ struct ModalHeader: View {
             
             Spacer()
             
-            Button(action: {
+            CustomButton(action: {
                 isPresented = false
             }) {
                 Image(systemName: "xmark")
@@ -28,7 +28,6 @@ struct ModalHeader: View {
                     .background(Color.secondary.opacity(0.1))
                     .clipShape(Circle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
     }
 }

@@ -175,7 +175,7 @@ struct BMIGenderSelector: View {
             
             HStack(spacing: 16) {
                 ForEach(BMIGender.allCases, id: \.self) { gender in
-                    Button(action: {
+                    CustomButton(action: {
                         selectedGender = gender
                     }) {
                         HStack(spacing: 6) {
@@ -195,7 +195,7 @@ struct BMIGenderSelector: View {
                                 .foregroundColor(.primary)
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    
                 }
             }
             .padding(.horizontal, 12)
@@ -289,7 +289,7 @@ struct BMIModalButtons: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onCalculate) {
+            CustomButton(action: onCalculate) {
                 Text("Calcular IMC")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white)
@@ -298,10 +298,10 @@ struct BMIModalButtons: View {
                     .background(Color(red: 0.2, green: 0.7, blue: 0.3))
                     .cornerRadius(8)
             }
-            .buttonStyle(PlainButtonStyle())
+            
             .disabled(isCalculateDisabled)
             
-            Button(action: onClose) {
+            CustomButton(action: onClose) {
                 Text("Cerrar")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.primary)
@@ -310,7 +310,7 @@ struct BMIModalButtons: View {
                     .background(Color.secondary.opacity(0.2))
                     .cornerRadius(8)
             }
-            .buttonStyle(PlainButtonStyle())
+            
         }
     }
 }

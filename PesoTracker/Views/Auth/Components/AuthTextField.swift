@@ -38,14 +38,14 @@ struct AuthTextField: View {
             .textFieldStyle(PlainTextFieldStyle())
             
             if isSecure {
-                Button(action: {
+                CustomButton(action: {
                     isSecureVisible.toggle()
                 }) {
                     Image(systemName: isSecureVisible ? "eye.slash" : "eye")
                         .foregroundColor(.secondary)
                         .font(.system(size: 16))
                 }
-                .buttonStyle(PlainButtonStyle())
+                
                 .contentShape(Rectangle())
             }
         }

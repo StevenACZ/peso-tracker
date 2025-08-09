@@ -7,7 +7,7 @@ struct AuthButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        CustomButton(action: action) {
             HStack {
                 if isLoading {
                     ProgressView()
@@ -30,7 +30,6 @@ struct AuthButton: View {
             .shadow(color: Color.green.opacity(0.3), radius: isEnabled ? 4 : 0, x: 0, y: 2)
         }
         .disabled(!isEnabled || isLoading)
-        .buttonStyle(PlainButtonStyle())
         .scaleEffect(isEnabled ? 1.0 : 0.98)
         .animation(.easeInOut(duration: 0.2), value: isEnabled)
     }

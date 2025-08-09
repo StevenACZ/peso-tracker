@@ -10,7 +10,7 @@ struct DropdownMenuItem: View {
     @State private var isHovered = false
     
     var body: some View {
-        Button(action: action) {
+        CustomButton(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 14))
@@ -28,7 +28,7 @@ struct DropdownMenuItem: View {
             .background(isHovered ? Color.secondary.opacity(0.1) : Color.clear)
             .contentShape(Rectangle())
         }
-        .buttonStyle(PlainButtonStyle())
+        
         .onHover { hovering in
             isHovered = hovering
         }

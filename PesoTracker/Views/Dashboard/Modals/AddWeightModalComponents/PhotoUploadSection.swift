@@ -48,7 +48,7 @@ struct NewImagePreview: View {
                     .fill(Color.gray.opacity(0.1))
                     .frame(height: 120)
                 
-                Button(action: {
+                CustomButton(action: {
                     onImageTap(selectedImage)
                 }) {
                     Image(nsImage: selectedImage)
@@ -57,13 +57,13 @@ struct NewImagePreview: View {
                         .frame(maxHeight: 100)
                         .cornerRadius(6)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
             }
             
             Spacer()
             
             // Button area at bottom
-            Button(action: {
+            CustomButton(action: {
                 viewModel.removeImage()
             }) {
                 HStack(spacing: 4) {
@@ -74,7 +74,7 @@ struct NewImagePreview: View {
                 }
                 .foregroundColor(.red)
             }
-            .buttonStyle(PlainButtonStyle())
+            
         }
     }
 }
@@ -92,7 +92,7 @@ struct ExistingPhotoPreview: View {
                     .frame(height: 120)
                 
                 if let photoUrl = viewModel.existingPhotoUrl, let url = URL(string: photoUrl) {
-                    Button(action: {
+                    CustomButton(action: {
                         // Use full size URL for zoom if available, otherwise use existing URL
                         if let fullSizePhotoUrl = viewModel.existingFullSizePhotoUrl,
                            let fullSizeURL = URL(string: fullSizePhotoUrl) {
@@ -117,7 +117,7 @@ struct ExistingPhotoPreview: View {
                             }
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    
                 } else {
                     VStack(spacing: 8) {
                         Image(systemName: "photo.fill")
@@ -143,7 +143,7 @@ struct ExistingPhotoActions: View {
     @ObservedObject var viewModel: WeightEntryViewModel
     
     var body: some View {
-        Button(action: {
+        CustomButton(action: {
             viewModel.selectImage()
         }) {
             HStack(spacing: 4) {
@@ -154,7 +154,7 @@ struct ExistingPhotoActions: View {
             }
             .foregroundColor(.blue)
         }
-        .buttonStyle(PlainButtonStyle())
+        
     }
 }
 
@@ -163,7 +163,7 @@ struct PhotoUploadArea: View {
     @Binding var isImageHovered: Bool
     
     var body: some View {
-        Button(action: {
+        CustomButton(action: {
             viewModel.selectImage()
         }) {
             VStack(spacing: 12) {
@@ -197,7 +197,7 @@ struct PhotoUploadArea: View {
                     .fill(isImageHovered ? Color.blue.opacity(0.05) : Color.clear)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        
         .onDrop(of: [UTType.image], isTargeted: $isImageHovered) { providers in
             return viewModel.handleDrop(providers: providers)
         }

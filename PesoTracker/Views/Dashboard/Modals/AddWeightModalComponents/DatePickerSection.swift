@@ -9,7 +9,7 @@ struct DatePickerSection: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.primary)
             
-            Button(action: {
+            CustomButton(action: {
                 viewModel.showDatePicker.toggle()
             }) {
                 HStack {
@@ -30,7 +30,7 @@ struct DatePickerSection: View {
                         .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                 )
             }
-            .buttonStyle(PlainButtonStyle())
+            
             .popover(isPresented: $viewModel.showDatePicker) {
                 DatePickerPopover(viewModel: viewModel)
             }
@@ -73,7 +73,7 @@ struct DatePickerPopover: View {
             )
             
             HStack(spacing: 16) {
-                Button(action: {
+                CustomButton(action: {
                     viewModel.showDatePicker = false
                 }) {
                     Text("Cancelar")
@@ -87,9 +87,9 @@ struct DatePickerPopover: View {
                                 .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                         )
                 }
-                .buttonStyle(PlainButtonStyle())
                 
-                Button(action: {
+                
+                CustomButton(action: {
                     viewModel.updateDateString()
                     viewModel.showDatePicker = false
                 }) {
@@ -101,7 +101,7 @@ struct DatePickerPopover: View {
                         .cornerRadius(8)
                         .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
             }
         }
         .padding(24)

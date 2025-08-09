@@ -23,12 +23,14 @@ struct LoginActions: View {
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                 
-                Button("Regístrate") {
+                CustomButton(action: {
                     switchToRegister()
+                }) {
+                    Text("Regístrate")
                 }
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.blue)
-                .buttonStyle(PlainButtonStyle())
+                
             }
         }
     }

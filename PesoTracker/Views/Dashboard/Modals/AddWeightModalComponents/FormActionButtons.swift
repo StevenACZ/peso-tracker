@@ -7,7 +7,7 @@ struct FormActionButtons: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: {
+            CustomButton(action: {
                 isPresented = false
             }) {
                 Text("Cancelar")
@@ -17,9 +17,8 @@ struct FormActionButtons: View {
                     .foregroundColor(.secondary)
                     .cornerRadius(8)
             }
-            .buttonStyle(PlainButtonStyle())
             
-            Button(action: {
+            CustomButton(action: {
                 Task {
                     await viewModel.saveWeight()
                     if viewModel.errorMessage == nil {
@@ -35,7 +34,6 @@ struct FormActionButtons: View {
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
-            .buttonStyle(PlainButtonStyle())
             .disabled(!viewModel.canSave)
         }
     }

@@ -23,12 +23,14 @@ struct RegisterActions: View {
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                 
-                Button("Iniciar sesión") {
+                CustomButton(action: {
                     switchToLogin()
+                }) {
+                    Text("Iniciar sesión")
                 }
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.blue)
-                .buttonStyle(PlainButtonStyle())
+                
             }
         }
     }

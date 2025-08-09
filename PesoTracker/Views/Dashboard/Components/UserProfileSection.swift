@@ -35,14 +35,14 @@ struct UserProfileSection: View {
                 Spacer()
                 
                 // Settings button
-                Button(action: {
+                CustomButton(action: {
                     showSettingsDropdown.toggle()
                 }) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
             }
             .padding(20)
             .background(Color(NSColor.controlBackgroundColor))

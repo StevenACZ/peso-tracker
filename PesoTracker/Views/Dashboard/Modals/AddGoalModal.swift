@@ -73,7 +73,7 @@ struct AddGoalModal: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    Button(action: {
+                    CustomButton(action: {
                         showDatePicker.toggle()
                     }) {
                         HStack {
@@ -95,7 +95,7 @@ struct AddGoalModal: View {
                         )
                         .cornerRadius(6)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    
                     .popover(isPresented: $showDatePicker) {
                         GoalDatePickerPopover(targetDate: $targetDate, showDatePicker: $showDatePicker)
                     }
@@ -112,7 +112,7 @@ struct AddGoalModal: View {
             
             // Buttons
             HStack(spacing: 12) {
-                Button(action: {
+                CustomButton(action: {
                     isPresented = false
                 }) {
                     Text("Cancelar")
@@ -123,9 +123,9 @@ struct AddGoalModal: View {
                         .background(Color.secondary.opacity(0.1))
                         .cornerRadius(6)
                 }
-                .buttonStyle(PlainButtonStyle())
                 
-                Button(action: {
+                
+                CustomButton(action: {
                     saveGoal()
                 }) {
                     if isLoading {
@@ -142,7 +142,7 @@ struct AddGoalModal: View {
                 .frame(height: 36)
                 .background(Color(red: 0.2, green: 0.7, blue: 0.3))
                 .cornerRadius(6)
-                .buttonStyle(PlainButtonStyle())
+                
                 .disabled(isLoading || targetWeight.isEmpty)
             }
         }
@@ -252,7 +252,7 @@ struct GoalDatePickerPopover: View {
             )
             
             HStack(spacing: 16) {
-                Button(action: {
+                CustomButton(action: {
                     showDatePicker = false
                 }) {
                     Text("Cancelar")
@@ -266,9 +266,9 @@ struct GoalDatePickerPopover: View {
                                 .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                         )
                 }
-                .buttonStyle(PlainButtonStyle())
                 
-                Button(action: {
+                
+                CustomButton(action: {
                     showDatePicker = false
                 }) {
                     Text("Seleccionar")
@@ -279,7 +279,7 @@ struct GoalDatePickerPopover: View {
                         .cornerRadius(8)
                         .shadow(color: Color(red: 0.2, green: 0.7, blue: 0.3).opacity(0.3), radius: 4, x: 0, y: 2)
                 }
-                .buttonStyle(PlainButtonStyle())
+                
             }
         }
         .padding(24)
