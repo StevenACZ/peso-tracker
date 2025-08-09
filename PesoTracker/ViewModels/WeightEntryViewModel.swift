@@ -228,7 +228,13 @@ class WeightEntryViewModel: ObservableObject {
     }
     
     func loadExistingWeightSimple(_ weight: Weight) async {
-        isLoadingData = true
+        // Check if weight data is in cache to determine loading behavior
+        let isInCache = CacheService.shared.hasWeight(weight.id)
+        
+        // Only show loading if data is not in cache
+        if !isInCache {
+            isLoadingData = true
+        }
         
         isEditMode = true
         editingWeightId = weight.id
@@ -272,6 +278,7 @@ class WeightEntryViewModel: ObservableObject {
             existingPhotoId = nil
         }
         
+        // Always hide loading when done (whether it was shown or not)
         isLoadingData = false
     }
     
