@@ -417,7 +417,7 @@ class AuthService: ObservableObject {
             
             print("✅ [CODE VERIFICATION] Verification successful:")
             print("   Valid: \(response.valid)")
-            print("   TempToken: \(response.tempToken)")
+            print("   ResetToken: \(response.resetToken)")
             
             return response
             
@@ -428,18 +428,17 @@ class AuthService: ObservableObject {
         }
     }
     
-    func resetPasswordWithCode(email: String, code: String, newPassword: String) async throws -> SuccessResponse {
-        let request = ResetPasswordRequest(email: email, code: code, newPassword: newPassword)
+    func resetPassword(token: String, newPassword: String) async throws -> SuccessResponse {
+        let request = ResetPasswordRequest(token: token, newPassword: newPassword)
         
-        print("🔐 [RESET PASSWORD] Resetting password with code:")
-        print("   Email: \(email)")
-        print("   Code: \(code)")
+        print("🔐 [RESET PASSWORD] Resetting password with token:")
+        print("   Token: \(token.prefix(20))...")
         print("   Password: [HIDDEN]")
-        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.resetPasswordWithCode)")
+        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.resetPassword)")
         
         do {
             let response = try await apiService.post(
-                endpoint: Constants.API.Endpoints.resetPasswordWithCode,
+                endpoint: Constants.API.Endpoints.resetPassword,
                 body: request,
                 responseType: SuccessResponse.self,
                 requiresAuth: false

@@ -41,7 +41,7 @@ struct Constants {
             static let logout = "/auth/logout"
             static let forgotPassword = "/auth/forgot-password"
             static let verifyResetCode = "/auth/verify-reset-code"
-            static let resetPasswordWithCode = "/auth/reset-password-with-code"
+            static let resetPassword = "/auth/reset-password"
             static let weights = "/weights"
             static let goals = "/goals"
             static let photos = "/photos"

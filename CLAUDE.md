@@ -6,7 +6,12 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authent
 ## Key Files
 
 ### UI Components
-- `Views/Auth/` - Login/Register with AuthViewModel
+- `Views/Auth/` - **Complete password reset flow** ✅ ENHANCED
+  - `AuthView.swift` - Main auth router
+  - `CodeVerificationView.swift` - **NEW** Professional code verification
+  - `ForgotPasswordView.swift` - Email input for password reset
+  - `ResetPasswordView.swift` - New password input
+  - `Components/ErrorModalWithRetry.swift` - **NEW** Advanced error handling
 - `Views/Dashboard/MainDashboardView.swift` - Main dashboard (35% sidebar, 65% content)
 - `Views/Dashboard/Components/WeightRecordsView.swift` - Weight table with skeleton loading
 - `Views/Dashboard/Modals/AddWeightModal.swift` - Add/edit weights with photos
@@ -28,7 +33,7 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authent
   - `ExportMetadataGenerator.swift` - Metadata file generation
 
 ### Services
-- `Services/AuthService.swift` - JWT authentication
+- `Services/AuthService.swift` - JWT authentication + **password reset** ✅ UPDATED
 - `Services/APIService.swift` - HTTP client
 - `Services/DashboardService.swift` - Dashboard data + logout
 - `Services/WeightService.swift` - Weight CRUD + cache invalidation
@@ -38,9 +43,13 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authent
 
 ### Models
 - `Models/Weight.swift` - Weight data with photos
-- `Models/APIResponse.swift` - API responses (includes ProgressResponse)
+- `Models/APIResponse.swift` - API responses + **password reset models** ✅ UPDATED
 - `Models/User.swift` - User data
 - `Models/Goal.swift` - Goal data
+
+### Utils ✅ NEW
+- `Utils/Extensions.swift` - **NEW** Centralized extensions (Color hex support)
+- `Utils/Constants.swift` - App constants + **updated endpoints**
 
 ## Build Commands
 - Build: `xcodebuild -scheme PesoTracker -configuration Debug build`
@@ -54,6 +63,15 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authent
 - **Models**: Data structures with Codable support
 
 ## API Endpoints
+
+### Authentication & Password Reset ✅ UPDATED
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+- `POST /auth/forgot-password` - Request password reset code
+- `POST /auth/verify-reset-code` - Verify reset code → returns resetToken
+- `POST /auth/reset-password` - Reset password with token (simplified!)
+
+### Weight Management
 - `POST /weights` - Create weight (multipart with photo)
 - `PATCH /weights/:id` - Update weight
 - `DELETE /weights/:id` - Delete weight
@@ -121,6 +139,14 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authent
 - Date picker integration
 - Form validation
 - Auto-refresh dashboard
+
+### Password Reset Flow ✅ ENHANCED
+- **Step 1**: `ForgotPasswordView` → Email input → Success modal
+- **Step 2**: `CodeVerificationView` → 6-digit code → **Animated check modal** ✅
+- **Step 3**: `ResetPasswordView` → New password → Success modal → Login
+- **Security**: Token-based system (no local email/code persistence)
+- **UX**: Professional modals with smooth animations
+- **Validation**: Real-time form validation with visual states
 
 ## Code Patterns
 - SwiftUI + Combine

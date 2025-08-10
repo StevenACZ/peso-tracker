@@ -411,24 +411,22 @@ struct CodeVerificationRequest: Codable {
 }
 
 struct ResetPasswordRequest: Codable {
-    let email: String
-    let code: String
+    let token: String
     let newPassword: String
     
     enum CodingKeys: String, CodingKey {
-        case email
-        case code
+        case token
         case newPassword
     }
 }
 
 struct CodeVerificationResponse: Codable {
     let valid: Bool
-    let tempToken: String
+    let resetToken: String
     
     enum CodingKeys: String, CodingKey {
         case valid
-        case tempToken
+        case resetToken
     }
 }
 
