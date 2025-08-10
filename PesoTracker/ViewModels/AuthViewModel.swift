@@ -27,9 +27,31 @@ class AuthViewModel: ObservableObject {
     @Published var passwordValidationError: String?
     @Published var usernameValidationError: String?
     @Published var confirmPasswordError: String?
+    @Published var loginEmailError: String?
+    @Published var loginPasswordError: String?
+    
+    // MARK: - Real-time Validation States
+    @Published var emailValidationState: AuthTextField.ValidationState = .none
+    @Published var usernameValidationState: AuthTextField.ValidationState = .none
+    @Published var passwordValidationState: AuthTextField.ValidationState = .none
+    @Published var loginEmailValidationState: AuthTextField.ValidationState = .none
+    @Published var loginPasswordValidationState: AuthTextField.ValidationState = .none
+    
+    // MARK: - Availability Checking
+    @Published var isCheckingEmailAvailability = false
+    @Published var isCheckingUsernameAvailability = false
+    
+    // MARK: - Error Modal
+    @Published var showErrorModal = false
+    @Published var errorModalMessage = ""
     
     // MARK: - Services
     private let authService = AuthService.shared
+    
+    // MARK: - Debouncing
+    private var cancellables = Set<AnyCancellable>()
+    private var emailCheckTask: Task<Void, Never>?
+    private var usernameCheckTask: Task<Void, Never>?
     
     // MARK: - Initialization
     init() {
@@ -49,70 +71,251 @@ class AuthViewModel: ObservableObject {
         // Login form validation
         Publishers.CombineLatest($loginEmail, $loginPassword)
             .map { email, password in
-                !email.isEmpty && !password.isEmpty && self.authService.validateEmail(email)
+                !email.isEmpty && !password.isEmpty && self.authService.validateEmail(email) && self.authService.validatePassword(password)
             }
             .assign(to: &$isLoginFormValid)
         
-        // Register form validation (simplified - no confirm password)
-        Publishers.CombineLatest3($registerUsername, $registerEmail, $registerPassword)
-            .map { username, email, password in
-                !username.isEmpty &&
-                !email.isEmpty &&
-                !password.isEmpty &&
-                self.authService.validateUsername(username) &&
-                self.authService.validateEmail(email) &&
-                self.authService.validatePassword(password)
+        // Register form validation
+        Publishers.CombineLatest4($registerUsername, $registerEmail, $registerPassword, $usernameValidationState)
+            .combineLatest($emailValidationState, $passwordValidationState)
+            .map { formData, emailState, passwordState in
+                let (username, email, password, usernameState) = formData
+                return !username.isEmpty &&
+                       !email.isEmpty &&
+                       !password.isEmpty &&
+                       usernameState == .valid &&
+                       emailState == .valid &&
+                       passwordState == .valid
             }
             .assign(to: &$isRegisterFormValid)
         
-        // Real-time email validation
+        // Real-time login email validation
         $loginEmail
-            .combineLatest($registerEmail)
-            .map { loginEmail, registerEmail in
-                let emailToValidate = !loginEmail.isEmpty ? loginEmail : registerEmail
-                if emailToValidate.isEmpty {
-                    return nil
-                }
-                return self.authService.validateEmail(emailToValidate) ? nil : "Formato de email inválido"
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] email in
+                self?.validateLoginEmail(email)
             }
-            .assign(to: &$emailValidationError)
+            .store(in: &cancellables)
+        
+        // Real-time login password validation
+        $loginPassword
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] password in
+                self?.validateLoginPassword(password)
+            }
+            .store(in: &cancellables)
+        
+        // Real-time register email validation with availability check
+        $registerEmail
+            .debounce(for: .milliseconds(800), scheduler: DispatchQueue.main)
+            .sink { [weak self] email in
+                self?.validateRegisterEmail(email)
+            }
+            .store(in: &cancellables)
+        
+        // Real-time username validation with availability check
+        $registerUsername
+            .debounce(for: .milliseconds(800), scheduler: DispatchQueue.main)
+            .sink { [weak self] username in
+                self?.validateUsername(username)
+            }
+            .store(in: &cancellables)
         
         // Real-time password validation
         $registerPassword
-            .map { password in
-                if password.isEmpty {
-                    return nil
-                }
-                return self.authService.validatePassword(password) ? nil : "La contraseña debe tener entre \(Constants.Validation.minPasswordLength) y \(Constants.Validation.maxPasswordLength) caracteres"
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] password in
+                self?.validatePassword(password)
             }
-            .assign(to: &$passwordValidationError)
-        
-        // Real-time username validation
-        $registerUsername
-            .map { username in
-                if username.isEmpty {
-                    return nil
-                }
-                return self.authService.validateUsername(username) ? nil : "El nombre de usuario debe tener entre \(Constants.Validation.minUsernameLength) y \(Constants.Validation.maxUsernameLength) caracteres"
-            }
-            .assign(to: &$usernameValidationError)
+            .store(in: &cancellables)
         
         // Confirm password validation
         Publishers.CombineLatest($registerPassword, $confirmPassword)
-            .map { password, confirmPassword in
-                if confirmPassword.isEmpty {
-                    return nil
-                }
-                return password == confirmPassword ? nil : "Las contraseñas no coinciden"
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] password, confirmPassword in
+                self?.validateConfirmPassword(password: password, confirmPassword: confirmPassword)
             }
-            .assign(to: &$confirmPasswordError)
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Real-time Validation Methods
+    
+    private func validateLoginEmail(_ email: String) {
+        if email.isEmpty {
+            loginEmailError = nil
+            loginEmailValidationState = .none
+        } else if !authService.validateEmail(email) {
+            loginEmailError = "Formato de email inválido"
+            loginEmailValidationState = .invalid
+        } else {
+            loginEmailError = nil
+            loginEmailValidationState = .valid
+        }
+    }
+    
+    private func validateLoginPassword(_ password: String) {
+        if password.isEmpty {
+            loginPasswordError = nil
+            loginPasswordValidationState = .none
+        } else if !authService.validatePassword(password) {
+            loginPasswordError = "La contraseña debe tener entre \(Constants.Validation.minPasswordLength) y \(Constants.Validation.maxPasswordLength) caracteres"
+            loginPasswordValidationState = .invalid
+        } else {
+            loginPasswordError = nil
+            loginPasswordValidationState = .valid
+        }
+    }
+    
+    private func validateRegisterEmail(_ email: String) {
+        // Cancel previous task
+        emailCheckTask?.cancel()
+        
+        if email.isEmpty {
+            emailValidationError = nil
+            emailValidationState = .none
+            return
+        }
+        
+        // First validate format
+        if !authService.validateEmail(email) {
+            emailValidationError = "Formato de email inválido"
+            emailValidationState = .invalid
+            return
+        }
+        
+        // Only check availability if email seems complete (has @ and .)
+        if !email.contains("@") || !email.contains(".") {
+            emailValidationError = nil
+            emailValidationState = .none
+            return
+        }
+        
+        // Additional check: make sure there's something after the dot
+        let components = email.split(separator: ".")
+        if components.isEmpty || components.last!.count < 2 {
+            emailValidationError = nil
+            emailValidationState = .none
+            return
+        }
+        
+        // Then check availability
+        emailValidationState = .checking
+        isCheckingEmailAvailability = true
+        
+        emailCheckTask = Task { @MainActor in
+            do {
+                let response = try await authService.checkAvailability(email: email)
+                
+                if !Task.isCancelled {
+                    if response.emailChecked && response.emailAvailable {
+                        emailValidationError = nil
+                        emailValidationState = .valid
+                    } else if response.emailChecked && !response.emailAvailable {
+                        emailValidationError = "Este email ya está registrado"
+                        emailValidationState = .invalid
+                    } else {
+                        // If not checked or API didn't return email info, consider it valid format-wise
+                        emailValidationError = nil
+                        emailValidationState = .valid
+                    }
+                }
+            } catch {
+                if !Task.isCancelled {
+                    print("❌ Email availability check error: \(error)")
+                    // Don't show error to user for API failures - just treat as valid format-wise
+                    emailValidationError = nil
+                    emailValidationState = .valid
+                }
+            }
+            isCheckingEmailAvailability = false
+        }
+    }
+    
+    private func validateUsername(_ username: String) {
+        // Cancel previous task
+        usernameCheckTask?.cancel()
+        
+        if username.isEmpty {
+            usernameValidationError = nil
+            usernameValidationState = .none
+            return
+        }
+        
+        // Only proceed if username has minimum length (don't check partial usernames)
+        if username.count < Constants.Validation.minUsernameLength {
+            usernameValidationError = nil
+            usernameValidationState = .none
+            return
+        }
+        
+        // First validate format
+        if !authService.validateUsername(username) {
+            usernameValidationError = "El nombre de usuario debe tener entre 3 y 50 caracteres y solo contener letras, números y guiones bajos"
+            usernameValidationState = .invalid
+            return
+        }
+        
+        // Then check availability
+        usernameValidationState = .checking
+        isCheckingUsernameAvailability = true
+        
+        usernameCheckTask = Task { @MainActor in
+            do {
+                let response = try await authService.checkAvailability(username: username)
+                
+                if !Task.isCancelled {
+                    if response.usernameChecked && response.usernameAvailable {
+                        usernameValidationError = nil
+                        usernameValidationState = .valid
+                    } else if response.usernameChecked && !response.usernameAvailable {
+                        usernameValidationError = "Este nombre de usuario ya está en uso"
+                        usernameValidationState = .invalid
+                    } else {
+                        // If not checked or API didn't return username info, consider it valid format-wise
+                        usernameValidationError = nil
+                        usernameValidationState = .valid
+                    }
+                }
+            } catch {
+                if !Task.isCancelled {
+                    print("❌ Username availability check error: \(error)")
+                    // Don't show error to user for API failures - just treat as valid format-wise
+                    usernameValidationError = nil
+                    usernameValidationState = .valid
+                }
+            }
+            isCheckingUsernameAvailability = false
+        }
+    }
+    
+    private func validatePassword(_ password: String) {
+        if password.isEmpty {
+            passwordValidationError = nil
+            passwordValidationState = .none
+        } else if !authService.validatePassword(password) {
+            passwordValidationError = "La contraseña debe tener entre \(Constants.Validation.minPasswordLength) y \(Constants.Validation.maxPasswordLength) caracteres"
+            passwordValidationState = .invalid
+        } else {
+            passwordValidationError = nil
+            passwordValidationState = .valid
+        }
+    }
+    
+    private func validateConfirmPassword(password: String, confirmPassword: String) {
+        if confirmPassword.isEmpty {
+            confirmPasswordError = nil
+        } else if password != confirmPassword {
+            confirmPasswordError = "Las contraseñas no coinciden"
+        } else {
+            confirmPasswordError = nil
+        }
     }
     
     // MARK: - Authentication Methods
     
     func login() async {
         guard isLoginFormValid else {
-            showErrorMessage("Por favor completa todos los campos correctamente")
+            showErrorModal(message: "Por favor completa todos los campos correctamente")
             return
         }
         
@@ -128,7 +331,7 @@ class AuthViewModel: ObservableObject {
             print("Login exitoso para usuario: \(user.username)")
             
         } catch {
-            showErrorMessage(authService.handleAuthError(error))
+            showErrorModal(message: authService.handleAuthError(error))
         }
         
         isLoading = false
@@ -136,7 +339,7 @@ class AuthViewModel: ObservableObject {
     
     func register() async {
         guard isRegisterFormValid else {
-            showErrorMessage("Por favor completa todos los campos correctamente")
+            showErrorModal(message: "Por favor completa todos los campos correctamente")
             return
         }
         
@@ -156,7 +359,7 @@ class AuthViewModel: ObservableObject {
             print("Registro exitoso para usuario: \(user.username)")
             
         } catch {
-            showErrorMessage(authService.handleAuthError(error))
+            showErrorModal(message: authService.handleAuthError(error))
         }
         
         isLoading = false
@@ -175,14 +378,25 @@ class AuthViewModel: ObservableObject {
         showError = true
     }
     
+    private func showErrorModal(message: String) {
+        errorModalMessage = message
+        showErrorModal = true
+    }
+    
     private func clearError() {
         errorMessage = nil
         showError = false
+        errorModalMessage = ""
+        showErrorModal = false
     }
     
     private func clearLoginForm() {
         loginEmail = ""
         loginPassword = ""
+        loginEmailError = nil
+        loginPasswordError = nil
+        loginEmailValidationState = .none
+        loginPasswordValidationState = .none
     }
     
     private func clearRegisterForm() {
@@ -190,6 +404,19 @@ class AuthViewModel: ObservableObject {
         registerEmail = ""
         registerPassword = ""
         confirmPassword = ""
+        
+        // Clear validation states
+        emailValidationError = nil
+        passwordValidationError = nil
+        usernameValidationError = nil
+        confirmPasswordError = nil
+        emailValidationState = .none
+        usernameValidationState = .none
+        passwordValidationState = .none
+        
+        // Cancel any running tasks
+        emailCheckTask?.cancel()
+        usernameCheckTask?.cancel()
     }
     
     private func clearAllForms() {
@@ -197,34 +424,11 @@ class AuthViewModel: ObservableObject {
         clearRegisterForm()
     }
     
-    // MARK: - Validation Helpers
+    // MARK: - Public Methods for Form Access
     
-    func getEmailFieldColor() -> Color {
-        if emailValidationError != nil {
-            return .red
-        }
-        return .primary
-    }
-    
-    func getPasswordFieldColor() -> Color {
-        if passwordValidationError != nil {
-            return .red
-        }
-        return .primary
-    }
-    
-    func getUsernameFieldColor() -> Color {
-        if usernameValidationError != nil {
-            return .red
-        }
-        return .primary
-    }
-    
-    func getConfirmPasswordFieldColor() -> Color {
-        if confirmPasswordError != nil {
-            return .red
-        }
-        return .primary
+    func dismissErrorModal() {
+        showErrorModal = false
+        errorModalMessage = ""
     }
     
     // MARK: - Authentication Status

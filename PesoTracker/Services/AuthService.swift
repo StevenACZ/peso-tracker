@@ -327,10 +327,86 @@ class AuthService: ObservableObject {
                !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
+    // MARK: - Availability Checking
+    func checkAvailability(username: String? = nil, email: String? = nil) async throws -> AvailabilityResponse {
+        var requestBody: [String: String] = [:]
+        
+        if let username = username, !username.isEmpty {
+            requestBody["username"] = username
+        }
+        
+        if let email = email, !email.isEmpty {
+            requestBody["email"] = email
+        }
+        
+        guard !requestBody.isEmpty else {
+            throw APIError.invalidResponse
+        }
+        
+        print("🔍 [AVAILABILITY] Checking availability:")
+        if let username = username { print("   Username: \(username)") }
+        if let email = email { print("   Email: \(email)") }
+        
+        do {
+            let response = try await apiService.post(
+                endpoint: "/auth/check-availability",
+                body: requestBody,
+                responseType: AvailabilityResponse.self,
+                requiresAuth: false
+            )
+            
+            print("✅ [AVAILABILITY] Response received:")
+            if response.emailChecked {
+                print("   Email available: \(response.emailAvailable)")
+            }
+            if response.usernameChecked {
+                print("   Username available: \(response.usernameAvailable)")
+            }
+            
+            return response
+            
+        } catch {
+            print("❌ [AVAILABILITY] Error checking availability: \(error)")
+            throw error
+        }
+    }
+    
     // MARK: - Error Handling
     func handleAuthError(_ error: Error) -> String {
         if let apiError = error as? APIError {
-            return apiError.localizedDescription
+            switch apiError {
+            case .authenticationFailed:
+                return "Credenciales incorrectas. Verifica tu email y contraseña."
+            case .serverError(let code, let message):
+                if code == 400 {
+                    if let msg = message, msg.lowercased().contains("email") {
+                        return "Formato de email inválido."
+                    } else if let msg = message, msg.lowercased().contains("username") {
+                        return "El nombre de usuario debe tener entre 3 y 50 caracteres y solo contener letras, números y guiones bajos."
+                    } else if let msg = message, msg.lowercased().contains("password") {
+                        return "La contraseña debe tener entre 6 y 100 caracteres."
+                    }
+                    return "Datos inválidos. Revisa los campos."
+                } else if code == 409 {
+                    return "Este email o nombre de usuario ya está registrado."
+                } else {
+                    return "Error del servidor. Intenta más tarde."
+                }
+            case .networkError(_):
+                return "Error de conexión. Verifica tu internet."
+            case .noData:
+                return "No se recibieron datos del servidor."
+            case .decodingError(_):
+                return "Error al procesar la respuesta del servidor."
+            case .tokenExpired:
+                return "Tu sesión ha expirado. Por favor inicia sesión nuevamente."
+            case .invalidResponse:
+                return "Respuesta inválida del servidor."
+            case .invalidURL:
+                return "Error de configuración del servidor."
+            case .encodingError(_):
+                return "Error al procesar la solicitud."
+            }
         }
         return "Error de autenticación: \(error.localizedDescription)"
     }

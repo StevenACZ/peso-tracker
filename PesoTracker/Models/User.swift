@@ -111,3 +111,55 @@ struct AuthResponse: Codable {
         }
     }
 }
+
+// MARK: - Availability Check Models
+struct AvailabilityResponse: Codable {
+    let email: AvailabilityStatus?
+    let username: AvailabilityStatus?
+    
+    // Computed properties for easier access with defaults
+    var emailAvailable: Bool {
+        return email?.available ?? true
+    }
+    
+    var usernameAvailable: Bool {
+        return username?.available ?? true
+    }
+    
+    var emailChecked: Bool {
+        return email?.checked ?? false
+    }
+    
+    var usernameChecked: Bool {
+        return username?.checked ?? false
+    }
+}
+
+struct AvailabilityStatus: Codable {
+    let available: Bool
+    let checked: Bool
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Handle both boolean and potential other formats
+        if let availableBool = try? container.decode(Bool.self, forKey: .available) {
+            available = availableBool
+        } else {
+            // Default to false if not available or can't decode
+            available = false
+        }
+        
+        if let checkedBool = try? container.decode(Bool.self, forKey: .checked) {
+            checked = checkedBool
+        } else {
+            // Default to true if not specified (assume it was checked)
+            checked = true
+        }
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case available
+        case checked
+    }
+}

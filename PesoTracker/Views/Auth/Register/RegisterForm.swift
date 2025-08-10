@@ -14,14 +14,11 @@ struct RegisterForm: View {
                 
                 AuthTextField(
                     text: $authViewModel.registerUsername,
-                    placeholder: "Ingresa tu nombre de usuario"
+                    placeholder: "Ingresa tu nombre de usuario",
+                    errorMessage: authViewModel.usernameValidationError,
+                    validationState: authViewModel.usernameValidationState,
+                    isValidating: authViewModel.isCheckingUsernameAvailability
                 )
-                
-                if let usernameError = authViewModel.usernameValidationError {
-                    Text(usernameError)
-                        .font(.system(size: 12))
-                        .foregroundColor(.red)
-                }
             }
             
             // Email field
@@ -32,14 +29,11 @@ struct RegisterForm: View {
                 
                 AuthTextField(
                     text: $authViewModel.registerEmail,
-                    placeholder: "Ingresa tu correo electrónico"
+                    placeholder: "Ingresa tu correo electrónico",
+                    errorMessage: authViewModel.emailValidationError,
+                    validationState: authViewModel.emailValidationState,
+                    isValidating: authViewModel.isCheckingEmailAvailability
                 )
-                
-                if let emailError = authViewModel.emailValidationError {
-                    Text(emailError)
-                        .font(.system(size: 12))
-                        .foregroundColor(.red)
-                }
             }
             
             // Password field
@@ -51,18 +45,39 @@ struct RegisterForm: View {
                 AuthTextField(
                     text: $authViewModel.registerPassword,
                     placeholder: "Ingresa tu contraseña",
-                    isSecure: true
-                ) {
-                    if authViewModel.isRegisterFormValid {
-                        onSubmit()
-                    }
+                    isSecure: true,
+                    onSubmit: {
+                        if authViewModel.isRegisterFormValid {
+                            onSubmit()
+                        }
+                    },
+                    errorMessage: authViewModel.passwordValidationError,
+                    validationState: authViewModel.passwordValidationState
+                )
+            }
+            
+            // Confirm password field (optional, but good UX)
+            if !authViewModel.registerPassword.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Confirmar contraseña")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    AuthTextField(
+                        text: $authViewModel.confirmPassword,
+                        placeholder: "Confirma tu contraseña",
+                        isSecure: true,
+                        onSubmit: {
+                            if authViewModel.isRegisterFormValid {
+                                onSubmit()
+                            }
+                        },
+                        errorMessage: authViewModel.confirmPasswordError,
+                        validationState: authViewModel.confirmPasswordError == nil && !authViewModel.confirmPassword.isEmpty ? .valid : (authViewModel.confirmPasswordError != nil ? .invalid : .none)
+                    )
                 }
-                
-                if let passwordError = authViewModel.passwordValidationError {
-                    Text(passwordError)
-                        .font(.system(size: 12))
-                        .foregroundColor(.red)
-                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .animation(.easeInOut(duration: 0.3), value: authViewModel.registerPassword.isEmpty)
             }
         }
     }
