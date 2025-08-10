@@ -39,19 +39,6 @@ struct LoginForm: View {
                     validationState: authViewModel.loginPasswordValidationState
                 )
             }
-            
-            // Forgot password link
-            HStack {
-                Spacer()
-                CustomButton(action: {
-                    // TODO: Implement forgot password
-                }) {
-                    Text("¿Olvidaste tu contraseña?")
-                }
-                .font(.system(size: 14))
-                .foregroundColor(.blue)
-                
-            }
         }
     }
 }

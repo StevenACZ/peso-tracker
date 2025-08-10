@@ -3,6 +3,7 @@ import SwiftUI
 struct AuthLoginView: View {
     @StateObject private var authViewModel = AuthViewModel()
     let switchToRegister: () -> Void
+    let switchToForgotPassword: () -> Void
     
     var body: some View {
         ZStack {
@@ -18,7 +19,8 @@ struct AuthLoginView: View {
                     }
                     LoginActions(
                         authViewModel: authViewModel,
-                        switchToRegister: switchToRegister
+                        switchToRegister: switchToRegister,
+                        switchToForgotPassword: switchToForgotPassword
                     )
                 }
                 .frame(maxWidth: 360)
@@ -46,5 +48,5 @@ struct AuthLoginView: View {
 }
 
 #Preview {
-    AuthLoginView(switchToRegister: {})
+    AuthLoginView(switchToRegister: {}, switchToForgotPassword: {})
 }

@@ -371,6 +371,92 @@ class AuthService: ObservableObject {
         }
     }
     
+    // MARK: - Password Recovery
+    func requestPasswordReset(email: String) async throws -> SuccessResponse {
+        let request = PasswordResetRequest(email: email)
+        
+        print("🔐 [PASSWORD RESET] Requesting password reset:")
+        print("   Email: \(email)")
+        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.forgotPassword)")
+        
+        do {
+            let response = try await apiService.post(
+                endpoint: Constants.API.Endpoints.forgotPassword,
+                body: request,
+                responseType: SuccessResponse.self,
+                requiresAuth: false
+            )
+            
+            print("✅ [PASSWORD RESET] Request successful:")
+            print("   Message: \(response.message)")
+            
+            return response
+            
+        } catch {
+            print("❌ [PASSWORD RESET] Error requesting password reset:")
+            print("   Error: \(error)")
+            throw error
+        }
+    }
+    
+    func verifyResetCode(email: String, code: String) async throws -> CodeVerificationResponse {
+        let request = CodeVerificationRequest(email: email, code: code)
+        
+        print("🔐 [CODE VERIFICATION] Verifying reset code:")
+        print("   Email: \(email)")
+        print("   Code: \(code)")
+        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.verifyResetCode)")
+        
+        do {
+            let response = try await apiService.post(
+                endpoint: Constants.API.Endpoints.verifyResetCode,
+                body: request,
+                responseType: CodeVerificationResponse.self,
+                requiresAuth: false
+            )
+            
+            print("✅ [CODE VERIFICATION] Verification successful:")
+            print("   Valid: \(response.valid)")
+            print("   TempToken: \(response.tempToken)")
+            
+            return response
+            
+        } catch {
+            print("❌ [CODE VERIFICATION] Error verifying reset code:")
+            print("   Error: \(error)")
+            throw error
+        }
+    }
+    
+    func resetPasswordWithCode(email: String, code: String, newPassword: String) async throws -> SuccessResponse {
+        let request = ResetPasswordRequest(email: email, code: code, newPassword: newPassword)
+        
+        print("🔐 [RESET PASSWORD] Resetting password with code:")
+        print("   Email: \(email)")
+        print("   Code: \(code)")
+        print("   Password: [HIDDEN]")
+        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.resetPasswordWithCode)")
+        
+        do {
+            let response = try await apiService.post(
+                endpoint: Constants.API.Endpoints.resetPasswordWithCode,
+                body: request,
+                responseType: SuccessResponse.self,
+                requiresAuth: false
+            )
+            
+            print("✅ [RESET PASSWORD] Password reset successful:")
+            print("   Message: \(response.message)")
+            
+            return response
+            
+        } catch {
+            print("❌ [RESET PASSWORD] Error resetting password:")
+            print("   Error: \(error)")
+            throw error
+        }
+    }
+    
     // MARK: - Error Handling
     func handleAuthError(_ error: Error) -> String {
         if let apiError = error as? APIError {
@@ -409,5 +495,155 @@ class AuthService: ObservableObject {
             }
         }
         return "Error de autenticación: \(error.localizedDescription)"
+    }
+    
+    // MARK: - Password Recovery Error Handling
+    func handlePasswordRecoveryError(_ error: Error) -> String {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .serverError(let code, let message):
+                return handlePasswordRecoveryServerError(code: code, message: message)
+            case .networkError(let underlyingError):
+                return handlePasswordRecoveryNetworkError(underlyingError)
+            case .noData:
+                return "No se recibió respuesta del servidor. Verifica tu conexión e intenta nuevamente."
+            case .decodingError(_):
+                return "Error al procesar la respuesta del servidor. Intenta más tarde."
+            case .tokenExpired:
+                return "La sesión ha expirado. Inicia el proceso nuevamente."
+            case .invalidResponse:
+                return "Respuesta inválida del servidor. Intenta más tarde."
+            case .invalidURL:
+                return "Error de configuración del servidor. Contacta soporte técnico."
+            case .encodingError(_):
+                return "Error al procesar la solicitud. Verifica los datos e intenta nuevamente."
+            case .authenticationFailed:
+                return "Error de autenticación. Inicia el proceso nuevamente."
+            }
+        }
+        
+        // Handle URLError specifically
+        if let urlError = error as? URLError {
+            return handlePasswordRecoveryURLError(urlError)
+        }
+        
+        return "Error en recuperación de contraseña: \(error.localizedDescription)"
+    }
+    
+    private func handlePasswordRecoveryServerError(code: Int, message: String?) -> String {
+        switch code {
+        case 400:
+            return handleBadRequestError(message: message)
+        case 401:
+            return "No autorizado. Inicia el proceso nuevamente."
+        case 403:
+            return "Acceso denegado. Verifica tu información."
+        case 404:
+            return "No se encontró una cuenta con este email. Verifica que el email sea correcto."
+        case 409:
+            return "Conflicto en el servidor. Intenta más tarde."
+        case 422:
+            return "Datos inválidos. Verifica la información ingresada."
+        case 429:
+            return "Demasiados intentos. Espera 5 minutos antes de intentar nuevamente."
+        case 500:
+            return "Error interno del servidor. Intenta más tarde."
+        case 502:
+            return "Servidor no disponible temporalmente. Intenta más tarde."
+        case 503:
+            return "Servicio no disponible. Intenta más tarde."
+        case 504:
+            return "Tiempo de espera agotado. Intenta más tarde."
+        default:
+            return "Error del servidor (\(code)). Intenta más tarde."
+        }
+    }
+    
+    private func handleBadRequestError(message: String?) -> String {
+        guard let msg = message?.lowercased() else {
+            return "Datos inválidos. Verifica la información ingresada."
+        }
+        
+        if msg.contains("email") && msg.contains("not found") {
+            return "No se encontró una cuenta con este email. Verifica que el email sea correcto."
+        } else if msg.contains("email") && msg.contains("invalid") {
+            return "El formato del email es inválido. Ingresa un email válido."
+        } else if msg.contains("code") && msg.contains("invalid") {
+            return "El código ingresado es incorrecto. Verifica el código e intenta nuevamente."
+        } else if msg.contains("code") && msg.contains("expired") {
+            return "El código ha expirado. Solicita un nuevo código."
+        } else if msg.contains("code") && msg.contains("used") {
+            return "Este código ya ha sido utilizado. Solicita un nuevo código."
+        } else if msg.contains("attempts") || msg.contains("maximum") {
+            return "Has excedido el número máximo de intentos. Espera 15 minutos antes de intentar nuevamente."
+        } else if msg.contains("password") && msg.contains("weak") {
+            return "La contraseña es muy débil. Usa al menos \(Constants.Validation.minPasswordLength) caracteres con letras y números."
+        } else if msg.contains("password") && msg.contains("length") {
+            return "La contraseña debe tener entre \(Constants.Validation.minPasswordLength) y \(Constants.Validation.maxPasswordLength) caracteres."
+        } else if msg.contains("password") && msg.contains("requirements") {
+            return "La contraseña no cumple con los requisitos de seguridad."
+        } else if msg.contains("rate") && msg.contains("limit") {
+            return "Demasiadas solicitudes. Espera unos minutos antes de intentar nuevamente."
+        } else if msg.contains("blocked") || msg.contains("suspended") {
+            return "Tu cuenta ha sido temporalmente bloqueada. Contacta soporte técnico."
+        }
+        
+        return "Datos inválidos. Verifica la información ingresada."
+    }
+    
+    private func handlePasswordRecoveryNetworkError(_ error: Error) -> String {
+        if let urlError = error as? URLError {
+            return handlePasswordRecoveryURLError(urlError)
+        }
+        return "Error de conexión. Verifica tu internet e intenta nuevamente."
+    }
+    
+    private func handlePasswordRecoveryURLError(_ urlError: URLError) -> String {
+        switch urlError.code {
+        case .notConnectedToInternet:
+            return "No hay conexión a internet. Verifica tu conexión y vuelve a intentar."
+        case .timedOut:
+            return "La conexión ha expirado. Verifica tu conexión e intenta nuevamente."
+        case .cannotFindHost:
+            return "No se puede encontrar el servidor. Verifica tu conexión e intenta más tarde."
+        case .cannotConnectToHost:
+            return "No se puede conectar al servidor. Intenta más tarde."
+        case .networkConnectionLost:
+            return "Se perdió la conexión de red. Verifica tu conexión e intenta nuevamente."
+        case .dnsLookupFailed:
+            return "Error de DNS. Verifica tu conexión e intenta nuevamente."
+        case .httpTooManyRedirects:
+            return "Error de servidor. Intenta más tarde."
+        case .resourceUnavailable:
+            return "Servicio no disponible temporalmente. Intenta más tarde."
+        case .notConnectedToInternet:
+            return "Sin conexión a internet. Conecta a una red e intenta nuevamente."
+        case .redirectToNonExistentLocation:
+            return "Error de configuración del servidor. Intenta más tarde."
+        case .badServerResponse:
+            return "Respuesta inválida del servidor. Intenta más tarde."
+        case .userCancelledAuthentication:
+            return "Autenticación cancelada. Intenta nuevamente."
+        case .userAuthenticationRequired:
+            return "Se requiere autenticación. Inicia el proceso nuevamente."
+        case .zeroByteResource:
+            return "Respuesta vacía del servidor. Intenta más tarde."
+        case .cannotDecodeRawData:
+            return "Error al procesar la respuesta del servidor."
+        case .cannotDecodeContentData:
+            return "Error al decodificar la respuesta del servidor."
+        case .cannotParseResponse:
+            return "Error al interpretar la respuesta del servidor."
+        case .internationalRoamingOff:
+            return "Roaming internacional desactivado. Activa el roaming o conecta a WiFi."
+        case .callIsActive:
+            return "Llamada activa. Finaliza la llamada e intenta nuevamente."
+        case .dataNotAllowed:
+            return "Datos móviles desactivados. Activa los datos o conecta a WiFi."
+        case .requestBodyStreamExhausted:
+            return "Error en la solicitud. Intenta nuevamente."
+        default:
+            return "Error de conexión (\(urlError.code.rawValue)). Verifica tu internet e intenta nuevamente."
+        }
     }
 }

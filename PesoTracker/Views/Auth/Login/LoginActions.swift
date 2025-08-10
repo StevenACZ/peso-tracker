@@ -3,6 +3,7 @@ import SwiftUI
 struct LoginActions: View {
     @ObservedObject var authViewModel: AuthViewModel
     let switchToRegister: () -> Void
+    let switchToForgotPassword: () -> Void
     
     var body: some View {
         VStack(spacing: 20) {
@@ -16,6 +17,15 @@ struct LoginActions: View {
                     await authViewModel.login()
                 }
             }
+            
+            // Forgot password link
+            CustomButton(action: {
+                switchToForgotPassword()
+            }) {
+                Text("Olvidé mi contraseña")
+            }
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.blue)
             
             // Register link
             HStack(spacing: 4) {
@@ -39,6 +49,7 @@ struct LoginActions: View {
 #Preview {
     LoginActions(
         authViewModel: AuthViewModel(),
-        switchToRegister: {}
+        switchToRegister: {},
+        switchToForgotPassword: {}
     )
 }

@@ -78,6 +78,32 @@ struct SuccessResponse: Codable {
         self.message = message
         self.success = true
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Try to decode success field, default to true if not present
+        success = try container.decodeIfPresent(Bool.self, forKey: .success) ?? true
+        
+        // Try to decode message field
+        if let message = try container.decodeIfPresent(String.self, forKey: .message) {
+            self.message = message
+        } else {
+            // If no message field, try to decode the entire response as a string
+            let singleValueContainer = try decoder.singleValueContainer()
+            if let stringMessage = try? singleValueContainer.decode(String.self) {
+                self.message = stringMessage
+            } else {
+                // Default message if nothing can be decoded
+                self.message = "Operación exitosa"
+            }
+        }
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case message
+        case success
+    }
 }
 
 // MARK: - Profile Response Models
@@ -332,6 +358,77 @@ struct ServiceStatus: Codable {
     enum CodingKeys: String, CodingKey {
         case status
         case responseTime = "response_time"
+    }
+}
+
+// MARK: - Password Recovery Models
+struct PasswordResetRequest: Codable {
+    let email: String
+    
+    enum CodingKeys: String, CodingKey {
+        case email
+    }
+}
+
+// MARK: - Flexible Password Reset Response
+struct PasswordResetResponse: Codable {
+    let message: String
+    let success: Bool
+    
+    init(from decoder: Decoder) throws {
+        // Try to decode as object first
+        if let container = try? decoder.container(keyedBy: CodingKeys.self) {
+            message = try container.decodeIfPresent(String.self, forKey: .message) ?? "Código enviado exitosamente"
+            success = try container.decodeIfPresent(Bool.self, forKey: .success) ?? true
+        } else {
+            // Try to decode as simple string
+            let singleValueContainer = try decoder.singleValueContainer()
+            if let stringMessage = try? singleValueContainer.decode(String.self) {
+                message = stringMessage
+                success = true
+            } else {
+                // Default values
+                message = "Código enviado exitosamente"
+                success = true
+            }
+        }
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case message
+        case success
+    }
+}
+
+struct CodeVerificationRequest: Codable {
+    let email: String
+    let code: String
+    
+    enum CodingKeys: String, CodingKey {
+        case email
+        case code
+    }
+}
+
+struct ResetPasswordRequest: Codable {
+    let email: String
+    let code: String
+    let newPassword: String
+    
+    enum CodingKeys: String, CodingKey {
+        case email
+        case code
+        case newPassword
+    }
+}
+
+struct CodeVerificationResponse: Codable {
+    let valid: Bool
+    let tempToken: String
+    
+    enum CodingKeys: String, CodingKey {
+        case valid
+        case tempToken
     }
 }
 

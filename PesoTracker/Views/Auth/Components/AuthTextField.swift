@@ -21,7 +21,7 @@ struct AuthTextField: View {
     
     init(text: Binding<String>, 
          placeholder: String, 
-         isSecure: Bool = false, 
+         isSecure: Bool = false,
          onSubmit: (() -> Void)? = nil,
          errorMessage: String? = nil,
          validationState: ValidationState = .none,
@@ -55,7 +55,7 @@ struct AuthTextField: View {
                     }
                 }
                 .font(.system(size: 16))
-                .foregroundColor(Color(NSColor.textColor))
+                .foregroundColor(.primary)
                 .textFieldStyle(PlainTextFieldStyle())
                 
                 // Validation indicator and password toggle
@@ -84,7 +84,7 @@ struct AuthTextField: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(NSColor.textBackgroundColor))
+                    .fill(Color(.textBackgroundColor))
                     .shadow(color: Color.primary.opacity(0.1), radius: 1, x: 0, y: 1)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
@@ -183,7 +183,7 @@ struct AuthTextField: View {
             text: .constant(""),
             placeholder: "Contraseña",
             isSecure: true,
-            onSubmit: { print("Submit") }
+            onSubmit: { }
         )
         
         AuthTextField(

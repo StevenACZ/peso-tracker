@@ -39,6 +39,9 @@ struct Constants {
             static let login = "/auth/login"
             static let register = "/auth/register"
             static let logout = "/auth/logout"
+            static let forgotPassword = "/auth/forgot-password"
+            static let verifyResetCode = "/auth/verify-reset-code"
+            static let resetPasswordWithCode = "/auth/reset-password-with-code"
             static let weights = "/weights"
             static let goals = "/goals"
             static let photos = "/photos"
@@ -106,6 +109,13 @@ struct Constants {
         static let minWeight: Double = 1.0
         static let maxWeight: Double = 1000.0
         static let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        
+        // Password Recovery Validation
+        static let verificationCodeLength = 6
+        static let maxPasswordResetAttempts = 5
+        static let passwordResetTimeoutMinutes = 15
+        static let codeExpirationMinutes = 10
+        static let rateLimitWaitMinutes = 5
     }
     
     // MARK: - Date Formats
@@ -120,5 +130,45 @@ struct Constants {
         static let maxImageSize: CGFloat = 1024.0
         static let compressionQuality: CGFloat = 0.8
         static let allowedImageTypes = ["jpg", "jpeg", "png"]
+    }
+    
+    // MARK: - Error Messages
+    struct ErrorMessages {
+        // Password Recovery Errors
+        struct PasswordRecovery {
+            static let emailRequired = "El email es requerido"
+            static let emailInvalid = "Formato de email inválido"
+            static let emailNotFound = "No se encontró una cuenta con este email"
+            static let codeRequired = "El código es requerido"
+            static let codeInvalid = "El código debe tener 6 dígitos numéricos"
+            static let codeIncorrect = "El código ingresado es incorrecto"
+            static let codeExpired = "El código ha expirado. Solicita uno nuevo"
+            static let codeUsed = "Este código ya ha sido utilizado"
+            static let maxAttemptsExceeded = "Has excedido el número máximo de intentos"
+            static let passwordRequired = "La contraseña es requerida"
+            static let passwordTooShort = "La contraseña debe tener al menos \(Validation.minPasswordLength) caracteres"
+            static let passwordTooLong = "La contraseña no puede tener más de \(Validation.maxPasswordLength) caracteres"
+            static let passwordsDoNotMatch = "Las contraseñas no coinciden"
+            static let sessionExpired = "La sesión ha expirado. Inicia el proceso nuevamente"
+            static let rateLimitExceeded = "Demasiados intentos. Espera \(Validation.rateLimitWaitMinutes) minutos"
+        }
+        
+        // Network Errors
+        struct Network {
+            static let noConnection = "No hay conexión a internet"
+            static let timeout = "La conexión ha expirado"
+            static let serverUnavailable = "Servidor no disponible"
+            static let connectionLost = "Se perdió la conexión de red"
+            static let genericError = "Error de conexión"
+        }
+        
+        // Server Errors
+        struct Server {
+            static let internalError = "Error interno del servidor"
+            static let badGateway = "Servidor no disponible temporalmente"
+            static let serviceUnavailable = "Servicio no disponible"
+            static let gatewayTimeout = "Tiempo de espera agotado"
+            static let genericError = "Error del servidor"
+        }
     }
 }
