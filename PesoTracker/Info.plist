@@ -17,6 +17,9 @@
 	<key>API_PORT</key>
 	<string>$(API_PORT)</string>
 	
+	<key>API_BASE_PATH</key>
+	<string>$(API_BASE_PATH)</string>
+	
 	<!-- App Information -->
 	<key>CFBundleName</key>
 	<string>PesoTracker</string>
