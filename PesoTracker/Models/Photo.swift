@@ -38,9 +38,14 @@ struct Photo: Codable, Identifiable {
             weightId = try container.decode(String.self, forKey: .weightId)
         }
         
-        thumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
-        mediumUrl = try container.decodeIfPresent(String.self, forKey: .mediumUrl)
-        fullUrl = try container.decodeIfPresent(String.self, forKey: .fullUrl)
+        // Transform URLs to use correct base URL based on environment
+        let rawThumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
+        let rawMediumUrl = try container.decodeIfPresent(String.self, forKey: .mediumUrl)
+        let rawFullUrl = try container.decodeIfPresent(String.self, forKey: .fullUrl)
+        
+        thumbnailUrl = URLHelper.transformPhotoURL(rawThumbnailUrl)
+        mediumUrl = rawMediumUrl != nil ? URLHelper.transformPhotoURL(rawMediumUrl!) : nil
+        fullUrl = rawFullUrl != nil ? URLHelper.transformPhotoURL(rawFullUrl!) : nil
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         
         // Handle userId as either Int or String

@@ -498,9 +498,15 @@ struct ProgressPhoto: Codable {
         userId = try container.decode(Int.self, forKey: .userId)
         weightId = try container.decode(Int.self, forKey: .weightId)
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        thumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
-        mediumUrl = try container.decode(String.self, forKey: .mediumUrl)
-        fullUrl = try container.decode(String.self, forKey: .fullUrl)
+        
+        // Transform URLs to use correct base URL based on environment
+        let rawThumbnailUrl = try container.decode(String.self, forKey: .thumbnailUrl)
+        let rawMediumUrl = try container.decode(String.self, forKey: .mediumUrl)
+        let rawFullUrl = try container.decode(String.self, forKey: .fullUrl)
+        
+        thumbnailUrl = URLHelper.transformPhotoURL(rawThumbnailUrl)
+        mediumUrl = URLHelper.transformPhotoURL(rawMediumUrl)
+        fullUrl = URLHelper.transformPhotoURL(rawFullUrl)
         
         // Handle date parsing for createdAt and updatedAt
         let formatter = ISO8601DateFormatter()
