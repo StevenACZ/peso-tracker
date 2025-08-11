@@ -249,7 +249,7 @@ class DashboardViewModel: ObservableObject {
     }
     
     var canShowProgress: Bool {
-        return hasWeightData && hasGoalData
+        return hasWeightData // Solo requiere datos de peso, no necesariamente una meta activa
     }
     
     // MARK: - Load Progress Data

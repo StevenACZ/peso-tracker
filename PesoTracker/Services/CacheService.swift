@@ -472,6 +472,61 @@ class CacheService {
             }
         }
     }
+    
+    /// Validates and removes cached items with expired photos
+    /// This method should be called periodically to maintain cache freshness
+    func cleanupExpiredPhotoCache() {
+        cacheQueue.async(flags: .barrier) {
+            var removedTableItems = 0
+            var removedProgressItems = 0
+            
+            // Clean table cache for weights with expired photos
+            var tableCacheToRemove: [String] = []
+            for (key, cachedPage) in self.tableCache {
+                var hasExpiredPhotos = false
+                for weight in cachedPage.data {
+                    if let photo = weight.photo, photo.isExpired {
+                        hasExpiredPhotos = true
+                        self.logCacheOperation("Found expired photo for weight \(weight.id) in \(key)")
+                        break
+                    }
+                }
+                
+                if hasExpiredPhotos {
+                    tableCacheToRemove.append(key)
+                }
+            }
+            
+            // Remove expired table cache items
+            for key in tableCacheToRemove {
+                self.tableCache.removeValue(forKey: key)
+                if let index = self.accessOrder.firstIndex(of: key) {
+                    self.accessOrder.remove(at: index)
+                }
+                removedTableItems += 1
+            }
+            
+            // Clean progress cache for expired photos
+            if let progressData = self.progressCache {
+                let hasExpiredProgressPhotos = progressData.contains { progressResponse in
+                    if let photo = progressResponse.photo {
+                        return photo.isExpired
+                    }
+                    return false
+                }
+                
+                if hasExpiredProgressPhotos {
+                    self.progressCache = nil
+                    removedProgressItems = 1
+                    self.logCacheOperation("Progress cache cleared due to expired photos")
+                }
+            }
+            
+            if removedTableItems > 0 || removedProgressItems > 0 {
+                self.logCacheOperation("Photo expiration cleanup: cleared \(removedTableItems) table pages and \(removedProgressItems) progress cache entries")
+            }
+        }
+    }
 }
 
 // MARK: - Debug Support
@@ -484,6 +539,9 @@ extension CacheService {
             let memoryUsage = calculateApproximateMemoryUsage()
             let totalCacheSize = tableCache.count + chartCache.count
             let progressRecords = progressCache?.count ?? 0
+            
+            // Check for expired photos in cache
+            let expiredPhotoStats = getExpiredPhotoStats()
             
             return [
                 "totalTablePages": tableCache.count,
@@ -498,9 +556,48 @@ extension CacheService {
                 "maxMemoryUsage": maxMemoryUsage,
                 "memoryUsagePercentage": Double(memoryUsage) / Double(maxMemoryUsage) * 100,
                 "accessOrder": accessOrder,
-                "cacheUtilization": Double(totalCacheSize) / Double(maxCacheSize) * 100
+                "cacheUtilization": Double(totalCacheSize) / Double(maxCacheSize) * 100,
+                "expiredPhotos": expiredPhotoStats
             ]
         }
+    }
+    
+    /// Gets statistics about expired photos in cache
+    /// - Returns: Dictionary with expired photo statistics
+    private func getExpiredPhotoStats() -> [String: Any] {
+        var tablePagesWithExpiredPhotos = 0
+        var totalExpiredPhotos = 0
+        var progressHasExpiredPhotos = false
+        
+        // Check table cache
+        for (_, cachedPage) in tableCache {
+            var pageHasExpiredPhotos = false
+            for weight in cachedPage.data {
+                if let photo = weight.photo, photo.isExpired {
+                    totalExpiredPhotos += 1
+                    pageHasExpiredPhotos = true
+                }
+            }
+            if pageHasExpiredPhotos {
+                tablePagesWithExpiredPhotos += 1
+            }
+        }
+        
+        // Check progress cache
+        if let progressData = progressCache {
+            progressHasExpiredPhotos = progressData.contains { progressResponse in
+                if let photo = progressResponse.photo {
+                    return photo.isExpired
+                }
+                return false
+            }
+        }
+        
+        return [
+            "tablePagesWithExpiredPhotos": tablePagesWithExpiredPhotos,
+            "totalExpiredPhotos": totalExpiredPhotos,
+            "progressHasExpiredPhotos": progressHasExpiredPhotos
+        ]
     }
     
     /// Calculates approximate memory usage of cached data

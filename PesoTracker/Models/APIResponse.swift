@@ -33,10 +33,27 @@ struct APIResponseWrapper<T: Codable>: Codable {
 struct PaginatedResponse<T: Codable>: Codable {
     let data: [T]
     let pagination: PaginationInfo
+    let metadata: APIMetadata?
     
     enum CodingKeys: String, CodingKey {
         case data
         case pagination
+        case metadata
+    }
+}
+
+// MARK: - API Metadata
+struct APIMetadata: Codable {
+    let isCloudflare: Bool?
+    let optimizedForMobile: Bool?
+    let dataCount: Int?
+    let photosCount: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case isCloudflare
+        case optimizedForMobile
+        case dataCount
+        case photosCount
     }
 }
 
@@ -46,11 +63,26 @@ struct PaginationInfo: Codable {
     let total: Int
     let totalPages: Int
     
+    // New pagination helpers (optional for backward compatibility)
+    let hasNext: Bool?
+    let hasPrev: Bool?
+    
+    // Computed properties for easy access with fallback logic
+    var hasNextPage: Bool {
+        return hasNext ?? (page < totalPages)
+    }
+    
+    var hasPreviousPage: Bool {
+        return hasPrev ?? (page > 1)
+    }
+    
     enum CodingKeys: String, CodingKey {
         case page
         case limit
         case total
         case totalPages
+        case hasNext
+        case hasPrev
     }
 }
 
@@ -479,6 +511,10 @@ struct ProgressPhoto: Codable {
     let createdAt: Date
     let updatedAt: Date
     
+    // New metadata fields (optional for backward compatibility)
+    let expiresIn: Int?
+    let format: String?
+    
     enum CodingKeys: String, CodingKey {
         case id
         case userId
@@ -489,6 +525,8 @@ struct ProgressPhoto: Codable {
         case fullUrl
         case createdAt
         case updatedAt
+        case expiresIn
+        case format
     }
     
     init(from decoder: Decoder) throws {
@@ -527,5 +565,39 @@ struct ProgressPhoto: Codable {
             formatter.formatOptions = [.withInternetDateTime]
             updatedAt = formatter.date(from: updatedAtString) ?? Date()
         }
+        
+        // Decode optional metadata fields
+        expiresIn = try container.decodeIfPresent(Int.self, forKey: .expiresIn)
+        format = try container.decodeIfPresent(String.self, forKey: .format)
+    }
+}
+
+// MARK: - ProgressPhoto Extensions
+extension ProgressPhoto {
+    /// Checks if the photo cache should be expired based on expiresIn field
+    /// - Returns: true if photo should be considered expired
+    var isExpired: Bool {
+        guard let expiresIn = expiresIn else {
+            // If no expiration provided, assume it never expires
+            return false
+        }
+        
+        // Calculate expiration based on updatedAt + expiresIn seconds
+        let expirationDate = updatedAt.addingTimeInterval(TimeInterval(expiresIn))
+        return Date() > expirationDate
+    }
+    
+    /// Returns the expiration date for this photo
+    /// - Returns: Date when photo cache expires, nil if never expires
+    var expirationDate: Date? {
+        guard let expiresIn = expiresIn else { return nil }
+        return updatedAt.addingTimeInterval(TimeInterval(expiresIn))
+    }
+    
+    /// Returns seconds until expiration
+    /// - Returns: seconds until expiration, nil if never expires
+    var secondsUntilExpiration: TimeInterval? {
+        guard let expirationDate = expirationDate else { return nil }
+        return expirationDate.timeIntervalSinceNow
     }
 }

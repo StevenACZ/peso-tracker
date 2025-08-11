@@ -78,6 +78,7 @@ class AuthService: ObservableObject {
         
         // Clear keychain
         keychainHelper.delete(key: Constants.Keychain.jwtToken)
+        keychainHelper.delete(key: Constants.Keychain.refreshToken)
         keychainHelper.delete(key: Constants.Keychain.userID)
         
         // Update authentication state
@@ -124,11 +125,12 @@ class AuthService: ObservableObject {
             print("   User ID: \(response.user.id)")
             print("   Expires: \(response.expiresAt)")
             
-            // Save token and user ID to keychain
-            let tokenSaved = keychainHelper.save(key: Constants.Keychain.jwtToken, value: response.token)
+            // Save tokens and user ID to keychain
+            let accessTokenSaved = keychainHelper.save(key: Constants.Keychain.jwtToken, value: response.accessToken)
+            let refreshTokenSaved = keychainHelper.save(key: Constants.Keychain.refreshToken, value: response.refreshToken)
             let userIDSaved = keychainHelper.save(key: Constants.Keychain.userID, value: response.user.id)
             
-            guard tokenSaved && userIDSaved else {
+            guard accessTokenSaved && refreshTokenSaved && userIDSaved else {
                 throw APIError.serverError(500, "Error al guardar credenciales")
             }
             
@@ -186,11 +188,12 @@ class AuthService: ObservableObject {
             print("   User ID: \(response.user.id)")
             print("   Expires: \(response.expiresAt)")
             
-            // Save token and user ID to keychain
-            let tokenSaved = keychainHelper.save(key: Constants.Keychain.jwtToken, value: response.token)
+            // Save tokens and user ID to keychain
+            let accessTokenSaved = keychainHelper.save(key: Constants.Keychain.jwtToken, value: response.accessToken)
+            let refreshTokenSaved = keychainHelper.save(key: Constants.Keychain.refreshToken, value: response.refreshToken)
             let userIDSaved = keychainHelper.save(key: Constants.Keychain.userID, value: response.user.id)
             
-            guard tokenSaved && userIDSaved else {
+            guard accessTokenSaved && refreshTokenSaved && userIDSaved else {
                 throw APIError.serverError(500, "Error al guardar credenciales")
             }
             
@@ -223,6 +226,7 @@ class AuthService: ObservableObject {
     func logout() {
         // Clear keychain
         keychainHelper.delete(key: Constants.Keychain.jwtToken)
+        keychainHelper.delete(key: Constants.Keychain.refreshToken)
         keychainHelper.delete(key: Constants.Keychain.userID)
         
         // Update authentication state
@@ -295,6 +299,10 @@ class AuthService: ObservableObject {
         return keychainHelper.get(key: Constants.Keychain.jwtToken)
     }
     
+    func getRefreshToken() -> String? {
+        return keychainHelper.get(key: Constants.Keychain.refreshToken)
+    }
+    
     func isTokenValid() -> Bool {
         guard let token = getAuthToken(), !token.isEmpty else {
             return false
@@ -303,6 +311,57 @@ class AuthService: ObservableObject {
         // Basic token validation - in a real app you might want to decode JWT and check expiration
         // For now, we'll assume the token is valid if it exists
         return true
+    }
+    
+    // MARK: - Refresh Token
+    func refreshToken() async throws -> RefreshTokenResponse {
+        guard let refreshToken = getRefreshToken(), !refreshToken.isEmpty else {
+            print("❌ [REFRESH TOKEN] No refresh token available")
+            throw APIError.authenticationFailed
+        }
+        
+        let request = RefreshTokenRequest(refreshToken: refreshToken)
+        
+        print("🔄 [REFRESH TOKEN] Refreshing access token...")
+        print("   Refresh Token: \(refreshToken.prefix(20))...")
+        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.refresh)")
+        
+        do {
+            let response = try await apiService.post(
+                endpoint: Constants.API.Endpoints.refresh,
+                body: request,
+                responseType: RefreshTokenResponse.self,
+                requiresAuth: false
+            )
+            
+            print("✅ [REFRESH TOKEN] Token refresh successful:")
+            print("   New Access Token: \(response.accessToken.prefix(20))...")
+            print("   New Refresh Token: \(response.refreshToken.prefix(20))...")
+            print("   Expires In: \(response.expiresIn) seconds")
+            
+            // Save new tokens to keychain
+            let accessTokenSaved = keychainHelper.save(key: Constants.Keychain.jwtToken, value: response.accessToken)
+            let refreshTokenSaved = keychainHelper.save(key: Constants.Keychain.refreshToken, value: response.refreshToken)
+            
+            guard accessTokenSaved && refreshTokenSaved else {
+                print("❌ [REFRESH TOKEN] Failed to save new tokens to keychain")
+                throw APIError.serverError(500, "Error al guardar tokens actualizados")
+            }
+            
+            print("✅ [REFRESH TOKEN] New tokens saved to keychain")
+            return response
+            
+        } catch {
+            print("❌ [REFRESH TOKEN] Token refresh failed:")
+            print("   Error: \(error)")
+            
+            // If refresh fails, perform auto-logout
+            await MainActor.run {
+                self.performAutoLogout()
+            }
+            
+            throw error
+        }
     }
     
     func refreshAuthenticationStatus() {

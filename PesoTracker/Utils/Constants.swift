@@ -47,6 +47,7 @@ struct Constants {
             static let login = "/auth/login"
             static let register = "/auth/register"
             static let logout = "/auth/logout"
+            static let refresh = "/auth/refresh"
             static let forgotPassword = "/auth/forgot-password"
             static let verifyResetCode = "/auth/verify-reset-code"
             static let resetPassword = "/auth/reset-password"
@@ -77,6 +78,7 @@ struct Constants {
     // MARK: - Keychain Keys
     struct Keychain {
         static let jwtToken = "peso_tracker_jwt_token"
+        static let refreshToken = "peso_tracker_refresh_token"
         static let userID = "peso_tracker_user_id"
     }
     

@@ -130,6 +130,10 @@ struct WeightPhoto: Codable, Identifiable {
     let createdAt: Date
     let updatedAt: Date
     
+    // New metadata fields (optional for backward compatibility)
+    let expiresIn: Int?
+    let format: String?
+    
     enum CodingKeys: String, CodingKey {
         case id
         case userId
@@ -139,6 +143,8 @@ struct WeightPhoto: Codable, Identifiable {
         case fullUrl
         case createdAt
         case updatedAt
+        case expiresIn
+        case format
     }
     
     init(from decoder: Decoder) throws {
@@ -166,6 +172,10 @@ struct WeightPhoto: Codable, Identifiable {
         
         let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
         updatedAt = dateFormatter.date(from: updatedAtString) ?? Date()
+        
+        // Decode optional metadata fields
+        expiresIn = try container.decodeIfPresent(Int.self, forKey: .expiresIn)
+        format = try container.decodeIfPresent(String.self, forKey: .format)
     }
 }
 
@@ -191,5 +201,35 @@ extension Weight {
         formatter.timeStyle = .none
         formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - WeightPhoto Extensions
+extension WeightPhoto {
+    /// Checks if the photo cache should be expired based on expiresIn field
+    /// - Returns: true if photo should be considered expired
+    var isExpired: Bool {
+        guard let expiresIn = expiresIn else {
+            // If no expiration provided, assume it never expires
+            return false
+        }
+        
+        // Calculate expiration based on updatedAt + expiresIn seconds
+        let expirationDate = updatedAt.addingTimeInterval(TimeInterval(expiresIn))
+        return Date() > expirationDate
+    }
+    
+    /// Returns the expiration date for this photo
+    /// - Returns: Date when photo cache expires, nil if never expires
+    var expirationDate: Date? {
+        guard let expiresIn = expiresIn else { return nil }
+        return updatedAt.addingTimeInterval(TimeInterval(expiresIn))
+    }
+    
+    /// Returns seconds until expiration
+    /// - Returns: seconds until expiration, nil if never expires
+    var secondsUntilExpiration: TimeInterval? {
+        guard let expirationDate = expirationDate else { return nil }
+        return expirationDate.timeIntervalSinceNow
     }
 }

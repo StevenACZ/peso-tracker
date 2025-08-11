@@ -91,16 +91,22 @@ class HTTPClient {
                 }
                 
             case 401:
-                // Unauthorized - token expired or invalid
-                print("🔐 [HTTP CLIENT] 401 Unauthorized - triggering auto-logout")
-                await triggerAutoLogout()
-                throw APIError.authenticationFailed
+                // Unauthorized - try to refresh token first
+                print("🔐 [HTTP CLIENT] 401 Unauthorized - attempting token refresh")
+                if let refreshedRequest = await attemptTokenRefreshAndRetry(request) {
+                    return try await performRequestWithoutRetry(refreshedRequest, responseType: responseType)
+                } else {
+                    throw APIError.authenticationFailed
+                }
                 
             case 403:
-                // Forbidden - token expired
-                print("🔐 [HTTP CLIENT] 403 Forbidden - triggering auto-logout")
-                await triggerAutoLogout()
-                throw APIError.tokenExpired
+                // Forbidden - try to refresh token first
+                print("🔐 [HTTP CLIENT] 403 Forbidden - attempting token refresh")
+                if let refreshedRequest = await attemptTokenRefreshAndRetry(request) {
+                    return try await performRequestWithoutRetry(refreshedRequest, responseType: responseType)
+                } else {
+                    throw APIError.tokenExpired
+                }
                 
             default:
                 // Server error
@@ -123,6 +129,78 @@ class HTTPClient {
             return try jsonEncoder.encode(body)
         } catch {
             throw APIError.encodingError(error)
+        }
+    }
+    
+    // MARK: - Request without retry (to avoid infinite loops)
+    private func performRequestWithoutRetry<T: Codable>(
+        _ request: URLRequest,
+        responseType: T.Type
+    ) async throws -> T {
+        
+        // Execute request
+        do {
+            let (data, response) = try await session.data(for: request)
+            
+            // Validate HTTP response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+            
+            // Handle HTTP status codes (without retry logic)
+            switch httpResponse.statusCode {
+            case 200...299:
+                // Success - decode response
+                do {
+                    let decodedResponse = try jsonDecoder.decode(T.self, from: data)
+                    return decodedResponse
+                } catch {
+                    throw APIError.decodingError(error)
+                }
+                
+            case 401:
+                throw APIError.authenticationFailed
+                
+            case 403:
+                throw APIError.tokenExpired
+                
+            default:
+                // Server error
+                let errorMessage = String(data: data, encoding: .utf8)
+                throw APIError.serverError(httpResponse.statusCode, errorMessage)
+            }
+            
+        } catch {
+            if error is APIError {
+                throw error
+            } else {
+                throw APIError.networkError(error)
+            }
+        }
+    }
+    
+    // MARK: - Token Refresh and Retry Logic
+    private func attemptTokenRefreshAndRetry(
+        _ originalRequest: URLRequest
+    ) async -> URLRequest? {
+        do {
+            // Try to refresh the token
+            let _ = try await AuthService.shared.refreshToken()
+            
+            // Update the request with new authorization header
+            var refreshedRequest = originalRequest
+            let authHeaders = AuthenticationHandler().getAuthHeaders()
+            for (key, value) in authHeaders {
+                refreshedRequest.setValue(value, forHTTPHeaderField: key)
+            }
+            
+            print("✅ [HTTP CLIENT] Token refreshed successfully, retrying original request")
+            return refreshedRequest
+            
+        } catch {
+            print("❌ [HTTP CLIENT] Token refresh failed: \(error)")
+            await triggerAutoLogout()
+            return nil
         }
     }
     

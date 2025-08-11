@@ -77,38 +77,84 @@ struct RegisterRequest: Codable {
 }
 
 struct AuthResponse: Codable {
-    let token: String
+    let accessToken: String
+    let refreshToken: String
+    let expiresIn: Int
+    let tokenType: String
     let user: User
-    let expiresAt: Date
+    
+    // Legacy support - computed properties for backward compatibility
+    var token: String { return accessToken }
+    var expiresAt: Date { return Date().addingTimeInterval(TimeInterval(expiresIn)) }
     
     enum CodingKeys: String, CodingKey {
-        case token
+        case accessToken
+        case refreshToken
+        case expiresIn
+        case tokenType
         case user
-        case expiresAt = "expires_at"
+        
+        // Legacy key for decoding old format
+        case token
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        token = try container.decode(String.self, forKey: .token)
         user = try container.decode(User.self, forKey: .user)
         
-        // Handle expiresAt - try different formats or use default
-        if let dateString = try? container.decode(String.self, forKey: .expiresAt) {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            formatter.timeZone = TimeZone(identifier: "UTC")
-            
-            if let date = formatter.date(from: dateString) {
-                expiresAt = date
-            } else {
-                formatter.formatOptions = [.withInternetDateTime]
-                expiresAt = formatter.date(from: dateString) ?? Date().addingTimeInterval(3600)
-            }
+        // Try new format first
+        if let newAccessToken = try? container.decode(String.self, forKey: .accessToken) {
+            // New API format
+            accessToken = newAccessToken
+            refreshToken = try container.decode(String.self, forKey: .refreshToken)
+            expiresIn = try container.decode(Int.self, forKey: .expiresIn)
+            tokenType = try container.decode(String.self, forKey: .tokenType)
         } else {
-            // Default to 1 hour from now if no expiration provided
-            expiresAt = Date().addingTimeInterval(3600)
+            // Legacy format support
+            accessToken = try container.decode(String.self, forKey: .token)
+            refreshToken = "" // Default for legacy
+            expiresIn = 900 // Default 15 minutes
+            tokenType = "Bearer"
         }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(accessToken, forKey: .accessToken)
+        try container.encode(refreshToken, forKey: .refreshToken)
+        try container.encode(expiresIn, forKey: .expiresIn)
+        try container.encode(tokenType, forKey: .tokenType)
+        try container.encode(user, forKey: .user)
+    }
+}
+
+// MARK: - Refresh Token Models
+struct RefreshTokenRequest: Codable {
+    let refreshToken: String
+}
+
+struct RefreshTokenResponse: Codable {
+    let accessToken: String
+    let refreshToken: String
+    let expiresIn: Int
+    let tokenType: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case accessToken
+        case refreshToken
+        case expiresIn
+        case tokenType
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        accessToken = try container.decode(String.self, forKey: .accessToken)
+        refreshToken = try container.decode(String.self, forKey: .refreshToken)
+        expiresIn = try container.decode(Int.self, forKey: .expiresIn)
+        tokenType = try container.decodeIfPresent(String.self, forKey: .tokenType) ?? "Bearer"
     }
 }
 
