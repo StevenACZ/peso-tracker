@@ -1,75 +1,81 @@
 # CLAUDE.md
 
 ## Project Overview
-PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authentication, weight tracking, goals, photos, charts, and smart caching.
+PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT authentication with refresh tokens, smart caching with photo expiration, weight tracking, goals, progress photos, and Cloudflare-optimized API integration.
 
 ## Key Files
 
-### UI Components
-- `Views/Auth/` - **Complete password reset flow** ✅ ENHANCED
-  - `AuthView.swift` - Main auth router
-  - `CodeVerificationView.swift` - **NEW** Professional code verification
-  - `ForgotPasswordView.swift` - Email input for password reset
-  - `ResetPasswordView.swift` - New password input
-  - `Components/ErrorModalWithRetry.swift` - **NEW** Advanced error handling
-- `Views/Dashboard/MainDashboardView.swift` - Main dashboard (35% sidebar, 65% content)
-- `Views/Dashboard/Components/WeightRecordsView.swift` - Weight table with skeleton loading
-- `Views/Dashboard/Modals/AddWeightModal.swift` - Add/edit weights with photos
-- `Views/Dashboard/Modals/ViewProgressModal.swift` - Progress photos with lazy loading
-- `Views/Dashboard/Components/SettingsDropdown.swift` - Settings with logout
-
-### Modular Components ✅ REFACTORED
-- `Views/Dashboard/Modals/ViewProgressComponents/` - **MODULARIZED**
-  - `ProgressDataManager.swift` - State management and data loading
-  - `ProgressStateViews.swift` - Loading, error, and empty state views
-  - `ProgressPhotoViewer.swift` - Photo viewer with LazyAsyncImage
-  - `ProgressInfoComponents.swift` - Info displays (indicators, weight, notes, progress bar)
-  - `ProgressContentView.swift` - Main content container
-- `Services/Export/` - **MODULARIZED** 
-  - `ExportModels.swift` - Export data models and configuration
-  - `ExportFileManager.swift` - File system operations and folder management
-  - `ExportDataFetcher.swift` - Data fetching and API calls
-  - `ExportPhotoDownloader.swift` - Photo download and organization
-  - `ExportMetadataGenerator.swift` - Metadata file generation
-
-### Services
-- `Services/AuthService.swift` - JWT authentication + **password reset** ✅ UPDATED
-- `Services/APIService.swift` - HTTP client
+### Services ⚡ CLOUDFLARE-READY
+- `Services/AuthService.swift` - JWT auth + **refresh tokens** + auto-renewal ✅ UPGRADED
+- `Services/Networking/HTTPClient.swift` - HTTP client + **auto-retry logic** + token refresh ✅ NEW
+- `Services/APIService.swift` - Modular HTTP client architecture
+- `Services/CacheService.swift` - Smart cache + **photo expiration** (550+ lines) ✅ ENHANCED
 - `Services/DashboardService.swift` - Dashboard data + logout
 - `Services/WeightService.swift` - Weight CRUD + cache invalidation
-- `Services/CacheService.swift` - Smart cache system (446 lines - **NOT MODULARIZED**)
 - `Services/GoalService.swift` - Goal management
-- `Services/LocalStorageService.swift` - **REFACTORED** to DataExportService (coordinator)
 
-### Models
-- `Models/Weight.swift` - Weight data with photos
-- `Models/APIResponse.swift` - API responses + **password reset models** ✅ UPDATED
-- `Models/User.swift` - User data
-- `Models/Goal.swift` - Goal data
+### Models ✅ CLOUDFLARE-ENHANCED
+- `Models/User.swift` - **AuthResponse** with accessToken + refreshToken + legacy support ✅ UPDATED
+- `Models/APIResponse.swift` - **PaginationInfo** + hasNext/hasPrev + APIMetadata ✅ ENHANCED
+- `Models/Weight.swift` - **WeightPhoto** + expiresIn + format + expiration logic ✅ UPGRADED
+- `Models/Goal.swift` - Goal data structures
 
-### Utils ✅ NEW
-- `Utils/Extensions.swift` - **NEW** Centralized extensions (Color hex support)
-- `Utils/Constants.swift` - App constants + **updated endpoints**
+### UI Components
+- `Views/Auth/` - Complete password reset flow ✅ COMPLETE
+- `Views/Dashboard/MainDashboardView.swift` - Main dashboard (35% sidebar, 65% content)
+- `Views/Dashboard/Components/RightContentPanel.swift` - Progress button (shows with weight data)
+- `Views/Dashboard/Modals/ViewProgressModal.swift` - Progress photos with lazy loading
 
-## Build Commands
-- Build: `xcodebuild -scheme PesoTracker -configuration Debug build`
-- Target: PesoTracker (macOS app)
-- Window: 1000x700 min, 1200x800 default
+### Modular Components ✅ REFACTORED
+- `Views/Dashboard/Modals/ViewProgressComponents/` - 5 focused components
+- `Services/Export/` - 5 specialized export services
+
+### Utils
+- `Utils/Constants.swift` - App constants + **/auth/refresh** endpoint ✅ UPDATED
+- `Utils/Extensions.swift` - Centralized extensions
+
+## ⚡ Cloudflare Integration ✅ NEW
+
+### Refresh Token System
+- **accessToken**: 15-minute JWT for API calls
+- **refreshToken**: 7-day JWT for token renewal
+- **Auto-refresh**: Seamless renewal on 401/403 responses
+- **Legacy compatible**: Supports old `token` format
+- **Keychain storage**: Secure token persistence
+
+### Smart Photo Caching
+- **expiresIn**: Photo URL expiration in seconds
+- **format**: Photo format metadata (heic, jpg, etc.)
+- **Auto-cleanup**: Expired photo cache invalidation
+- **Cache stats**: Debug info with expiration tracking
+
+### Enhanced Pagination
+- **hasNext/hasPrev**: Server-provided navigation hints
+- **APIMetadata**: Cloudflare optimization flags
+- **Fallback logic**: Computed properties for backward compatibility
+
+### Auto-Retry Logic
+- **401/403 detection**: Automatic token refresh attempt
+- **Request replay**: Seamless retry with fresh token
+- **Fallback logout**: Auto-logout if refresh fails
+- **Zero interruption**: User doesn't see auth failures
 
 ## Architecture
 - **Pattern**: MVVM with SwiftUI + Combine
-- **Services**: API communication, auth, caching
-- **ViewModels**: Business logic and state management
-- **Models**: Data structures with Codable support
+- **Security**: JWT + refresh tokens with auto-renewal
+- **Caching**: LRU cache with photo expiration intelligence
+- **Networking**: Auto-retry HTTP client with token refresh
+- **Compatibility**: 100% backward compatible with legacy APIs
 
 ## API Endpoints
 
-### Authentication & Password Reset ✅ UPDATED
-- `POST /auth/login` - User login
-- `POST /auth/register` - User registration
+### Authentication ✅ CLOUDFLARE-ENHANCED
+- `POST /auth/login` - Returns accessToken + refreshToken + user
+- `POST /auth/register` - Returns accessToken + refreshToken + user  
+- `POST /auth/refresh` - **NEW** Refresh expired access token
 - `POST /auth/forgot-password` - Request password reset code
-- `POST /auth/verify-reset-code` - Verify reset code → returns resetToken
-- `POST /auth/reset-password` - Reset password with token (simplified!)
+- `POST /auth/verify-reset-code` - Verify code → returns resetToken
+- `POST /auth/reset-password` - Reset password with token
 
 ### Weight Management
 - `POST /weights` - Create weight (multipart with photo)
@@ -80,116 +86,42 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: authent
 - `GET /weights/chart-data` - Chart data with time filters
 - `GET /weights/progress` - Progress photos
 
+## Smart Cache System ✅ CLOUDFLARE-ENHANCED
+
+### Cache Types + Photo Expiration
+- **Table Cache**: Paginated weights + photo expiration validation
+- **Chart Cache**: Chart data by time range  
+- **Progress Cache**: Progress photos + automatic expiration cleanup
+- **Photo Expiration**: Based on `expiresIn` metadata from Cloudflare
+
+### Intelligence Features
+- **Photo expiration detection**: `photo.isExpired` computed property
+- **Auto-cleanup**: `cleanupExpiredPhotoCache()` method
+- **Debug stats**: Expired photo tracking in `getCacheStatus()`
+- **Smart invalidation**: Removes cache when photos expire
+- **LRU management**: 50 items max, 10MB limit
+
+### Cache Behavior  
+- **Instant loading**: Shows "INSTANT" in logs for cached data
+- **Photo validation**: Checks expiration before serving cached images
+- **Memory pressure**: Automatic cleanup on system events
+- **CRUD invalidation**: Cache cleared on weight operations
+
+## Build Commands
+- Build: `xcodebuild -scheme PesoTracker -configuration Debug build`
+- Target: PesoTracker (macOS)
+- Window: 1000x700 min, 1200x800 default
+
 ## Key Settings
-- JWT tokens stored in Keychain
-- Images: 80% quality, max 1024px
-- Weight precision: 2 decimals
-- Spanish localization
-- Green color scheme
-
-## Smart Cache System ✅ COMPLETE
-
-### Cache Types
-- **Table Cache**: Paginated weight data (`"table_page_X"`)
-- **Chart Cache**: Chart data by time range (`"chart_timeRange_page_X"`)
-- **Progress Cache**: Progress photos array (single cache entry)
-
-### Cache Behavior
-- **First visit**: API call + cache storage
-- **Subsequent visits**: Instant loading (shows "INSTANT" in logs)
-- **Auto-invalidation**: Cache cleared on weight create/update/delete
-- **Memory management**: LRU cleanup (50 items max, 10MB limit)
-- **App lifecycle**: Auto-cleanup on termination/memory pressure
-
-### Integration Points
-- `DashboardService.loadTableData()` - checks cache before API
-- `DashboardService.loadChartData()` - checks cache before API  
-- `DashboardService.loadProgressData()` - checks cache before API
-- `WeightService` - invalidates cache after CRUD operations
-- `DashboardService.logout()` - clears all cache
-
-### Loading States
-- **Table**: Professional skeleton loading (5 rows with shimmer animation)
-- **Progress**: Lazy image loading with custom `LazyAsyncImage` component
-- **Charts**: Standard loading with cache check
-
-## Important Features
-
-### Progress Modal
-- Cached progress data for instant loading
-- Lazy image loading with `LazyAsyncImage`
-- Tap navigation (left/right halves)
-- Spanish dates, kg weights
-- Progress bar and dots indicator
-
-### Weight Table  
-- Professional skeleton loading (shimmer animation)
-- Smart pagination with cache
-- Edit/delete buttons per row
-- Photo indicators
-
-### BMI Calculator
-- Medical classifications with colors
-- Height/weight/age/gender inputs
-- Ideal weight range calculation
-- Accessible via settings dropdown
-
-### Goal Management
-- Create/edit weight goals
-- Date picker integration
-- Form validation
-- Auto-refresh dashboard
-
-### Password Reset Flow ✅ ENHANCED
-- **Step 1**: `ForgotPasswordView` → Email input → Success modal
-- **Step 2**: `CodeVerificationView` → 6-digit code → **Animated check modal** ✅
-- **Step 3**: `ResetPasswordView` → New password → Success modal → Login
-- **Security**: Token-based system (no local email/code persistence)
-- **UX**: Professional modals with smooth animations
-- **Validation**: Real-time form validation with visual states
+- **Tokens**: accessToken + refreshToken in Keychain
+- **Images**: 80% quality, max 1024px, smart expiration
+- **Cache**: LRU with photo expiration intelligence  
+- **Localization**: Spanish
+- **Theme**: Green color scheme
 
 ## Code Patterns
-- SwiftUI + Combine
-- Async/await for API calls
-- Spanish localization
-- Thread-safe operations
-- PlainButtonStyle for buttons
-- Green color scheme
-
-## Modularization Status ✅ COMPLETED
-
-### ✅ Successfully Modularized
-1. **ViewProgressComponents** (375 → 0 lines, deleted empty file)
-   - Split into 5 focused components
-   - Reusable LazyAsyncImage component
-   - Better separation of concerns
-   - Improved maintainability
-
-2. **LocalStorageService** (353 → DataExportService coordinator)
-   - Split into 5 specialized services
-   - Clean architecture with single responsibilities
-   - Better testability and maintenance
-
-### 🔄 Architecture Improvements
-- **Single Responsibility Principle** applied
-- **Reusable components** extracted (LazyAsyncImage)
-- **Modular file structure** for complex features
-- **Clean separation** of UI, data, and business logic
-- **Reduced cognitive load** per file
-
-### 📁 File Organization
-```
-PesoTracker/
-├── Views/Dashboard/Modals/ViewProgressComponents/
-│   ├── ProgressDataManager.swift
-│   ├── ProgressStateViews.swift
-│   ├── ProgressPhotoViewer.swift
-│   ├── ProgressInfoComponents.swift
-│   └── ProgressContentView.swift
-└── Services/Export/
-    ├── ExportModels.swift
-    ├── ExportFileManager.swift
-    ├── ExportDataFetcher.swift
-    ├── ExportPhotoDownloader.swift
-    └── ExportMetadataGenerator.swift
-```
+- **MVVM**: SwiftUI + Combine + Async/await
+- **Security**: JWT refresh tokens with auto-renewal
+- **Caching**: Smart invalidation with photo expiration
+- **Networking**: Auto-retry with token refresh
+- **Threading**: Thread-safe concurrent operations

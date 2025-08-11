@@ -4,11 +4,11 @@ Una aplicación macOS elegante y completa para el seguimiento de peso con caract
 
 ## ✨ Características Principales
 
-### 🔐 **Autenticación Completa**
-- Registro e inicio de sesión seguro con JWT
+### 🔐 **Autenticación Avanzada**
+- Registro e inicio de sesión súper seguro
 - Sistema completo de recuperación de contraseña
-- Verificación por código de 6 dígitos
-- Almacenamiento seguro en Keychain
+- Renovación automática de sesión (nunca más "sesión expirada") 
+- Almacenamiento ultra-seguro en el sistema
 
 ### ⚖️ **Seguimiento de Peso**
 - Registro de peso con fecha personalizable
@@ -34,11 +34,11 @@ Una aplicación macOS elegante y completa para el seguimiento de peso con caract
 - Rango de peso ideal personalizado
 - Entrada de altura, peso, edad y género
 
-### 📷 **Galería de Progreso**
+### 📷 **Galería de Progreso Inteligente**
 - Visualización de fotos organizadas por fecha
-- Navegación intuitiva entre imágenes
-- Carga lazy para mejor rendimiento
-- Indicadores de progreso visual
+- Navegación súper intuitiva entre imágenes
+- Carga ultra-rápida y eficiente
+- Sistema inteligente que actualiza fotos automáticamente
 
 ### 💾 **Exportación de Datos**
 - Exportación completa de datos a CSV
@@ -46,19 +46,25 @@ Una aplicación macOS elegante y completa para el seguimiento de peso con caract
 - Generación de archivos de metadatos
 - Sistema de carpetas estructurado
 
-### ⚡ **Rendimiento Optimizado**
-- Sistema de caché inteligente LRU
-- Carga instantánea de datos frecuentes
-- Invalidación automática de caché
-- Gestión eficiente de memoria
+### ⚡ **Rendimiento de Última Generación**
+- Carga instantánea de todos tus datos
+- Optimización automática de fotos y contenido
+- Sistema inteligente que siempre te muestra información fresca
+- Experiencia súper fluida sin esperas ni interrupciones
 
-## 🛠️ Tecnologías
+### 🚀 **Nuevas Mejoras 2024**
+- **Sesiones que nunca expiran**: Renovación automática invisible
+- **Fotos siempre actualizadas**: Sistema inteligente de actualización
+- **Velocidad mejorada**: Optimización con tecnología Cloudflare  
+- **Mayor confiabilidad**: Sistema de respaldo automático en caso de errores
 
-- **SwiftUI** - Interfaz de usuario moderna y reactiva
-- **Combine** - Programación reactiva y manejo de estado
-- **JWT** - Autenticación segura basada en tokens
-- **Async/Await** - Operaciones asíncronas eficientes
-- **Core Data** - Persistencia local inteligente
+## 🛠️ Tecnologías Avanzadas
+
+- **SwiftUI** - Interfaz moderna súper responsiva
+- **Seguridad Avanzada** - Autenticación con renovación automática  
+- **Cache Inteligente** - Sistema que aprende tus patrones de uso
+- **Optimización Cloudflare** - Velocidad y confiabilidad máxima
+- **Arquitectura Modular** - Diseño profesional y escalable
 
 ## 💻 Requisitos del Sistema
 
@@ -104,8 +110,9 @@ PesoTracker/
 - **Tema Verde** elegante y profesional
 - **Localización** completa en español
 - **Animaciones** suaves y naturales
-- **Loading States** con esqueletos profesionales
+- **Experiencia sin interrupciones** - nunca verás errores de sesión
 - **Responsive** adaptable a diferentes tamaños
+- **Rendimiento optimizado** - todo funciona instantáneamente
 
 ## 📱 Capturas de Pantalla
 
