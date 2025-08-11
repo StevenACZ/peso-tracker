@@ -21,10 +21,18 @@ struct Constants {
                !protocolValue.isEmpty && !host.isEmpty {
                 
                 let port = Bundle.main.object(forInfoDictionaryKey: "API_PORT") as? String ?? ""
+                let basePath = Bundle.main.object(forInfoDictionaryKey: "API_BASE_PATH") as? String ?? ""
                 
                 var url = "\(protocolValue)://\(host)"
+                
+                // Add port if specified (for development with localhost:3000)
                 if !port.isEmpty {
                     url += ":\(port)"
+                }
+                
+                // Add base path if specified (for production /peso-tracker/v1)
+                if !basePath.isEmpty {
+                    url += basePath
                 }
                 
                 return url

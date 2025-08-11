@@ -143,7 +143,7 @@
 		B0B409BB2E34857700A7DBC1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = B0B409B32E34857700A7DBC1 /* PesoTracker */;
-			baseConfigurationReferenceRelativePath = Config/Debug.xcconfig;
+			baseConfigurationReferenceRelativePath = Config/Release.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

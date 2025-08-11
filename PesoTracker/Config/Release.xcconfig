@@ -1,9 +1,9 @@
 // Release Configuration for PesoTracker - macOS only
 
 // API Configuration
-API_PROTOCOL = http
-API_HOST = 192.168.18.105/peso-tracker-api
-API_PORT = 
+API_PROTOCOL = https
+API_HOST = api.stevenacz.com
+API_BASE_PATH = /peso-tracker/v1
 
 // Build settings
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE
