@@ -20,13 +20,14 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - `Models/Weight.swift` - **WeightPhoto** + expiresIn + format + expiration logic ✅ UPGRADED
 - `Models/Goal.swift` - Goal data structures
 
-### UI Components ✅ LOADING-ENHANCED
+### UI Components ✅ ERROR-ENHANCED
 - `Views/Auth/` - Complete password reset flow ✅ COMPLETE
+- `Views/Auth/Components/ErrorModal.swift` - **Professional error modals** + reusable design ✅ ENHANCED
 - `Views/Dashboard/MainDashboardView.swift` - Main dashboard (35% sidebar, 65% content)
 - `Views/Dashboard/Components/RightContentPanel.swift` - Progress button (shows with weight data)
 - `Views/Dashboard/Components/LoadingOverlay.swift` - **Multi-context loading** + modal support ✅ ENHANCED
 - `Views/Dashboard/Modals/ViewProgressModal.swift` - Progress photos with lazy loading
-- `Views/Dashboard/Modals/AddWeightModal.swift` - **Complete UI blocking** during save ✅ PROTECTED
+- `Views/Dashboard/Modals/AddWeightModal.swift` - **ErrorModal integration** + complete UI blocking ✅ PROTECTED
 
 ### Modular Components ✅ REFACTORED
 - `Views/Dashboard/Modals/ViewProgressComponents/` - 5 focused components
@@ -46,6 +47,10 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 ### Image Handling ✅ DRAG & DROP ENHANCED
 - `ViewModels/Components/ImageHandler.swift` - **Universal drag & drop** + multi-format support ✅ UPGRADED
 - `Views/Dashboard/Modals/AddWeightModalComponents/PhotoUploadSection.swift` - **Enhanced onDrop** + expanded UTTypes ✅ IMPROVED
+
+### ViewModels ✅ ERROR-ENHANCED
+- `ViewModels/WeightEntryViewModel.swift` - **ErrorModal integration** + crash-safe message parsing ✅ UPGRADED
+- `ViewModels/Components/FormActionButtons.swift` - **ErrorModal logic** + improved save handling ✅ IMPROVED
 
 ## ⚡ Cloudflare Integration ✅ NEW
 
@@ -97,6 +102,15 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - **Visual Consistency**: Grayed out elements with loading indicators
 - **Custom Context**: "Guardando peso..." specific messaging
 - **Zero Interference**: Prevents data corruption during async operations
+
+### 🎨 ErrorModal System ✅ NEW
+- **Beautiful Error Display**: Professional modals instead of native system alerts
+- **Consistent Design**: Same visual style as Auth components (login/register)
+- **Smart Message Parsing**: Extracts clean user-friendly messages from server JSON
+- **Crash-Safe Parsing**: Robust string handling prevents index out of bounds errors
+- **Contextual Titles**: "Error al Guardar Peso" for weight form context
+- **Spring Animations**: Smooth modal transitions with scale and opacity effects
+- **User-Friendly Messages**: Shows "Ya existe un registro de peso para esta fecha" instead of raw JSON
 
 ## Architecture
 - **Pattern**: MVVM with SwiftUI + Combine

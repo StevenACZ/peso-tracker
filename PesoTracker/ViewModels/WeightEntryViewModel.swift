@@ -16,6 +16,8 @@ class WeightEntryViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingData = false
     @Published var errorMessage: String?
+    @Published var showErrorModal = false
+    @Published var errorModalMessage = ""
     
     // MARK: - Form Validation Properties
     @Published var selectedImage: NSImage?
@@ -198,9 +200,9 @@ class WeightEntryViewModel: ObservableObject {
             resetForm()
             
         } catch let error as APIError {
-            errorMessage = error.localizedDescription
+            showErrorModal(message: error.localizedDescription)
         } catch {
-            errorMessage = "Error inesperado: \(error.localizedDescription)"
+            showErrorModal(message: "Error inesperado: \(error.localizedDescription)")
         }
         
         isLoading = false
@@ -214,6 +216,8 @@ class WeightEntryViewModel: ObservableObject {
         dateString = ""
         notes = ""
         errorMessage = nil
+        showErrorModal = false
+        errorModalMessage = ""
         isEditMode = false
         isLoadingData = false
         editingWeightId = nil
@@ -331,6 +335,46 @@ class WeightEntryViewModel: ObservableObject {
     
     var saveButtonText: String {
         return isLoading ? "Guardando..." : "Guardar"
+    }
+    
+    // MARK: - Error Modal Methods
+    
+    private func showErrorModal(message: String) {
+        errorModalMessage = parseErrorMessage(from: message)
+        showErrorModal = true
+    }
+    
+    private func parseErrorMessage(from rawError: String) -> String {
+        // Try to extract clean message from server error
+        guard rawError.contains("Error del servidor") && rawError.contains("{") else {
+            return rawError
+        }
+        
+        // Find the JSON part safely
+        guard let jsonStart = rawError.firstIndex(of: "{"),
+              let jsonEnd = rawError.lastIndex(of: "}"),
+              jsonStart < jsonEnd else {
+            return rawError
+        }
+        
+        // Extract JSON string safely
+        let jsonString = String(rawError[jsonStart...jsonEnd])
+        
+        // Try to parse JSON and extract message
+        guard let jsonData = jsonString.data(using: .utf8),
+              let errorObj = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+              let message = errorObj["message"] as? String,
+              !message.isEmpty else {
+            return rawError
+        }
+        
+        return message
+    }
+    
+    func dismissErrorModal() {
+        showErrorModal = false
+        errorModalMessage = ""
+        errorMessage = nil
     }
 }
 

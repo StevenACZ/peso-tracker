@@ -21,7 +21,7 @@ struct FormActionButtons: View {
             CustomButton(action: {
                 Task {
                     await viewModel.saveWeight()
-                    if viewModel.errorMessage == nil {
+                    if !viewModel.showErrorModal {
                         isPresented = false
                         onSave?()
                     }

@@ -39,12 +39,26 @@ struct AddWeightModal: View {
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
-            .disabled(viewModel.isLoading) // Disable entire form during save
+            .disabled(viewModel.isLoading || viewModel.showErrorModal) // Disable entire form during save or error
+            .opacity((viewModel.isLoading || viewModel.showErrorModal) ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.showErrorModal)
             
             // Loading overlay during save operation
             if viewModel.isLoading {
                 LoadingOverlay(isLoading: true, title: "Guardando peso...")
                     .cornerRadius(12)
+            }
+            
+            // Error Modal
+            if viewModel.showErrorModal {
+                ErrorModal(
+                    title: "Error al Guardar Peso",
+                    message: viewModel.errorModalMessage,
+                    isPresented: $viewModel.showErrorModal,
+                    onDismiss: {
+                        viewModel.dismissErrorModal()
+                    }
+                )
             }
         }
         .onAppear {
@@ -60,15 +74,6 @@ struct AddWeightModal: View {
                 }
             } else {
                 viewModel.resetForm()
-            }
-        }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-            Button("OK") {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
             }
         }
     }
