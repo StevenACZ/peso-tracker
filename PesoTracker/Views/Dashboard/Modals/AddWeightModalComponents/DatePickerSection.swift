@@ -10,7 +10,9 @@ struct DatePickerSection: View {
                 .foregroundColor(.primary)
             
             CustomButton(action: {
-                viewModel.showDatePicker.toggle()
+                if !viewModel.isLoading {
+                    viewModel.showDatePicker.toggle()
+                }
             }) {
                 HStack {
                     Text(viewModel.dateString.isEmpty ? "DD/MM/AAAA" : viewModel.dateString)
@@ -74,7 +76,9 @@ struct DatePickerPopover: View {
             
             HStack(spacing: 16) {
                 CustomButton(action: {
-                    viewModel.showDatePicker = false
+                    if !viewModel.isLoading {
+                        viewModel.showDatePicker = false
+                    }
                 }) {
                     Text("Cancelar")
                         .frame(maxWidth: .infinity)
@@ -90,8 +94,10 @@ struct DatePickerPopover: View {
                 
                 
                 CustomButton(action: {
-                    viewModel.updateDateString()
-                    viewModel.showDatePicker = false
+                    if !viewModel.isLoading {
+                        viewModel.updateDateString()
+                        viewModel.showDatePicker = false
+                    }
                 }) {
                     Text("Seleccionar")
                         .frame(maxWidth: .infinity)

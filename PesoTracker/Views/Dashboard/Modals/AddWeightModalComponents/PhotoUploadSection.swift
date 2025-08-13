@@ -64,7 +64,9 @@ struct NewImagePreview: View {
             
             // Button area at bottom
             CustomButton(action: {
-                viewModel.removeImage()
+                if !viewModel.isLoading {
+                    viewModel.removeImage()
+                }
             }) {
                 HStack(spacing: 4) {
                     Image(systemName: "trash")
@@ -72,7 +74,7 @@ struct NewImagePreview: View {
                     Text("Eliminar foto")
                         .font(.system(size: 12))
                 }
-                .foregroundColor(.red)
+                .foregroundColor(viewModel.isLoading ? .gray : .red)
             }
             
         }
@@ -144,7 +146,9 @@ struct ExistingPhotoActions: View {
     
     var body: some View {
         CustomButton(action: {
-            viewModel.selectImage()
+            if !viewModel.isLoading {
+                viewModel.selectImage()
+            }
         }) {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.triangle.2.circlepath")
@@ -152,7 +156,7 @@ struct ExistingPhotoActions: View {
                 Text("Cambiar foto")
                     .font(.system(size: 12))
             }
-            .foregroundColor(.blue)
+            .foregroundColor(viewModel.isLoading ? .gray : .blue)
         }
         
     }
@@ -164,25 +168,27 @@ struct PhotoUploadArea: View {
     
     var body: some View {
         CustomButton(action: {
-            viewModel.selectImage()
+            if !viewModel.isLoading {
+                viewModel.selectImage()
+            }
         }) {
             VStack(spacing: 12) {
                 Image(systemName: "photo")
                     .font(.system(size: 32))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(viewModel.isLoading ? .gray : .secondary)
                 
                 VStack(spacing: 4) {
                     Text("Subir un archivo")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.blue)
+                        .foregroundColor(viewModel.isLoading ? .gray : .blue)
                     
                     Text("o arrastrar y soltar")
                         .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(viewModel.isLoading ? .gray : .secondary)
                     
                     Text("PNG, JPG, GIF hasta 10MB")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(viewModel.isLoading ? .gray : .secondary)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -190,11 +196,11 @@ struct PhotoUploadArea: View {
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
-                    .foregroundColor(isImageHovered ? .blue : .secondary.opacity(0.5))
+                    .foregroundColor(viewModel.isLoading ? .gray.opacity(0.3) : (isImageHovered ? .blue : .secondary.opacity(0.5)))
             )
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isImageHovered ? Color.blue.opacity(0.05) : Color.clear)
+                    .fill(viewModel.isLoading ? Color.gray.opacity(0.1) : (isImageHovered ? Color.blue.opacity(0.05) : Color.clear))
             )
         }
         
@@ -209,6 +215,11 @@ struct PhotoUploadArea: View {
             UTType.data,
             UTType.item
         ], isTargeted: $isImageHovered) { providers in
+            guard !viewModel.isLoading else {
+                print("🚫 [DRAG DROP] Blocked during loading")
+                return false
+            }
+            
             print("🎯 [DRAG DROP] onDrop triggered with \(providers.count) providers")
             if let provider = providers.first {
                 print("🎯 [DRAG DROP] Provider types: \(provider.registeredTypeIdentifiers)")

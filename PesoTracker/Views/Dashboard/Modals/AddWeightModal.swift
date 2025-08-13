@@ -23,21 +23,30 @@ struct AddWeightModal: View {
     }
     
     var body: some View {
-        VStack(spacing: 24) {
-            ModalHeader(isEditing: isEditing, isPresented: $isPresented)
+        ZStack {
+            VStack(spacing: 24) {
+                ModalHeader(isEditing: isEditing, isPresented: $isPresented)
+                
+                if viewModel.isLoadingData {
+                    loadingContent
+                } else {
+                    formContent
+                    FormActionButtons(viewModel: viewModel, isPresented: $isPresented, onSave: onSave)
+                }
+            }
+            .padding(24)
+            .frame(width: 480)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
+            .disabled(viewModel.isLoading) // Disable entire form during save
             
-            if viewModel.isLoadingData {
-                loadingContent
-            } else {
-                formContent
-                FormActionButtons(viewModel: viewModel, isPresented: $isPresented, onSave: onSave)
+            // Loading overlay during save operation
+            if viewModel.isLoading {
+                LoadingOverlay(isLoading: true, title: "Guardando peso...")
+                    .cornerRadius(12)
             }
         }
-        .padding(24)
-        .frame(width: 480)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
         .onAppear {
             if isEditing {
                 if let weight = selectedWeight {

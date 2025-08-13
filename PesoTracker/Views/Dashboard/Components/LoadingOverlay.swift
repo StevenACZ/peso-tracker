@@ -8,12 +8,28 @@ struct LoadingOverlay: View {
     var body: some View {
         ZStack {
             if isLoading {
-                loadingView(title: "Cargando datos...")
+                loadingView(title: customTitle ?? "Cargando datos...")
             } else if isLoadingPhoto {
                 loadingView(title: "Cargando foto...")
             }
         }
     }
+    
+    /// Simple loading overlay for modals and focused contexts
+    init(isLoading: Bool, title: String = "Cargando...") {
+        self.isLoading = isLoading
+        self.isLoadingPhoto = false
+        self.customTitle = title
+    }
+    
+    /// Default initializer for dashboard context
+    init(isLoading: Bool, isLoadingPhoto: Bool) {
+        self.isLoading = isLoading
+        self.isLoadingPhoto = isLoadingPhoto
+        self.customTitle = nil
+    }
+    
+    private let customTitle: String?
     
     private func loadingView(title: String) -> some View {
         ZStack {

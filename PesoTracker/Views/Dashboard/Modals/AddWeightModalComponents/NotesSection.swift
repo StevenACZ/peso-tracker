@@ -36,6 +36,7 @@ struct NotesSection: View {
                     .background(Color.clear)
                     .scrollContentBackground(.hidden)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .disabled(viewModel.isLoading)
             }
             .frame(height: 80)
         }

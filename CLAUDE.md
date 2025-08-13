@@ -20,15 +20,23 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - `Models/Weight.swift` - **WeightPhoto** + expiresIn + format + expiration logic ✅ UPGRADED
 - `Models/Goal.swift` - Goal data structures
 
-### UI Components
+### UI Components ✅ LOADING-ENHANCED
 - `Views/Auth/` - Complete password reset flow ✅ COMPLETE
 - `Views/Dashboard/MainDashboardView.swift` - Main dashboard (35% sidebar, 65% content)
 - `Views/Dashboard/Components/RightContentPanel.swift` - Progress button (shows with weight data)
+- `Views/Dashboard/Components/LoadingOverlay.swift` - **Multi-context loading** + modal support ✅ ENHANCED
 - `Views/Dashboard/Modals/ViewProgressModal.swift` - Progress photos with lazy loading
+- `Views/Dashboard/Modals/AddWeightModal.swift` - **Complete UI blocking** during save ✅ PROTECTED
 
 ### Modular Components ✅ REFACTORED
 - `Views/Dashboard/Modals/ViewProgressComponents/` - 5 focused components
 - `Services/Export/` - 5 specialized export services
+
+### Form Components ✅ LOADING-PROTECTED
+- `Views/Dashboard/Modals/AddWeightModalComponents/WeightInputSection.swift` - **Input disabled** during loading ✅ ENHANCED
+- `Views/Dashboard/Modals/AddWeightModalComponents/DatePickerSection.swift` - **Picker blocked** during loading ✅ ENHANCED
+- `Views/Dashboard/Modals/AddWeightModalComponents/NotesSection.swift` - **TextEditor disabled** during loading ✅ ENHANCED
+- `Views/Dashboard/Modals/AddWeightModalComponents/PhotoUploadSection.swift` - **Complete photo blocking** during loading ✅ ENHANCED
 
 ### Utils ✅ PERFORMANCE-ENHANCED
 - `Utils/Constants.swift` - App constants + **/auth/refresh** endpoint ✅ UPDATED
@@ -80,6 +88,15 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - **Debug Logging**: Comprehensive logging for troubleshooting and verification
 - **Type Hierarchy**: File URLs → public.image → specific types → fallback search
 - **HDR Compatible**: Processes modern HDR images with gain map warnings (non-critical)
+
+### 🛡️ Loading Overlay System ✅ NEW
+- **Complete UI Blocking**: Full modal overlay during form submission
+- **Multi-Layer Protection**: Overlay + disabled states + individual component guards
+- **All Inputs Disabled**: Weight, date, notes, and photo upload blocked during loading
+- **Drag & Drop Protection**: Smart blocking with guard and visual feedback
+- **Visual Consistency**: Grayed out elements with loading indicators
+- **Custom Context**: "Guardando peso..." specific messaging
+- **Zero Interference**: Prevents data corruption during async operations
 
 ## Architecture
 - **Pattern**: MVVM with SwiftUI + Combine

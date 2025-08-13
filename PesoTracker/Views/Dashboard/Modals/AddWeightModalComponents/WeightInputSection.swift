@@ -21,6 +21,7 @@ struct WeightInputSection: View {
                         .textFieldStyle(.plain)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 8)
+                        .disabled(viewModel.isLoading)
                     
                     Text("kg")
                         .font(.system(size: 14))
