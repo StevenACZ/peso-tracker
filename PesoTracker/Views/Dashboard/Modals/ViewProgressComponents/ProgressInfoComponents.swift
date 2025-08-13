@@ -72,7 +72,7 @@ struct ProgressBarView: View {
                 .progressViewStyle(LinearProgressViewStyle(tint: .blue))
                 .scaleEffect(x: 1, y: 2, anchor: .center)
             
-            Text("Photo \(currentIndex + 1) of \(totalPhotos)")
+            Text("Foto \(currentIndex + 1) de \(totalPhotos)")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
         }

@@ -3,178 +3,150 @@
 ## Project Overview
 PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT authentication with refresh tokens, smart caching with photo expiration, weight tracking, goals, progress photos, and Cloudflare-optimized API integration.
 
-## Key Files
+## 🏗️ App Architecture
 
-### Services ⚡ CLOUDFLARE-READY
-- `Services/AuthService.swift` - JWT auth + **refresh tokens** + auto-renewal ✅ UPGRADED
-- `Services/Networking/HTTPClient.swift` - HTTP client + **auto-retry logic** + token refresh ✅ NEW
-- `Services/APIService.swift` - Modular HTTP client architecture
-- `Services/CacheService.swift` - Smart cache + **photo expiration** (550+ lines) ✅ ENHANCED
-- `Services/DashboardService.swift` - Dashboard data + logout
-- `Services/WeightService.swift` - Weight CRUD + cache invalidation
-- `Services/GoalService.swift` - Goal management
+### Pattern: MVVM + SwiftUI
+- **Models**: Data structures (User, Weight, Goal, APIResponse)
+- **Views**: SwiftUI components with modular structure
+- **ViewModels**: Business logic with @Published properties
+- **Services**: API communication, caching, authentication
 
-### Models ✅ CLOUDFLARE-ENHANCED
-- `Models/User.swift` - **AuthResponse** with accessToken + refreshToken + legacy support ✅ UPDATED
-- `Models/APIResponse.swift` - **PaginationInfo** + hasNext/hasPrev + APIMetadata ✅ ENHANCED
-- `Models/Weight.swift` - **WeightPhoto** + expiresIn + format + expiration logic ✅ UPGRADED
-- `Models/Goal.swift` - Goal data structures
-
-### UI Components ✅ ERROR-ENHANCED
-- `Views/Auth/` - Complete password reset flow ✅ COMPLETE
-- `Views/Auth/Components/ErrorModal.swift` - **Professional error modals** + reusable design ✅ ENHANCED
-- `Views/Dashboard/MainDashboardView.swift` - Main dashboard (35% sidebar, 65% content)
-- `Views/Dashboard/Components/RightContentPanel.swift` - Progress button (shows with weight data)
-- `Views/Dashboard/Components/LoadingOverlay.swift` - **Multi-context loading** + modal support ✅ ENHANCED
-- `Views/Dashboard/Modals/ViewProgressModal.swift` - Progress photos with lazy loading
-- `Views/Dashboard/Modals/AddWeightModal.swift` - **ErrorModal integration** + complete UI blocking ✅ PROTECTED
-
-### Modular Components ✅ REFACTORED
-- `Views/Dashboard/Modals/ViewProgressComponents/` - 5 focused components
-- `Services/Export/` - 5 specialized export services
-
-### Form Components ✅ LOADING-PROTECTED
-- `Views/Dashboard/Modals/AddWeightModalComponents/WeightInputSection.swift` - **Input disabled** during loading ✅ ENHANCED
-- `Views/Dashboard/Modals/AddWeightModalComponents/DatePickerSection.swift` - **Picker blocked** during loading ✅ ENHANCED
-- `Views/Dashboard/Modals/AddWeightModalComponents/NotesSection.swift` - **TextEditor disabled** during loading ✅ ENHANCED
-- `Views/Dashboard/Modals/AddWeightModalComponents/PhotoUploadSection.swift` - **Complete photo blocking** during loading ✅ ENHANCED
-
-### Utils ✅ PERFORMANCE-ENHANCED
-- `Utils/Constants.swift` - App constants + **/auth/refresh** endpoint ✅ UPDATED
-- `Utils/Extensions.swift` - Centralized extensions
-- `Utils/JWTHelper.swift` - **JWT validation** + local expiration check ✅ NEW
-
-### Image Handling ✅ DRAG & DROP ENHANCED
-- `ViewModels/Components/ImageHandler.swift` - **Universal drag & drop** + multi-format support ✅ UPGRADED
-- `Views/Dashboard/Modals/AddWeightModalComponents/PhotoUploadSection.swift` - **Enhanced onDrop** + expanded UTTypes ✅ IMPROVED
-
-### ViewModels ✅ ERROR-ENHANCED
-- `ViewModels/WeightEntryViewModel.swift` - **ErrorModal integration** + crash-safe message parsing ✅ UPGRADED
-- `ViewModels/Components/FormActionButtons.swift` - **ErrorModal logic** + improved save handling ✅ IMPROVED
-
-## ⚡ Cloudflare Integration ✅ NEW
-
-### Refresh Token System
-- **accessToken**: 15-minute JWT for API calls
-- **refreshToken**: 7-day JWT for token renewal
-- **Auto-refresh**: Seamless renewal on 401/403 responses
-- **Legacy compatible**: Supports old `token` format
-- **Keychain storage**: Secure token persistence
-
-### Smart Photo Caching
-- **expiresIn**: Photo URL expiration in seconds
-- **format**: Photo format metadata (heic, jpg, etc.)
-- **Auto-cleanup**: Expired photo cache invalidation
-- **Cache stats**: Debug info with expiration tracking
-
-### Enhanced Pagination
-- **hasNext/hasPrev**: Server-provided navigation hints
-- **APIMetadata**: Cloudflare optimization flags
-- **Fallback logic**: Computed properties for backward compatibility
-
-### Auto-Retry Logic
-- **401/403 detection**: Automatic token refresh attempt
-- **Request replay**: Seamless retry with fresh token
-- **Fallback logout**: Auto-logout if refresh fails
-- **Zero interruption**: User doesn't see auth failures
-
-### 🚀 Lightning-Fast Loading ✅ NEW
-- **JWT Local Validation**: Instant token expiration check (no API calls)
-- **Smart Auto-Refresh**: Only refreshes when needed (2-min buffer)
-- **Optimized Startup**: Eliminated artificial delays - app opens instantly
-- **Intelligent Flow**: accessToken → refreshToken → logout (only as last resort)
-
-### 🎯 Drag & Drop System ✅ ENHANCED
-- **Universal Compatibility**: Finder, browsers, Preview, Fotos, creative apps
-- **Smart Detection**: Intelligent type identification with automatic fallback
-- **Multi-Format Support**: JPEG, PNG, GIF, HEIC, TIFF + data/URL variants
-- **Robust Processing**: Handles NSImage, Data, URL, and String URL formats
-- **Error Recovery**: Resolved kDragIPCCompleted issues with improved async handling
-- **Debug Logging**: Comprehensive logging for troubleshooting and verification
-- **Type Hierarchy**: File URLs → public.image → specific types → fallback search
-- **HDR Compatible**: Processes modern HDR images with gain map warnings (non-critical)
-
-### 🛡️ Loading Overlay System ✅ NEW
-- **Complete UI Blocking**: Full modal overlay during form submission
-- **Multi-Layer Protection**: Overlay + disabled states + individual component guards
-- **All Inputs Disabled**: Weight, date, notes, and photo upload blocked during loading
-- **Drag & Drop Protection**: Smart blocking with guard and visual feedback
-- **Visual Consistency**: Grayed out elements with loading indicators
-- **Custom Context**: "Guardando peso..." specific messaging
-- **Zero Interference**: Prevents data corruption during async operations
-
-### 🎨 ErrorModal System ✅ NEW
-- **Beautiful Error Display**: Professional modals instead of native system alerts
-- **Consistent Design**: Same visual style as Auth components (login/register)
-- **Smart Message Parsing**: Extracts clean user-friendly messages from server JSON
-- **Crash-Safe Parsing**: Robust string handling prevents index out of bounds errors
-- **Contextual Titles**: "Error al Guardar Peso" for weight form context
-- **Spring Animations**: Smooth modal transitions with scale and opacity effects
-- **User-Friendly Messages**: Shows "Ya existe un registro de peso para esta fecha" instead of raw JSON
-
-## Architecture
-- **Pattern**: MVVM with SwiftUI + Combine
-- **Security**: JWT + refresh tokens with auto-renewal + local validation
-- **Caching**: LRU cache with photo expiration intelligence
+### Core Systems
+- **Authentication**: JWT + refresh tokens with auto-renewal
 - **Networking**: Auto-retry HTTP client with token refresh
-- **Performance**: Lightning-fast startup with JWT local validation
-- **Compatibility**: 100% backward compatible with legacy APIs
+- **Caching**: LRU cache with photo expiration intelligence
+- **Image Processing**: Universal drag & drop + multi-format support
+- **Error Handling**: Beautiful modals with crash-safe message parsing
 
-## API Endpoints
+## 📁 Key Files Structure
 
-### Authentication ✅ CLOUDFLARE-ENHANCED
-- `POST /auth/login` - Returns accessToken + refreshToken + user
-- `POST /auth/register` - Returns accessToken + refreshToken + user  
-- `POST /auth/refresh` - **NEW** Refresh expired access token
-- `POST /auth/forgot-password` - Request password reset code
-- `POST /auth/verify-reset-code` - Verify code → returns resetToken
-- `POST /auth/reset-password` - Reset password with token
+### 🔐 Authentication & Security
+- `Services/AuthService.swift` - JWT + refresh tokens + auto-renewal
+- `Utils/JWTHelper.swift` - Local JWT validation (instant startup)
+- `Models/User.swift` - AuthResponse with accessToken + refreshToken
 
-### Weight Management
-- `POST /weights` - Create weight (multipart with photo)
-- `PATCH /weights/:id` - Update weight
-- `DELETE /weights/:id` - Delete weight
-- `GET /dashboard` - Dashboard data
-- `GET /weights/paginated` - Table data (5 per page)
-- `GET /weights/chart-data` - Chart data with time filters
-- `GET /weights/progress` - Progress photos
+### 🌐 Networking & API
+- `Services/Networking/HTTPClient.swift` - Auto-retry + token refresh
+- `Services/APIService.swift` - Modular HTTP client
+- `Models/APIResponse.swift` - Pagination + metadata
+- **Endpoints**: `/auth/login`, `/auth/refresh`, `/weights`, `/dashboard`
 
-## Smart Cache System ✅ CLOUDFLARE-ENHANCED
+### 💾 Smart Caching System
+- `Services/CacheService.swift` - LRU cache with photo expiration (550+ lines)
+- **Cache Types**: Table, Chart, Progress photos
+- **Intelligence**: Auto-cleanup expired photos, memory pressure handling
+- **Behavior**: Instant loading, smart invalidation on CRUD operations
 
-### Cache Types + Photo Expiration
-- **Table Cache**: Paginated weights + photo expiration validation
-- **Chart Cache**: Chart data by time range  
-- **Progress Cache**: Progress photos + automatic expiration cleanup
-- **Photo Expiration**: Based on `expiresIn` metadata from Cloudflare
+### 📸 Image Handling & Upload
+- `ViewModels/Components/ImageHandler.swift` - Universal drag & drop
+- `Views/.../PhotoUploadSection.swift` - Enhanced onDrop with UTTypes
+- **Formats**: JPEG, PNG, GIF, HEIC, TIFF + HDR support
+- **Sources**: Finder, browsers, Preview, Fotos, creative apps
+- **Processing**: 80% quality, max 1024px, multipart upload
 
-### Intelligence Features
-- **Photo expiration detection**: `photo.isExpired` computed property
+### ⚖️ Weight Management
+- `Services/WeightService.swift` - CRUD + cache invalidation
+- `ViewModels/WeightEntryViewModel.swift` - Form logic + validation
+- `Views/Dashboard/Modals/AddWeightModal.swift` - Create/Edit modal
+- **Features**: Date validation, weight range (1-1000kg), notes, photos
+
+### 📊 Dashboard & Progress
+- `Views/Dashboard/MainDashboardView.swift` - 35% sidebar, 65% content
+- `Services/DashboardService.swift` - Dashboard data
+- `Views/Dashboard/Modals/ViewProgressModal.swift` - Photo gallery
+- **Components**: Charts, tables, progress photos, export options
+
+### 🎨 UI Components & Modals
+
+#### Error Handling System
+- `Views/Auth/Components/ErrorModal.swift` - Professional error modals
+- **Features**: Crash-safe JSON parsing, contextual titles, spring animations
+- **Messages**: Extracts clean user messages from server errors
+- **Design**: Consistent with Auth components (red theme, icons)
+
+#### Loading & Protection
+- `Views/Dashboard/Components/LoadingOverlay.swift` - Multi-context loading
+- **Protection**: Complete UI blocking during form submission
+- **Layers**: Overlay + disabled states + component guards
+- **Context**: "Guardando peso...", "Cargando datos..."
+
+#### Form Components (All Loading-Protected)
+- `WeightInputSection.swift` - Input disabled during loading
+- `DatePickerSection.swift` - Picker blocked during loading
+- `NotesSection.swift` - TextEditor disabled during loading
+- `PhotoUploadSection.swift` - Complete photo blocking + drag protection
+
+#### Progress Components (Modular)
+- `ViewProgressComponents/ProgressInfoComponents.swift` - Photo counter ("Foto 1 de X")
+- `ProgressPhotoViewer.swift` - Main photo display
+- `ProgressDataManager.swift` - State management
+- `ProgressStateViews.swift` - Loading/Error/Empty states
+
+## 🚀 Key Features & Systems
+
+### Cloudflare Integration
+- **Refresh Tokens**: 15-min access + 7-day refresh + auto-renewal
+- **Photo URLs**: Expiration tracking with auto-cleanup
+- **Smart Caching**: Server metadata + client intelligence
+- **Performance**: Lightning-fast startup with local JWT validation
+
+### Drag & Drop System
+- **Universal**: Works with all macOS apps (Finder, browsers, etc.)
+- **Robust**: Type hierarchy with fallback mechanisms
+- **Debug**: Comprehensive logging for troubleshooting
+- **Error Recovery**: Fixed kDragIPCCompleted issues
+
+### Form Protection & Validation
+- **Multi-Layer**: Loading overlay + disabled states + guards
+- **Real-time**: Combine-based validation
+- **Error Prevention**: Blocks interaction during async operations
+- **Visual Feedback**: Grayed elements + loading indicators
+
+### Cache Intelligence
+- **Photo Expiration**: `photo.isExpired` computed property
 - **Auto-cleanup**: `cleanupExpiredPhotoCache()` method
-- **Debug stats**: Expired photo tracking in `getCacheStatus()`
-- **Smart invalidation**: Removes cache when photos expire
-- **LRU management**: 50 items max, 10MB limit
+- **Debug Stats**: Expired photo tracking
+- **Memory Management**: LRU (50 items, 10MB limit)
 
-### Cache Behavior  
-- **Instant loading**: Shows "INSTANT" in logs for cached data
-- **Photo validation**: Checks expiration before serving cached images
-- **Memory pressure**: Automatic cleanup on system events
-- **CRUD invalidation**: Cache cleared on weight operations
+## 🔧 Development Info
 
-## Build Commands
-- Build: `xcodebuild -scheme PesoTracker -configuration Debug build`
-- Target: PesoTracker (macOS)
-- Window: 1000x700 min, 1200x800 default
-
-## Key Settings
-- **Tokens**: accessToken + refreshToken in Keychain
-- **Images**: 80% quality, max 1024px, smart expiration
-- **Cache**: LRU with photo expiration intelligence  
-- **Localization**: Spanish
+### Build & Run
+- **Command**: `xcodebuild -scheme PesoTracker -configuration Debug build`
+- **Target**: macOS app (1000x700 min, 1200x800 default)
+- **Language**: Spanish localization
 - **Theme**: Green color scheme
 
-## Code Patterns
-- **MVVM**: SwiftUI + Combine + Async/await
-- **Security**: JWT refresh tokens with auto-renewal
-- **Caching**: Smart invalidation with photo expiration
-- **Networking**: Auto-retry with token refresh
-- **Threading**: Thread-safe concurrent operations
+### Data Flow
+1. **Authentication**: Login → JWT tokens → Keychain storage
+2. **Data Loading**: API call → Cache check → UI update
+3. **Image Upload**: Drag/select → Validation → Multipart upload
+4. **Error Handling**: API error → Parse message → Show ErrorModal
+5. **Cache**: CRUD operation → Invalidate cache → Refresh UI
+
+### Key Patterns
+- **Async/Await**: All API calls use modern async patterns
+- **Combine**: Real-time form validation and data binding
+- **Thread Safety**: @MainActor for UI updates
+- **Error Recovery**: Graceful fallbacks and user feedback
+- **Modular Design**: Reusable components and services
+
+## 📝 Quick Reference
+
+### Common Tasks
+- **Add Weight**: Modal with drag & drop, validation, error handling
+- **View Progress**: Photo gallery with "Foto X de Y" counter
+- **Authentication**: Auto-refresh tokens, graceful logout
+- **Caching**: Instant loading with smart invalidation
+- **Error Display**: Beautiful modals instead of system alerts
+
+### Key Services
+- `AuthService` - Authentication & token management
+- `WeightService` - Weight CRUD operations
+- `CacheService` - Smart caching with expiration
+- `DashboardService` - Dashboard data aggregation
+
+### UI Patterns
+- **Modals**: Consistent design with animations
+- **Loading**: Multi-context overlays with blocking
+- **Errors**: Professional modals with message parsing
+- **Forms**: Real-time validation with protection
