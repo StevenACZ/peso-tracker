@@ -12,6 +12,7 @@ class AuthService: ObservableObject {
     
     @Published var isAuthenticated = false
     @Published var currentUser: User?
+    @Published var isValidatingToken = false
     
     // MARK: - Initialization
     private init() {
@@ -24,11 +25,13 @@ class AuthService: ObservableObject {
         if let token = keychainHelper.get(key: Constants.Keychain.jwtToken),
            !token.isEmpty {
             print("🔐 [AUTH SERVICE] Token found in keychain - validating with server...")
+            isValidatingToken = true
             
             // Validate token with server
             Task {
                 let isValid = await validateTokenWithServer()
                 await MainActor.run {
+                    self.isValidatingToken = false
                     if isValid {
                         print("🔐 [AUTH SERVICE] Token validation successful")
                         self.isAuthenticated = true
@@ -42,6 +45,7 @@ class AuthService: ObservableObject {
             }
         } else {
             print("🔐 [AUTH SERVICE] No valid token found")
+            isValidatingToken = false
             isAuthenticated = false
             currentUser = nil
         }
@@ -57,9 +61,38 @@ class AuthService: ObservableObject {
     
     // MARK: - Token Validation
     private func validateTokenWithServer() async -> Bool {
+        print("🔐 [AUTH SERVICE] Starting intelligent token validation...")
+        
+        // Step 1: Check if access token is expired locally
+        if isAccessTokenExpired() {
+            print("🔐 [AUTH SERVICE] Access token expired locally - attempting refresh")
+            
+            // Step 2: Check if we have a valid refresh token
+            if hasValidRefreshToken() {
+                do {
+                    // Step 3: Attempt to refresh the token
+                    let _ = try await refreshToken()
+                    print("✅ [AUTH SERVICE] Token refreshed successfully during validation")
+                    return true
+                } catch {
+                    print("❌ [AUTH SERVICE] Token refresh failed: \(error)")
+                    return false
+                }
+            } else {
+                print("❌ [AUTH SERVICE] No valid refresh token available")
+                return false
+            }
+        }
+        
+        print("🔐 [AUTH SERVICE] Access token appears valid locally - skipping server validation")
+        // Step 4: Token appears valid locally, no need for server call during loading
+        // The auto-retry logic in HTTPClient will handle any 401s during actual API calls
+        return true
+        
+        // Note: We could add a lightweight server validation here if needed:
+        // But for loading performance, local JWT validation should be sufficient
+        /*
         do {
-            // Make a lightweight API call to validate the token
-            // Use a simple endpoint that requires auth but returns minimal data
             let _ = try await apiService.get(
                 endpoint: "/weights/paginated?page=1&limit=1",
                 responseType: PaginatedResponse<Weight>.self,
@@ -67,9 +100,22 @@ class AuthService: ObservableObject {
             )
             return true
         } catch {
-            print("🔐 [AUTH SERVICE] Token validation failed: \(error)")
+            print("🔐 [AUTH SERVICE] Server validation failed: \(error)")
+            
+            // If server validation fails, try refresh once more
+            if hasValidRefreshToken() {
+                do {
+                    let _ = try await refreshToken()
+                    print("✅ [AUTH SERVICE] Token refreshed after server validation failure")
+                    return true
+                } catch {
+                    print("❌ [AUTH SERVICE] Final token refresh attempt failed")
+                    return false
+                }
+            }
             return false
         }
+        */
     }
     
     // MARK: - Auto Logout
@@ -313,6 +359,26 @@ class AuthService: ObservableObject {
         return true
     }
     
+    // MARK: - Local Token Validation
+    func isAccessTokenExpired() -> Bool {
+        guard let token = keychainHelper.get(key: Constants.Keychain.jwtToken),
+              !token.isEmpty else {
+            print("🔐 [AUTH SERVICE] No access token found - treating as expired")
+            return true
+        }
+        
+        return JWTHelper.isTokenExpired(token, bufferMinutes: 2)
+    }
+    
+    func hasValidRefreshToken() -> Bool {
+        if let refreshToken = keychainHelper.get(key: Constants.Keychain.refreshToken),
+           !refreshToken.isEmpty {
+            // Check if refresh token is expired (7 days typically)
+            return !JWTHelper.isTokenExpired(refreshToken, bufferMinutes: 60) // 1 hour buffer
+        }
+        return false
+    }
+    
     // MARK: - Refresh Token
     func refreshToken() async throws -> RefreshTokenResponse {
         guard let refreshToken = getRefreshToken(), !refreshToken.isEmpty else {
@@ -390,6 +456,24 @@ class AuthService: ObservableObject {
     
     func refreshAuthenticationStatus() {
         checkAuthenticationStatus()
+    }
+    
+    // Wait for token validation to complete
+    func waitForTokenValidation() async {
+        // If not validating, return immediately
+        if !isValidatingToken { 
+            print("🔐 [AUTH SERVICE] Token validation not in progress - returning immediately")
+            return 
+        }
+        
+        print("🔐 [AUTH SERVICE] Waiting for token validation to complete...")
+        
+        // Simple polling approach - more reliable than Combine + continuation
+        while isValidatingToken {
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+        }
+        
+        print("🔐 [AUTH SERVICE] Token validation wait completed")
     }
     
     // MARK: - Validation Helpers

@@ -30,9 +30,10 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - `Views/Dashboard/Modals/ViewProgressComponents/` - 5 focused components
 - `Services/Export/` - 5 specialized export services
 
-### Utils
+### Utils ✅ PERFORMANCE-ENHANCED
 - `Utils/Constants.swift` - App constants + **/auth/refresh** endpoint ✅ UPDATED
 - `Utils/Extensions.swift` - Centralized extensions
+- `Utils/JWTHelper.swift` - **JWT validation** + local expiration check ✅ NEW
 
 ## ⚡ Cloudflare Integration ✅ NEW
 
@@ -60,11 +61,18 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - **Fallback logout**: Auto-logout if refresh fails
 - **Zero interruption**: User doesn't see auth failures
 
+### 🚀 Lightning-Fast Loading ✅ NEW
+- **JWT Local Validation**: Instant token expiration check (no API calls)
+- **Smart Auto-Refresh**: Only refreshes when needed (2-min buffer)
+- **Optimized Startup**: Eliminated artificial delays - app opens instantly
+- **Intelligent Flow**: accessToken → refreshToken → logout (only as last resort)
+
 ## Architecture
 - **Pattern**: MVVM with SwiftUI + Combine
-- **Security**: JWT + refresh tokens with auto-renewal
+- **Security**: JWT + refresh tokens with auto-renewal + local validation
 - **Caching**: LRU cache with photo expiration intelligence
 - **Networking**: Auto-retry HTTP client with token refresh
+- **Performance**: Lightning-fast startup with JWT local validation
 - **Compatibility**: 100% backward compatible with legacy APIs
 
 ## API Endpoints

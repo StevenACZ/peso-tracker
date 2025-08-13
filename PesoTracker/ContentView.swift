@@ -73,14 +73,15 @@ struct ContentView: View {
     
     // MARK: - Authentication Check
     private func checkInitialAuthState() {
-        // Simulate a brief loading time for better UX
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        Task {
             // Check if user has valid authentication token
-            authViewModel.checkAuthenticationStatus()
+            await authViewModel.checkAuthenticationStatus()
             
-            // Update loading state
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isCheckingAuth = false
+            // Update loading state after real authentication check
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isCheckingAuth = false
+                }
             }
         }
     }

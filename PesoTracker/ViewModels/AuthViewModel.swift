@@ -433,19 +433,21 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Authentication Status
     
-    func checkAuthenticationStatus() {
+    func checkAuthenticationStatus() async {
+        // Refresh authentication status from keychain
         authService.refreshAuthenticationStatus()
         
-        // Validate token if exists
-        if authService.isTokenValid() {
-            // Token exists and is valid
-            isAuthenticated = true
+        // Wait for any ongoing token validation to complete
+        await authService.waitForTokenValidation()
+        
+        // Now check the final authentication state
+        isAuthenticated = authService.isAuthenticated
+        currentUser = authService.currentUser
+        
+        if isAuthenticated {
+            print("🔐 [AUTH] User authenticated successfully")
         } else {
-            // Token is invalid or doesn't exist
-            isAuthenticated = false
-            currentUser = nil
-            // Clear invalid token
-            authService.logout()
+            print("🔐 [AUTH] User not authenticated")
         }
     }
     
