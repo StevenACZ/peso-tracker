@@ -316,15 +316,16 @@ class AuthService: ObservableObject {
     // MARK: - Refresh Token
     func refreshToken() async throws -> RefreshTokenResponse {
         guard let refreshToken = getRefreshToken(), !refreshToken.isEmpty else {
-            print("❌ [REFRESH TOKEN] No refresh token available")
+            print("❌ [REFRESH TOKEN] No refresh token available in keychain")
             throw APIError.authenticationFailed
         }
         
         let request = RefreshTokenRequest(refreshToken: refreshToken)
         
-        print("🔄 [REFRESH TOKEN] Refreshing access token...")
-        print("   Refresh Token: \(refreshToken.prefix(20))...")
-        print("   Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.refresh)")
+        print("🔄 [REFRESH TOKEN] Iniciando proceso de renovación de token...")
+        print("   🔑 Refresh Token: \(refreshToken.prefix(20))...")
+        print("   🌐 Endpoint: \(Constants.API.baseURL)\(Constants.API.Endpoints.refresh)")
+        print("   📤 Request Body: {\"refreshToken\": \"\(refreshToken.prefix(10))...\"}")
         
         do {
             let response = try await apiService.post(
@@ -334,28 +335,51 @@ class AuthService: ObservableObject {
                 requiresAuth: false
             )
             
-            print("✅ [REFRESH TOKEN] Token refresh successful:")
-            print("   New Access Token: \(response.accessToken.prefix(20))...")
-            print("   New Refresh Token: \(response.refreshToken.prefix(20))...")
-            print("   Expires In: \(response.expiresIn) seconds")
+            print("✅ [REFRESH TOKEN] ¡Renovación de token exitosa!")
+            print("   🆕 New Access Token: \(response.accessToken.prefix(20))...")
+            print("   🔄 New Refresh Token: \(response.refreshToken.prefix(20))...")
+            print("   ⏰ Expires In: \(response.expiresIn) seconds (\(response.expiresIn/60) minutes)")
+            print("   🏷️ Token Type: \(response.tokenType ?? "Bearer")")
             
             // Save new tokens to keychain
+            print("💾 [REFRESH TOKEN] Guardando nuevos tokens en keychain...")
             let accessTokenSaved = keychainHelper.save(key: Constants.Keychain.jwtToken, value: response.accessToken)
             let refreshTokenSaved = keychainHelper.save(key: Constants.Keychain.refreshToken, value: response.refreshToken)
             
             guard accessTokenSaved && refreshTokenSaved else {
                 print("❌ [REFRESH TOKEN] Failed to save new tokens to keychain")
+                print("   Access Token Saved: \(accessTokenSaved)")
+                print("   Refresh Token Saved: \(refreshTokenSaved)")
                 throw APIError.serverError(500, "Error al guardar tokens actualizados")
             }
             
-            print("✅ [REFRESH TOKEN] New tokens saved to keychain")
+            print("✅ [REFRESH TOKEN] Nuevos tokens guardados exitosamente en keychain")
+            print("🔒 [REFRESH TOKEN] Proceso de renovación completado - usuario puede continuar sin interrupción")
             return response
             
         } catch {
-            print("❌ [REFRESH TOKEN] Token refresh failed:")
-            print("   Error: \(error)")
+            print("❌ [REFRESH TOKEN] Error en renovación de token:")
+            print("   📝 Error Type: \(type(of: error))")
+            print("   💬 Error Description: \(error)")
+            
+            if let apiError = error as? APIError {
+                switch apiError {
+                case .serverError(let code, let message):
+                    print("   🌐 Server Error Code: \(code)")
+                    print("   📄 Server Message: \(message ?? "No message")")
+                case .networkError(let underlyingError):
+                    print("   🌐 Network Error: \(underlyingError)")
+                case .authenticationFailed:
+                    print("   🔐 Authentication failed - refresh token inválido")
+                case .tokenExpired:
+                    print("   ⏰ Token expired - refresh token expirado")
+                default:
+                    print("   ❓ Other API Error: \(apiError)")
+                }
+            }
             
             // If refresh fails, perform auto-logout
+            print("🚪 [REFRESH TOKEN] Iniciando auto-logout debido a fallo en renovación...")
             await MainActor.run {
                 self.performAutoLogout()
             }
