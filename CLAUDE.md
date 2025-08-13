@@ -35,6 +35,10 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - `Utils/Extensions.swift` - Centralized extensions
 - `Utils/JWTHelper.swift` - **JWT validation** + local expiration check ✅ NEW
 
+### Image Handling ✅ DRAG & DROP ENHANCED
+- `ViewModels/Components/ImageHandler.swift` - **Universal drag & drop** + multi-format support ✅ UPGRADED
+- `Views/Dashboard/Modals/AddWeightModalComponents/PhotoUploadSection.swift` - **Enhanced onDrop** + expanded UTTypes ✅ IMPROVED
+
 ## ⚡ Cloudflare Integration ✅ NEW
 
 ### Refresh Token System
@@ -66,6 +70,16 @@ PesoTracker is a macOS weight tracking app built with SwiftUI. Features: JWT aut
 - **Smart Auto-Refresh**: Only refreshes when needed (2-min buffer)
 - **Optimized Startup**: Eliminated artificial delays - app opens instantly
 - **Intelligent Flow**: accessToken → refreshToken → logout (only as last resort)
+
+### 🎯 Drag & Drop System ✅ ENHANCED
+- **Universal Compatibility**: Finder, browsers, Preview, Fotos, creative apps
+- **Smart Detection**: Intelligent type identification with automatic fallback
+- **Multi-Format Support**: JPEG, PNG, GIF, HEIC, TIFF + data/URL variants
+- **Robust Processing**: Handles NSImage, Data, URL, and String URL formats
+- **Error Recovery**: Resolved kDragIPCCompleted issues with improved async handling
+- **Debug Logging**: Comprehensive logging for troubleshooting and verification
+- **Type Hierarchy**: File URLs → public.image → specific types → fallback search
+- **HDR Compatible**: Processes modern HDR images with gain map warnings (non-critical)
 
 ## Architecture
 - **Pattern**: MVVM with SwiftUI + Combine

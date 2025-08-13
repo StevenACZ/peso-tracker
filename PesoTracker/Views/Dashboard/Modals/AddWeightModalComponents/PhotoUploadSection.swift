@@ -198,8 +198,24 @@ struct PhotoUploadArea: View {
             )
         }
         
-        .onDrop(of: [UTType.image], isTargeted: $isImageHovered) { providers in
-            return viewModel.handleDrop(providers: providers)
+        .onDrop(of: [
+            UTType.fileURL, 
+            UTType.image, 
+            UTType.jpeg, 
+            UTType.png, 
+            UTType.gif, 
+            UTType.heic, 
+            UTType.tiff,
+            UTType.data,
+            UTType.item
+        ], isTargeted: $isImageHovered) { providers in
+            print("🎯 [DRAG DROP] onDrop triggered with \(providers.count) providers")
+            if let provider = providers.first {
+                print("🎯 [DRAG DROP] Provider types: \(provider.registeredTypeIdentifiers)")
+            }
+            let result = viewModel.handleDrop(providers: providers)
+            print("🎯 [DRAG DROP] handleDrop returned: \(result)")
+            return result
         }
     }
 }
