@@ -27,7 +27,13 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - Component Handlers
     private let validationService = UniversalValidationService.shared
-    @StateObject private var imageManager = WeightEntryImageManager()
+    private let imageManager = WeightEntryImageManager()
+    
+    // MARK: - Exposed Image Properties
+    @Published var selectedImage: NSImage?
+    @Published var imageData: Data?
+    @Published var existingPhotoUrl: String?
+    @Published var hasExistingPhoto = false
     
     // MARK: - Editing State
     @Published var isEditMode = false
@@ -39,6 +45,7 @@ class WeightEntryViewModel: ObservableObject {
     
     init() {
         setupValidation()
+        setupImageBindings()
         updateDateString()
     }
     
@@ -55,10 +62,28 @@ class WeightEntryViewModel: ObservableObject {
             }
             .assign(to: &$isValid)
         
-        // Bind image manager error messages
+    }
+    
+    private func setupImageBindings() {
+        // Bind image manager properties to published properties
+        imageManager.$selectedImage
+            .assign(to: &$selectedImage)
+        
+        imageManager.$imageData
+            .assign(to: &$imageData)
+        
+        imageManager.$existingPhotoUrl
+            .assign(to: &$existingPhotoUrl)
+        
+        imageManager.$hasExistingPhoto
+            .assign(to: &$hasExistingPhoto)
+        
         imageManager.$errorMessage
             .compactMap { $0 }
-            .assign(to: &$errorMessage)
+            .sink { [weak self] errorMessage in
+                self?.errorMessage = errorMessage
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Validation Methods
@@ -278,18 +303,6 @@ class WeightEntryViewModel: ObservableObject {
     }
     
     // MARK: - Image Manager Computed Properties
-    
-    var selectedImage: NSImage? {
-        return imageManager.selectedImage
-    }
-    
-    var hasExistingPhoto: Bool {
-        return imageManager.hasExistingPhoto
-    }
-    
-    var existingPhotoUrl: String? {
-        return imageManager.existingPhotoUrl
-    }
     
     var existingFullSizePhotoUrl: String? {
         return imageManager.existingFullSizePhotoUrl

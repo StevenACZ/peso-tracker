@@ -20,19 +20,27 @@ class DateFormatterFactory {
     private lazy var spanishFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "es_ES")
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.timeZone = TimeZone.current
         return formatter
     }()
     
     /// Default system formatter
     private lazy var systemFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.timeZone = TimeZone.current
         return formatter
     }()
     
     /// English locale formatter for internal processing
     private lazy var englishFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }()
+    
+    /// UTC formatter for API communication (only use for server communication)
+    private lazy var utcFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")
@@ -63,9 +71,9 @@ class DateFormatterFactory {
         return formatter
     }
     
-    /// API format: "yyyy-MM-dd" (e.g., "2024-03-15")
+    /// API format: "yyyy-MM-dd" (e.g., "2024-03-15") - Uses UTC for server communication
     func apiDateFormatter() -> DateFormatter {
-        let formatter = englishFormatter
+        let formatter = utcFormatter
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }

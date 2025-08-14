@@ -73,9 +73,10 @@ struct UniversalErrorModal: View {
     
     var body: some View {
         ZStack {
-            // Background overlay
+            // Background overlay that covers everything including headers
             Color.black.opacity(0.4)
-                .ignoresSafeArea()
+                .ignoresSafeArea(.all, edges: .all)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .onTapGesture {
                     dismissModal()
                 }
@@ -117,6 +118,7 @@ struct UniversalErrorModal: View {
         .opacity(isPresented.wrappedValue ? 1 : 0)
         .scaleEffect(isPresented.wrappedValue ? 1 : 0.8)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isPresented.wrappedValue)
+        .zIndex(999) // Ensure modal appears above everything else
     }
     
     @ViewBuilder
