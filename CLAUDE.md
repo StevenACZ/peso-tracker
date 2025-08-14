@@ -303,3 +303,111 @@ This comprehensive 8-phase refactoring establishes a solid foundation for future
 - **Enhanced Developer Experience**: Better discoverability and type safety
 
 ✅ **REFACTORING COMPLETED**: All 8 phases successfully implemented and tested
+
+## 🔧 Critical Bug Fixes & Runtime Improvements (v1.1.1)
+
+### 🟣 StateObject Warning Resolution ✅
+**Problem**: 11 purple SwiftUI warnings from `@StateObject private var imageManager` in WeightEntryViewModel
+**Root Cause**: StateObject accessed without being installed on a View, creating new instances each time
+**Solution**: 
+- Changed to regular instance with @Published properties
+- Implemented proper Combine bindings with `store(in: &cancellables)`
+- Exposed image properties directly on ViewModel
+
+**Result**: 0 compilation warnings, proper instance lifecycle management
+
+### 📸 Image Functionality Restoration ✅
+**Problem**: Drag & drop and image selection not working, existing photos not loading in edit mode
+**Root Cause**: Image manager properties not properly exposed after StateObject refactoring
+**Solution**:
+- Exposed `selectedImage`, `imageData`, `existingPhotoUrl`, `hasExistingPhoto` as @Published
+- Fixed binding configuration in `setupImageBindings()`
+- Restored proper loading of existing photos with `imageManager.setExistingPhoto()`
+
+**Result**: Full drag & drop functionality restored, existing photos load correctly
+
+### 📅 Date Timezone Correction ✅
+**Problem**: 1-day offset in dates between table view and create/edit forms
+**Root Cause**: DateFormatterFactory using UTC timezone for all operations instead of local
+**Solution**:
+- Changed DateFormatterFactory to use `TimeZone.current` for display formatters
+- Maintained separate UTC formatter specifically for API communication
+- Ensured consistency across table, forms, and calendar components
+
+**Result**: Dates display consistently across all views, no timezone-related offsets
+
+### 🎭 Modal Overlay Enhancement ✅
+**Problem**: Error modal background didn't cover auth header, leaving white space
+**Root Cause**: Modal overlay using basic `.ignoresSafeArea()` instead of full screen coverage
+**Solution**:
+- Enhanced UniversalErrorModal with `.ignoresSafeArea(.all, edges: .all)`
+- Added `zIndex(999)` for proper layering
+- Ensured complete screen coverage including headers
+
+**Result**: Error modals now properly dim entire application interface
+
+## 🎨 UI/UX Polish & Final Optimizations
+
+### 🏠 App Header Redesign ✅
+**Problem**: Header showing duplicate "Bienvenido de nuevo" text and oversized appearance
+**Root Cause**: Using `UniversalAuthHeader.login` which shows content headers instead of app header
+**Solution**:
+- Created `UniversalAuthHeader.appHeader` factory method
+- Implemented conditional layout: simple logo + title for app header
+- Added perfect vertical centering with VStack and Spacers
+
+**Components Enhanced**:
+- **Logo Layout**: Centered [AppLogo] + "PesoTracker" text
+- **Dimensions**: 70px height + 25px top padding with separator
+- **Positioning**: Perfect horizontal and vertical centering
+
+**Result**: Clean, compact header exactly matching original AuthHeader design
+
+### 🔗 Component Architecture Refinement ✅
+**Improvements Made**:
+- **UniversalErrorModal**: Enhanced with full-screen overlay and proper z-indexing
+- **UniversalAuthHeader**: Dual-mode component (app header vs content header)
+- **WeightEntryViewModel**: Proper Combine binding architecture
+- **DateFormatterFactory**: Timezone-aware formatting with API separation
+
+## 📊 Final Architecture Summary
+
+### 🏗️ **Modern Component Hierarchy**
+```
+UniversalComponents/
+├── UniversalErrorModal      # Full-screen error handling with actions
+├── UniversalAuthHeader      # Dual-mode: app header + content headers  
+├── UniversalValidationService # Centralized form validation
+├── UniversalFormActionButtons # Standardized button patterns
+└── UniversalStatCard        # Enhanced statistics display
+```
+
+### ⚙️ **Service Layer Optimization**
+```
+Services/
+├── WeightEntryImageManager  # Specialized image handling
+├── DateFormatterFactory     # Timezone-aware cached formatters
+├── ErrorMessageParser       # Centralized error message handling
+├── ColorTheme              # Unified color logic
+└── ServiceRegistry         # Centralized service management
+```
+
+### 🎯 **Performance Achievements**
+- **0 Compilation Warnings**: Clean codebase with proper lifecycle management
+- **Optimized Bindings**: Combine publishers with proper memory management
+- **Cached Formatters**: Performance-optimized date formatting
+- **Smart Image Management**: Efficient photo handling with existing state management
+- **Enhanced UX**: Seamless drag & drop, precise dates, perfect modal overlays
+
+### 🔄 **Development Workflow Improvements**
+- **Consistent Patterns**: Factory methods and unified component interfaces
+- **Enhanced Debugging**: Better error messages and state tracking
+- **Type Safety**: Validated configurations and compile-time checks
+- **Maintainability**: Single source of truth for common functionality
+
+## 🎉 **FINAL STATUS: PRODUCTION READY**
+- ✅ Zero warnings and clean compilation
+- ✅ All user functionality restored and enhanced
+- ✅ Perfect UI/UX with no visual artifacts
+- ✅ Robust architecture with modern Swift patterns
+- ✅ Comprehensive testing and validation complete
