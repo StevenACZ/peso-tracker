@@ -22,7 +22,7 @@ struct PersonalSummaryCard: View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 weightCard(title: "Peso Inicial", value: initialWeight)
-                weightCard(title: "Peso Actual", value: viewModel.formattedCurrentWeight)
+                weightCard(title: "Peso Actual", value: currentWeight)
             }
             
             totalChangeCard
@@ -30,8 +30,13 @@ struct PersonalSummaryCard: View {
     }
     
     private var initialWeight: String {
-        guard let initial = viewModel.initialWeight else { return "-" }
+        guard let initial = viewModel.statistics?.initialWeight else { return "-" }
         return String(format: "%.2f kg", initial)
+    }
+    
+    private var currentWeight: String {
+        guard let current = viewModel.statistics?.currentWeight else { return "-" }
+        return String(format: "%.2f kg", current)
     }
     
     private var emptyView: some View {
@@ -78,23 +83,46 @@ struct PersonalSummaryCard: View {
         HStack {
             Spacer()
             VStack(spacing: 4) {
-                Text("Total Perdido/Ganado")
+                Text(intelligentChangeText)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
-                Text(viewModel.formattedWeightChange)
+                Text(intelligentChangeValue)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(weightChangeColor)
+                    .foregroundColor(intelligentChangeColor)
             }
             Spacer()
         }
         .padding(.vertical, 12)
-        .background(weightChangeColor.opacity(0.1))
+        .background(intelligentChangeColor.opacity(0.1))
         .cornerRadius(8)
     }
     
-    private var weightChangeColor: Color {
-        guard let change = viewModel.weightChange else { return .secondary }
-        return change < 0 ? .green : change > 0 ? .red : .secondary
+    // MARK: - Intelligent Change Display
+    private var intelligentChangeText: String {
+        guard let change = viewModel.statistics?.totalChange else { return "Total Perdido/Ganado" }
+        if change < 0 {
+            return "Total Perdido"
+        } else if change > 0 {
+            return "Total Ganado"
+        } else {
+            return "Sin Cambio"
+        }
+    }
+    
+    private var intelligentChangeValue: String {
+        guard let change = viewModel.statistics?.totalChange else { return "-" }
+        return String(format: "%.2f kg", abs(change))
+    }
+    
+    private var intelligentChangeColor: Color {
+        guard let change = viewModel.statistics?.totalChange else { return .secondary }
+        if change < 0 {
+            return .green  // Perdido = Verde (bueno)
+        } else if change > 0 {
+            return .red    // Ganado = Rojo (malo)
+        } else {
+            return .secondary  // Sin cambio = Gris
+        }
     }
 }
 

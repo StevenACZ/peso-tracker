@@ -10,7 +10,7 @@ struct WeightPredictionCard: View {
                 .foregroundColor(.secondary)
                 .tracking(0.5)
             
-            if viewModel.hasWeightData && viewModel.totalRecords >= 3 {
+            if viewModel.hasData && (viewModel.statistics?.totalRecords ?? 0) >= 3 {
                 dataView
             } else {
                 emptyView
@@ -24,7 +24,7 @@ struct WeightPredictionCard: View {
                 Text("Promedio / semana")
                     .font(.system(size: 14))
                 Spacer()
-                Text(viewModel.formattedWeeklyAverage)
+                Text(formattedWeeklyAverage)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(weeklyChangeColor)
             }
@@ -33,17 +33,8 @@ struct WeightPredictionCard: View {
                 Text("Total de registros")
                     .font(.system(size: 14))
                 Spacer()
-                Text("\(viewModel.totalRecords)")
+                Text("\(viewModel.statistics?.totalRecords ?? 0)")
                     .font(.system(size: 14, weight: .medium))
-            }
-            
-            HStack {
-                Text("Cambio total")
-                    .font(.system(size: 14))
-                Spacer()
-                Text(viewModel.formattedWeightChange)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(totalChangeColor)
             }
         }
     }
@@ -55,14 +46,15 @@ struct WeightPredictionCard: View {
             .italic()
     }
     
-    private var weeklyChangeColor: Color {
-        guard let weeklyAverage = viewModel.weeklyAverage else { return .secondary }
-        return weeklyAverage < 0 ? .green : weeklyAverage > 0 ? .red : .secondary
+    private var formattedWeeklyAverage: String {
+        guard let weeklyAverage = viewModel.statistics?.weeklyAverage else { return "Sin datos" }
+        let sign = weeklyAverage >= 0 ? "+" : ""
+        return "\(sign)\(String(format: "%.2f", weeklyAverage)) kg/semana"
     }
     
-    private var totalChangeColor: Color {
-        guard let change = viewModel.weightChange else { return .secondary }
-        return change < 0 ? .green : change > 0 ? .red : .secondary
+    private var weeklyChangeColor: Color {
+        guard let weeklyAverage = viewModel.statistics?.weeklyAverage else { return .secondary }
+        return weeklyAverage < 0 ? .green : weeklyAverage > 0 ? .red : .secondary
     }
 }
 
