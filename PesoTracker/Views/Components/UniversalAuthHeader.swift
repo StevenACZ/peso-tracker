@@ -25,6 +25,53 @@ struct UniversalAuthHeader: View {
     }
     
     var body: some View {
+        // Special layout for app header (logo + title like original AuthHeader)
+        if title.isEmpty && subtitle == nil {
+            appHeaderLayout
+        } else {
+            // Regular content header layout
+            contentHeaderLayout
+        }
+    }
+    
+    // MARK: - Layout Variants
+    
+    private var appHeaderLayout: some View {
+        VStack {
+            Spacer()
+            
+            HStack {
+                Spacer()
+                
+                // Logo centered
+                HStack(spacing: 8) {
+                    Image("AppLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 20, height: 20)
+                    
+                    Text("PesoTracker")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+            }
+            
+            Spacer()
+        }
+        .frame(height: 70)
+        .padding(.top, 25)
+        .background(Color(NSColor.windowBackgroundColor))
+        .overlay(
+            Rectangle()
+                .frame(height: 0.5)
+                .foregroundColor(Color(NSColor.separatorColor)),
+            alignment: .bottom
+        )
+    }
+    
+    private var contentHeaderLayout: some View {
         VStack(spacing: spacing) {
             Text(title)
                 .font(.system(size: titleFontSize, weight: .semibold))
@@ -78,6 +125,11 @@ extension UniversalAuthHeader {
             title: "Nueva Contraseña",
             subtitle: "Crea una nueva contraseña segura."
         )
+    }
+    
+    /// App header - Simple logo + title layout like original AuthHeader
+    static var appHeader: UniversalAuthHeader {
+        UniversalAuthHeader(title: "", subtitle: nil) // We'll override the body
     }
     
     /// Custom header
