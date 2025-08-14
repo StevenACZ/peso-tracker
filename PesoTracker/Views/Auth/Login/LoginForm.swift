@@ -5,9 +5,9 @@ struct LoginForm: View {
     let onSubmit: () -> Void
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.lg) {
             // Email field
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text("Correo electrónico")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)

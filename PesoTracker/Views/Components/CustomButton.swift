@@ -42,27 +42,27 @@ struct CustomButton<Content: View>: View {
 
 // MARK: - Preview
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: Spacing.xl) {
         CustomButton(action: {
             print("Primary button tapped")
         }) {
             Text("Primary Button")
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.sm)
                 .background(.green)
                 .foregroundColor(.white)
-                .cornerRadius(8)
+                .standardCornerRadius()
         }
         
         CustomButton(action: {
             print("Secondary button tapped")
         }) {
             Text("Secondary Button")
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.sm)
                 .background(Color.gray.opacity(0.1))
                 .foregroundColor(.secondary)
-                .cornerRadius(8)
+                .standardCornerRadius()
         }
         
         CustomButton(action: {}) {
@@ -70,11 +70,11 @@ struct CustomButton<Content: View>: View {
                 Image(systemName: "photo")
                 Text("Button with Icon")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.vertical, Spacing.xs)
             .background(Color.blue.opacity(0.1))
             .foregroundColor(.blue)
-            .cornerRadius(6)
+            .cornerRadius(Spacing.radiusSmall)
         }
     }
     .padding()

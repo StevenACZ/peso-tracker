@@ -15,7 +15,7 @@ struct AuthView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Top header
-            AuthHeader()
+            UniversalAuthHeader.login
             
             // Main content area
             mainContent

@@ -46,7 +46,7 @@ struct ContentView: View {
             Color(NSColor.windowBackgroundColor)
                 .ignoresSafeArea()
             
-            VStack(spacing: 24) {
+            VStack(spacing: Spacing.xxxl) {
                 // App Logo - custom logo
                 Image("AppLogo")
                     .resizable()

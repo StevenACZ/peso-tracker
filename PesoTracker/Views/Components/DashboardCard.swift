@@ -13,13 +13,13 @@ struct DashboardCard<Content: View>: View {
     init(title: String, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
-        self.spacing = 16
+        self.spacing = Spacing.lg
         self.headerFontSize = 12
         self.headerColor = .secondary
     }
     
     /// Custom styling
-    init(title: String, spacing: CGFloat = 16, headerFontSize: CGFloat = 12, headerColor: Color = .secondary, @ViewBuilder content: () -> Content) {
+    init(title: String, spacing: CGFloat = Spacing.lg, headerFontSize: CGFloat = 12, headerColor: Color = .secondary, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
         self.spacing = spacing
@@ -57,7 +57,7 @@ struct StatCard: View {
     }
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Spacing.xs) {
             Text(title)
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
@@ -67,20 +67,12 @@ struct StatCard: View {
                 .foregroundColor(valueColor ?? .primary)
         }
         .frame(maxWidth: .infinity)
-        .padding(12)
+        .cardPadding()
         .background(backgroundColor)
-        .cornerRadius(8)
+        .standardCornerRadius()
     }
 }
 
-// MARK: - Weight Change Colors Utility
-extension Color {
-    /// Standard weight change color logic (used across multiple cards)
-    static func weightChangeColor(for change: Double?) -> Color {
-        guard let change = change else { return .secondary }
-        return change < 0 ? .green : change > 0 ? .red : .secondary
-    }
-}
 
 // MARK: - Previews
 #Preview("Dashboard Card with Stats") {
@@ -95,7 +87,7 @@ extension Color {
                 StatCard(
                     title: "Total Perdido/Ganado",
                     value: "-2.3 kg",
-                    valueColor: .weightChangeColor(for: -2.3)
+                    valueColor: .weightChange(for: -2.3)
                 )
             }
         }
