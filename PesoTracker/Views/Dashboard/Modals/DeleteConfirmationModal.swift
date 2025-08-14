@@ -53,7 +53,8 @@ struct DeleteConfirmationModal: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
+        ZStack {
+            VStack(spacing: Spacing.sectionSpacing) {
             // Icon
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
@@ -73,10 +74,10 @@ struct DeleteConfirmationModal: View {
                     Text("Peso: \(displayWeight) - \(displayDate)")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, Spacing.lg)
+                        .padding(.vertical, Spacing.sm)
                         .background(Color.gray.opacity(0.1))
-                        .cornerRadius(6)
+                        .cornerRadius(Spacing.radiusSmall)
                 }
                 
                 Text("Esta acción no se puede deshacer.")
@@ -86,46 +87,46 @@ struct DeleteConfirmationModal: View {
             }
             
             // Buttons
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.buttonSpacing) {
                 CustomButton(action: {
                     isPresented = false
                 }) {
                     Text("Cancelar")
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, Spacing.xl)
+                        .padding(.vertical, Spacing.sm)
                         .background(Color.gray.opacity(0.2))
-                        .cornerRadius(6)
+                        .cornerRadius(Spacing.radiusSmall)
                 }
-                
                 
                 CustomButton(action: {
                     Task {
                         await deleteWeight()
                     }
                 }) {
-                    HStack {
-                        if isDeleting {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        }
-                        Text(isDeleting ? "Eliminando..." : "Eliminar")
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
-                    .background(isDeleting ? Color.gray : Color.red)
-                    .foregroundColor(.white)
-                    .cornerRadius(6)
+                    Text("Eliminar")
+                        .padding(.horizontal, Spacing.xl)
+                        .padding(.vertical, Spacing.sm)
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(Spacing.radiusSmall)
                 }
-                
-                .disabled(isDeleting)
+            }
+            }
+            .padding(Spacing.modalPadding)
+            .frame(width: 350)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(Spacing.radiusModal)
+            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            .disabled(isDeleting)
+            .opacity(isDeleting ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isDeleting)
+            
+            // Loading overlay during delete operation
+            if isDeleting {
+                LoadingOverlay(isLoading: true, title: "Eliminando peso...")
+                    .cornerRadius(Spacing.radiusModal)
             }
         }
-        .padding(24)
-        .frame(width: 350)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") {
                 errorMessage = nil
