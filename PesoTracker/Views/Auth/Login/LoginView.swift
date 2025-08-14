@@ -11,7 +11,7 @@ struct AuthLoginView: View {
                 Spacer()
                 
                 VStack(spacing: 24) {
-                    LoginHeader()
+                    UniversalAuthHeader.login
                     LoginForm(authViewModel: authViewModel) {
                         Task {
                             await authViewModel.login()

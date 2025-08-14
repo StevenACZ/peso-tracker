@@ -10,7 +10,7 @@ struct AuthRegisterView: View {
                 Spacer()
                 
                 VStack(spacing: 24) {
-                    RegisterHeader()
+                    UniversalAuthHeader.register
                     RegisterForm(authViewModel: authViewModel) {
                         Task {
                             await authViewModel.register()
