@@ -199,7 +199,7 @@ extension Weight {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.timeZone = TimeZone.current
         return formatter.string(from: date)
     }
 }
