@@ -81,9 +81,9 @@ struct UniversalErrorModal: View {
                 }
             
             // Modal content
-            VStack(spacing: 20) {
+            VStack(spacing: Spacing.sectionSpacing) {
                 // Header with icon
-                VStack(spacing: 12) {
+                VStack(spacing: Spacing.md) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 40))
                         .foregroundColor(.red)
@@ -100,14 +100,14 @@ struct UniversalErrorModal: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, actions.count > 1 ? 16 : 0)
+                    .padding(.horizontal, actions.count > 1 ? Spacing.lg : 0)
                 
                 // Action buttons
                 actionButtons
             }
-            .padding(24)
+            .padding(Spacing.modalPadding)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: Spacing.radiusModal)
                     .fill(Color(NSColor.windowBackgroundColor))
                     .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
             )
@@ -126,7 +126,7 @@ struct UniversalErrorModal: View {
             singleActionButton(actions[0])
         } else {
             // Multiple buttons (horizontal)
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.buttonSpacing) {
                 ForEach(actions.indices, id: \.self) { index in
                     multiActionButton(actions[index])
                 }
@@ -143,9 +143,9 @@ struct UniversalErrorModal: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, Spacing.buttonSpacing)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: Spacing.radiusStandard)
                         .fill(colorForStyle(action.style))
                 )
         }
@@ -159,11 +159,11 @@ struct UniversalErrorModal: View {
         }) {
             Text(action.text)
                 .font(.system(size: 14, weight: .medium))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.sm)
                 .background(backgroundForStyle(action.style))
                 .foregroundColor(textColorForStyle(action.style))
-                .cornerRadius(6)
+                .cornerRadius(Spacing.radiusSmall)
         }
     }
     
