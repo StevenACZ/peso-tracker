@@ -71,10 +71,20 @@ struct CalendarDayView: View {
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
+        .disabled(!day.isSelectable)
         .onHover { hovering in
             onHover(hovering)
+            // Set cursor for selectable days
+            if day.isSelectable {
+                DispatchQueue.main.async {
+                    if hovering {
+                        NSCursor.pointingHand.set()
+                    } else {
+                        NSCursor.arrow.set()
+                    }
+                }
+            }
         }
-        .disabled(!day.isSelectable)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .accessibilityHint(isCurrentMonth ? "Toca para seleccionar esta fecha" : "Fecha de otro mes")

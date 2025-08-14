@@ -8,28 +8,38 @@ struct CalendarHeader: View {
     
     // MARK: - Body
     var body: some View {
-        HStack {
-            NavigationButton(
-                direction: .previous,
-                accessibilityLabel: viewModel.previousMonthAccessibilityLabel
-            ) {
-                viewModel.navigateToPreviousMonth()
+        VStack(spacing: Spacing.sm) {
+            // Navigation row with month/year controls
+            HStack {
+                NavigationButton(
+                    direction: .previous,
+                    accessibilityLabel: viewModel.previousMonthAccessibilityLabel
+                ) {
+                    viewModel.navigateToPreviousMonth()
+                }
+                Spacer()
+                MonthYearDisplay(
+                    month: viewModel.monthName,
+                    year: viewModel.yearString
+                )
+                Spacer()
+                NavigationButton(
+                    direction: .next,
+                    accessibilityLabel: viewModel.nextMonthAccessibilityLabel
+                ) {
+                    viewModel.navigateToNextMonth()
+                }
             }
-            
-            Spacer()
-            
-            MonthYearDisplay(
-                month: viewModel.monthName,
-                year: viewModel.yearString
-            )
-            
-            Spacer()
-            
-            TodayButton {
-                viewModel.selectToday()
+            // Today button centered below
+            HStack {
+                Spacer()
+                TodayButton {
+                    viewModel.selectToday()
+                }
+                Spacer()
             }
         }
-        .frame(height: 40)
+        .frame(height: 70) // Increased height for two rows
     }
 }
 
@@ -64,7 +74,13 @@ struct NavigationButton: View {
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel(accessibilityLabel)
         .onHover { hovering in
-            // Visual feedback on hover
+            DispatchQueue.main.async {
+                if hovering {
+                    NSCursor.pointingHand.set()
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
         }
     }
 }
@@ -114,6 +130,15 @@ struct TodayButton: View {
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel(SpanishCalendarLocalization.todayLabel)
         .accessibilityHint("Navega al mes actual y selecciona la fecha de hoy")
+        .onHover { hovering in
+            DispatchQueue.main.async {
+                if hovering {
+                    NSCursor.pointingHand.set()
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
+        }
     }
 }
 
