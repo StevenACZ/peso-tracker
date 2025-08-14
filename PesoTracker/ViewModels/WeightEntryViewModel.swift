@@ -28,7 +28,7 @@ class WeightEntryViewModel: ObservableObject {
     @Published var hasAttemptedSave = false
     
     // MARK: - Component Handlers
-    private let validator = WeightFormValidator()
+    private let validationService = UniversalValidationService.shared
     private let imageHandler = ImageHandler()
     
     // MARK: - Editing State
@@ -79,52 +79,27 @@ class WeightEntryViewModel: ObservableObject {
         // Always clear error first
         weightError = nil
         
-        // Check if weight is empty
-        guard !weightText.isEmpty else {
-            if hasAttemptedSave {
-                weightError = "El peso es requerido"
-            }
-            return false
+        let isValid = validationService.validateWeight(weightText)
+        
+        // Set error message only if validation failed and user has attempted to save
+        if !isValid && hasAttemptedSave {
+            weightError = validationService.getWeightValidationError(weightText)
         }
         
-        // Check if weight is valid number
-        guard let weightValue = Double(weightText.replacingOccurrences(of: ",", with: ".")) else {
-            if hasAttemptedSave {
-                weightError = "Ingresa un peso válido"
-            }
-            return false
-        }
-        
-        // Check weight range
-        guard weightValue >= 1.0 && weightValue <= 1000.0 else {
-            if hasAttemptedSave {
-                weightError = "El peso debe estar entre 1.0 y 1000.0 kg"
-            }
-            return false
-        }
-        
-        return true
+        return isValid
     }
     
     private func validateDate(_ date: Date) -> Bool {
         dateError = nil
         
-        let calendar = Calendar.current
-        let now = Date()
+        let isValid = validationService.validateDate(date)
         
-        // Don't allow future dates
-        if date > now {
-            dateError = "No puedes registrar un peso en el futuro"
-            return false
+        // Set error message only if validation failed and user has attempted to save
+        if !isValid && hasAttemptedSave {
+            dateError = validationService.getDateValidationError(date)
         }
         
-        // Don't allow dates more than 2 years ago
-        if let twoYearsAgo = calendar.date(byAdding: .year, value: -2, to: now), date < twoYearsAgo {
-            dateError = "La fecha no puede ser anterior a 2 años"
-            return false
-        }
-        
-        return true
+        return isValid
     }
     
     
