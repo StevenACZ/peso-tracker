@@ -15,10 +15,7 @@ class WeightService {
     ) async throws -> Weight {
         
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        let dateString = dateFormatter.string(from: date)
+        let dateString = DateFormatterFactory.shared.apiDateFormatter().string(from: date)
         
         var parameters: [String: String] = [
             "weight": String(weight),
@@ -59,10 +56,7 @@ class WeightService {
         imageData: Data? = nil
     ) async throws -> Weight {
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        let dateString = dateFormatter.string(from: date)
+        let dateString = DateFormatterFactory.shared.apiDateFormatter().string(from: date)
         
         var parameters: [String: String] = [
             "weight": String(weight),

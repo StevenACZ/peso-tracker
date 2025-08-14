@@ -21,16 +21,8 @@ struct AddGoalModal: View {
         self.onSave = onSave
     }
     
-    // Date formatter for display
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter
-    }()
-    
     private var dateString: String {
-        return dateFormatter.string(from: targetDate)
+        return DateFormatterFactory.shared.weightEntryFormatter().string(from: targetDate)
     }
     
     var body: some View {

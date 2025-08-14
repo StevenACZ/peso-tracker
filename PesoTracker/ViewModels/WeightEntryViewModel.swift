@@ -119,17 +119,11 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Date Handling Methods
     
     func updateDateString() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
-        formatter.timeZone = TimeZone.current
-        dateString = formatter.string(from: date)
+        dateString = DateFormatterFactory.shared.weightEntryFormatter().string(from: date)
     }
     
     func parseDateString() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
-        formatter.timeZone = TimeZone.current
-        if let parsedDate = formatter.date(from: dateString) {
+        if let parsedDate = DateFormatterFactory.shared.weightEntryFormatter().date(from: dateString) {
             date = parsedDate
         }
     }
@@ -298,10 +292,7 @@ class WeightEntryViewModel: ObservableObject {
     // MARK: - Computed Properties
     
     var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
+        return DateFormatterFactory.shared.weightEntryFormatter().string(from: date)
     }
     
     var canSave: Bool {

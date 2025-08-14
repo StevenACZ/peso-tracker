@@ -32,13 +32,9 @@ class GoalService: ObservableObject {
         
         do {
             // Create a simple request matching the API format
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")
-            
             let request = SimpleGoalRequest(
                 targetWeight: targetWeight,
-                targetDate: dateFormatter.string(from: targetDate)
+                targetDate: DateFormatterFactory.shared.apiDateFormatter().string(from: targetDate)
             )
             
             let goal = try await apiService.post(
@@ -67,13 +63,9 @@ class GoalService: ObservableObject {
         
         do {
             // Create a simple request matching the API format
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")
-            
             let request = SimpleGoalRequest(
                 targetWeight: targetWeight,
-                targetDate: dateFormatter.string(from: targetDate)
+                targetDate: DateFormatterFactory.shared.apiDateFormatter().string(from: targetDate)
             )
             
             let goal = try await apiService.patch(
