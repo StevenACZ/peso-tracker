@@ -32,7 +32,7 @@ struct AuthRegisterView: View {
             
             // Error Modal
             if authViewModel.showErrorModal {
-                ErrorModal(
+                UniversalErrorModal(
                     title: "Error de Registro",
                     message: authViewModel.errorModalMessage,
                     isPresented: $authViewModel.showErrorModal,

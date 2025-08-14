@@ -34,7 +34,7 @@ struct AuthLoginView: View {
             
             // Error Modal
             if authViewModel.showErrorModal {
-                ErrorModal(
+                UniversalErrorModal(
                     title: "Error de Inicio de Sesión",
                     message: authViewModel.errorModalMessage,
                     isPresented: $authViewModel.showErrorModal,

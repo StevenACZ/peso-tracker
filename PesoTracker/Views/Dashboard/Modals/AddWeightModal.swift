@@ -51,7 +51,7 @@ struct AddWeightModal: View {
             
             // Error Modal
             if viewModel.showErrorModal {
-                ErrorModal(
+                UniversalErrorModal(
                     title: "Error al Guardar Peso",
                     message: viewModel.errorModalMessage,
                     isPresented: $viewModel.showErrorModal,

@@ -50,7 +50,7 @@ struct CodeVerificationView: View {
             
             // Error Modal with Retry Option
             if passwordRecoveryViewModel.state.showError {
-                ErrorModalWithRetry(
+                UniversalErrorModal(
                     title: "Error de Verificación",
                     message: passwordRecoveryViewModel.state.errorMessage ?? "Ha ocurrido un error inesperado",
                     isPresented: $passwordRecoveryViewModel.state.showError,

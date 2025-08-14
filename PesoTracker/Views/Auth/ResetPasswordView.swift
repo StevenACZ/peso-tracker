@@ -46,7 +46,7 @@ struct ResetPasswordView: View {
             
             // Error Modal with Retry Option
             if passwordRecoveryViewModel.state.showError {
-                ErrorModalWithRetry(
+                UniversalErrorModal(
                     title: "Error al Cambiar Contraseña",
                     message: passwordRecoveryViewModel.state.errorMessage ?? "Ha ocurrido un error inesperado",
                     isPresented: $passwordRecoveryViewModel.state.showError,
