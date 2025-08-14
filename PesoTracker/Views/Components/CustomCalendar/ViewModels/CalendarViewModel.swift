@@ -75,6 +75,9 @@ class CalendarViewModel: ObservableObject {
             if !CalendarDateUtilities.isSameMonth(date, displayedMonth) {
                 displayedMonth = date
             }
+            
+            // Maintain hover state on the selected date for better visual feedback
+            setHoveredDate(date)
         }
     }
     

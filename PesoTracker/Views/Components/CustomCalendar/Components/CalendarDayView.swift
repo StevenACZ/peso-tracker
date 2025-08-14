@@ -73,7 +73,11 @@ struct CalendarDayView: View {
         .buttonStyle(PlainButtonStyle())
         .disabled(!day.isSelectable)
         .onHover { hovering in
-            onHover(hovering)
+            // Only clear hover state if not selected, to maintain visual feedback
+            if hovering || !isSelected {
+                onHover(hovering)
+            }
+            
             // Set cursor for selectable days
             if day.isSelectable {
                 DispatchQueue.main.async {

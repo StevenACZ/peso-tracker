@@ -25,10 +25,10 @@ struct CustomCalendar: View {
         .cornerRadius(Spacing.radiusModal)
         .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
         .frame(width: 340)
-        .onChange(of: viewModel.selectedDate) { newDate in
+        .onChange(of: viewModel.selectedDate) { _, newDate in
             selectedDate = newDate
         }
-        .onChange(of: selectedDate) { newDate in
+        .onChange(of: selectedDate) { _, newDate in
             if !CalendarDateUtilities.isSameDay(newDate, viewModel.selectedDate) {
                 viewModel.selectDate(newDate)
             }

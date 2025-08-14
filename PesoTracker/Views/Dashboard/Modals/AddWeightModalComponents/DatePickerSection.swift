@@ -51,7 +51,7 @@ struct DatePickerPopover: View {
             
             // Use our custom calendar instead of native DatePicker
             CustomCalendar(selectedDate: $viewModel.date)
-                .onChange(of: viewModel.date) { _ in
+                .onChange(of: viewModel.date) { _, _ in
                     viewModel.updateDateString()
                 }
             
