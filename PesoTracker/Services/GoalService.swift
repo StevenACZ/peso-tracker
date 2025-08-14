@@ -48,7 +48,7 @@ class GoalService: ObservableObject {
             return goal
             
         } catch {
-            self.error = "Error al crear la meta: \(error.localizedDescription)"
+            self.error = "Error al crear la meta: \(ErrorMessageParser.cleanMessage(from: error))"
             isLoading = false
             print("❌ [GOAL SERVICE] Error creating goal: \(error)")
             throw error
@@ -79,7 +79,7 @@ class GoalService: ObservableObject {
             return goal
             
         } catch {
-            self.error = "Error al actualizar la meta: \(error.localizedDescription)"
+            self.error = "Error al actualizar la meta: \(ErrorMessageParser.cleanMessage(from: error))"
             isLoading = false
             print("❌ [GOAL SERVICE] Error updating goal: \(error)")
             throw error

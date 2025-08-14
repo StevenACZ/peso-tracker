@@ -56,7 +56,7 @@ class DashboardService: ObservableObject {
             
         } catch {
             await handleAuthenticationError(error)
-            self.error = "Error al cargar datos del dashboard: \(error.localizedDescription)"
+            self.error = "Error al cargar datos del dashboard: \(ErrorMessageParser.cleanMessage(from: error))"
         }
         
         isLoading = false
@@ -95,7 +95,7 @@ class DashboardService: ObservableObject {
             
         } catch {
             await handleAuthenticationError(error)
-            self.error = "Error al cargar datos del gráfico: \(error.localizedDescription)"
+            self.error = "Error al cargar datos del gráfico: \(ErrorMessageParser.cleanMessage(from: error))"
         }
         
         isChartLoading = false
@@ -134,7 +134,7 @@ class DashboardService: ObservableObject {
             
         } catch {
             await handleAuthenticationError(error)
-            self.error = "Error al cargar datos de la tabla: \(error.localizedDescription)"
+            self.error = "Error al cargar datos de la tabla: \(ErrorMessageParser.cleanMessage(from: error))"
         }
         
         isTableLoading = false
