@@ -20,8 +20,6 @@ class WeightEntryViewModel: ObservableObject {
     @Published var errorModalMessage = ""
     
     // MARK: - Form Validation Properties
-    @Published var selectedImage: NSImage?
-    @Published var imageData: Data?
     @Published var weightError: String?
     @Published var dateError: String?
     @Published var isValid = false
@@ -29,15 +27,11 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - Component Handlers
     private let validationService = UniversalValidationService.shared
-    private let imageHandler = ImageHandler()
+    @StateObject private var imageManager = WeightEntryImageManager()
     
     // MARK: - Editing State
     @Published var isEditMode = false
     @Published var editingWeightId: Int?
-    @Published var existingPhotoUrl: String?
-    @Published var existingFullSizePhotoUrl: String?
-    @Published var existingPhotoId: Int?
-    @Published var hasExistingPhoto = false
     
     // MARK: - Services and Helpers
     private let weightService = WeightService()
@@ -61,14 +55,8 @@ class WeightEntryViewModel: ObservableObject {
             }
             .assign(to: &$isValid)
         
-        // Bind image handler properties
-        imageHandler.$selectedImage
-            .assign(to: &$selectedImage)
-        
-        imageHandler.$imageData
-            .assign(to: &$imageData)
-        
-        imageHandler.$errorMessage
+        // Bind image manager error messages
+        imageManager.$errorMessage
             .compactMap { $0 }
             .assign(to: &$errorMessage)
     }
@@ -105,15 +93,15 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - Image Handling (Delegated)
     func selectImage() {
-        imageHandler.selectImage()
+        imageManager.selectImage()
     }
     
     func removeImage() {
-        imageHandler.removeImage()
+        imageManager.removeImage()
     }
     
     func handleDrop(providers: [NSItemProvider]) -> Bool {
-        return imageHandler.handleDrop(providers: providers)
+        return imageManager.handleDrop(providers: providers)
     }
     
     // MARK: - Date Handling Methods
@@ -153,7 +141,7 @@ class WeightEntryViewModel: ObservableObject {
                     weight: weightValue,
                     date: date,
                     notes: notes.isEmpty ? nil : notes,
-                    image: selectedImage
+                    image: imageManager.selectedImage
                 )
             } else {
                 // Create new weight entry
@@ -161,7 +149,7 @@ class WeightEntryViewModel: ObservableObject {
                     weight: weightValue,
                     date: date,
                     notes: notes.isEmpty ? nil : notes,
-                    image: selectedImage
+                    image: imageManager.selectedImage
                 )
             }
             
@@ -190,14 +178,10 @@ class WeightEntryViewModel: ObservableObject {
         isEditMode = false
         isLoadingData = false
         editingWeightId = nil
-        existingPhotoUrl = nil
-        existingFullSizePhotoUrl = nil
-        existingPhotoId = nil
-        hasExistingPhoto = false
         hasAttemptedSave = false // Reset save attempt flag
         
         updateDateString()
-        imageHandler.removeImage()
+        imageManager.resetAll()
     }
     
     func loadExistingWeightSimple(_ weight: Weight) async {
@@ -219,36 +203,29 @@ class WeightEntryViewModel: ObservableObject {
         // Handle photo data from the new API structure
         if let photo = weight.photo {
             // Full photo data available (from individual endpoint)
-            hasExistingPhoto = true
-            existingPhotoUrl = photo.thumbnailUrl
-            existingFullSizePhotoUrl = photo.fullUrl
-            existingPhotoId = photo.id
+            imageManager.setExistingPhoto(
+                photoUrl: photo.thumbnailUrl,
+                fullSizeUrl: photo.fullUrl,
+                photoId: photo.id
+            )
         } else if weight.hasPhoto {
             // Photo exists but we need to fetch full details
             do {
                 let fullWeight = try await weightService.getWeight(id: weight.id)
                 if let photo = fullWeight.photo {
-                    hasExistingPhoto = true
-                    existingPhotoUrl = photo.thumbnailUrl
-                    existingFullSizePhotoUrl = photo.fullUrl
-                    existingPhotoId = photo.id
+                    imageManager.setExistingPhoto(
+                        photoUrl: photo.thumbnailUrl,
+                        fullSizeUrl: photo.fullUrl,
+                        photoId: photo.id
+                    )
                 } else {
-                    hasExistingPhoto = false
-                    existingPhotoUrl = nil
-                    existingFullSizePhotoUrl = nil
-                    existingPhotoId = nil
+                    imageManager.clearExistingPhoto()
                 }
             } catch {
-                hasExistingPhoto = false
-                existingPhotoUrl = nil
-                existingFullSizePhotoUrl = nil
-                existingPhotoId = nil
+                imageManager.clearExistingPhoto()
             }
         } else {
-            hasExistingPhoto = false
-            existingPhotoUrl = nil
-            existingFullSizePhotoUrl = nil
-            existingPhotoId = nil
+            imageManager.clearExistingPhoto()
         }
         
         // Always hide loading when done (whether it was shown or not)
@@ -262,7 +239,9 @@ class WeightEntryViewModel: ObservableObject {
         editingWeightId = weightRecord.id
         weight = weightRecord.weight.replacingOccurrences(of: " kg", with: "")
         notes = weightRecord.notes
-        hasExistingPhoto = weightRecord.hasPhotos
+        
+        // Configure image manager for limited photo info
+        imageManager.configureForEditingRecord(hasPhotos: weightRecord.hasPhotos)
         
         // Parse date from string format
         let formatter = DateFormatter()
@@ -274,17 +253,12 @@ class WeightEntryViewModel: ObservableObject {
             updateDateString()
         }
         
-        // Note: This method doesn't have photo ID info, so photo deletion won't work
-        existingPhotoId = nil
-        existingPhotoUrl = nil
-        existingFullSizePhotoUrl = nil
-        
         print("✏️ [EDIT MODE] Loaded weight for editing (limited photo info):")
         print("   - Weight ID: \(weightRecord.id)")
         print("   - Weight: \(weight)")
         print("   - Date: \(weightRecord.date)")
         print("   - Notes: \(notes)")
-        print("   - Has Photos: \(hasExistingPhoto)")
+        print("   - Images: \(imageManager.debugDescription)")
         print("   ⚠️  Photo deletion will not work - missing photo ID")
     }
     
@@ -301,6 +275,28 @@ class WeightEntryViewModel: ObservableObject {
     
     var saveButtonText: String {
         return isLoading ? "Guardando..." : "Guardar"
+    }
+    
+    // MARK: - Image Manager Computed Properties
+    
+    var selectedImage: NSImage? {
+        return imageManager.selectedImage
+    }
+    
+    var hasExistingPhoto: Bool {
+        return imageManager.hasExistingPhoto
+    }
+    
+    var existingPhotoUrl: String? {
+        return imageManager.existingPhotoUrl
+    }
+    
+    var existingFullSizePhotoUrl: String? {
+        return imageManager.existingFullSizePhotoUrl
+    }
+    
+    var hasAnyImage: Bool {
+        return imageManager.hasAnyImage
     }
     
     // MARK: - Error Modal Methods
