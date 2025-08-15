@@ -25,37 +25,10 @@ struct Goal: Codable, Identifiable {
         userId = try container.decode(Int.self, forKey: .userId)
         targetWeight = try container.decode(String.self, forKey: .targetWeight)
         
-        // Date decoding helper
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        
-        // Decode targetDate
-        let targetDateString = try container.decode(String.self, forKey: .targetDate)
-        if let parsedDate = dateFormatter.date(from: targetDateString) {
-            targetDate = parsedDate
-        } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            targetDate = dateFormatter.date(from: targetDateString) ?? Date()
-        }
-        
-        // Decode createdAt
-        let createdAtString = try container.decode(String.self, forKey: .createdAt)
-        if let parsedDate = dateFormatter.date(from: createdAtString) {
-            createdAt = parsedDate
-        } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            createdAt = dateFormatter.date(from: createdAtString) ?? Date()
-        }
-        
-        // Decode updatedAt
-        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
-        if let parsedDate = dateFormatter.date(from: updatedAtString) {
-            updatedAt = parsedDate
-        } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            updatedAt = dateFormatter.date(from: updatedAtString) ?? Date()
-        }
+        // Use DateDecodingHelper for consistent date handling
+        targetDate = try DateDecodingHelper.shared.decodeNormalizedDate(from: container, forKey: .targetDate)
+        createdAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .createdAt)
+        updatedAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .updatedAt)
     }
 }
 

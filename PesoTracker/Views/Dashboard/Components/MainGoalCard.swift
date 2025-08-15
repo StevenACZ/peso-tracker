@@ -38,6 +38,7 @@ struct MainGoalCard: View {
     
     private var dataView: some View {
         VStack(spacing: 16) {
+            // Weight display section
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Actual")
@@ -59,7 +60,7 @@ struct MainGoalCard: View {
                 }
             }
             
-            // Progress bar
+            // Progress bar with prediction
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Meta: \(goalDateText)")
@@ -88,15 +89,22 @@ struct MainGoalCard: View {
                 }
                 .frame(height: 6)
             }
+            
+            // Intelligent Prediction Section
+            if let prediction = calculatePrediction(),
+               let weeklyAverage = viewModel.weeklyAverage {
+                CompactPredictionIndicator(
+                    prediction: prediction, 
+                    weeklyAverage: weeklyAverage
+                )
+                    .transition(.opacity.combined(with: .scale))
+            }
         }
     }
     
     private var goalDateText: String {
         guard let goalDate = viewModel.goalDate else { return "Sin fecha" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter.string(from: goalDate)
+        return DateFormatterFactory.shared.formatForDisplay(goalDate)
     }
     
     private var progressPercentage: CGFloat {
@@ -132,6 +140,33 @@ struct MainGoalCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
+    }
+    
+    // MARK: - Prediction Calculation
+    
+    /// Calculates intelligent goal prediction using available dashboard data
+    private func calculatePrediction() -> GoalPredictionCalculator.GoalPrediction? {
+        // Verificar que tenemos todos los datos necesarios
+        guard let currentWeight = viewModel.currentWeight,
+              let goalWeight = viewModel.goalWeight,
+              let initialWeight = viewModel.initialWeight,
+              let weeklyAverage = viewModel.weeklyAverage,
+              let goalDate = viewModel.goalDate else {
+            return nil
+        }
+        
+        // Solo mostrar predicción si hay suficiente progreso o datos para calcular
+        guard currentWeight != initialWeight || weeklyAverage != 0 else {
+            return nil
+        }
+        
+        return GoalPredictionCalculator.shared.calculatePrediction(
+            currentWeight: currentWeight,
+            targetWeight: goalWeight,
+            initialWeight: initialWeight,
+            targetDate: goalDate,
+            weeklyAverage: weeklyAverage
+        )
     }
 }
 

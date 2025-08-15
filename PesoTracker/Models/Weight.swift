@@ -54,54 +54,32 @@ struct Weight: Codable, Identifiable {
         // API metadata
         userId = try container.decodeIfPresent(Int.self, forKey: .userId)
         
-        // Date decoding helper - preserve local date intent
+        // Use DateDecodingHelper with fallback to YYYY-MM-DD string parsing
         let dateString = try container.decode(String.self, forKey: .date)
         
         // First try to parse as a simple date string (YYYY-MM-DD)
         if let directDate = DateNormalizer.shared.dateFromAPIString(dateString) {
             date = directDate
+            #if DEBUG
             print("🗓️ [WEIGHT MODEL] Parsed date directly from string: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: directDate))")
+            #endif
         } else {
-            // Fallback to ISO8601 parsing for backward compatibility
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")
-            
-            if let parsedDate = dateFormatter.date(from: dateString) {
-                // Use the new API normalization method
-                date = DateNormalizer.shared.normalizeFromAPI(parsedDate)
-                print("🗓️ [WEIGHT MODEL] Parsed date from ISO8601: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: date))")
-            } else {
-                dateFormatter.formatOptions = [.withInternetDateTime]
-                let fallbackDate = dateFormatter.date(from: dateString) ?? Date()
-                date = DateNormalizer.shared.normalizeFromAPI(fallbackDate)
-                print("⚠️ [WEIGHT MODEL] Used fallback date parsing: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: date))")
-            }
+            // Fallback to DateDecodingHelper for ISO8601 parsing
+            date = DateDecodingHelper.shared.decodeNormalizedDate(from: dateString)
+            #if DEBUG
+            print("🗓️ [WEIGHT MODEL] Parsed date with DateDecodingHelper: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: date))")
+            #endif
         }
         
-        // Decode optional dates using ISO8601 formatter
-        let iso8601Formatter = ISO8601DateFormatter()
-        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        iso8601Formatter.timeZone = TimeZone(identifier: "UTC")
-        
+        // Use DateDecodingHelper for optional timestamps
         if let createdAtString = try container.decodeIfPresent(String.self, forKey: .createdAt) {
-            if let parsedDate = iso8601Formatter.date(from: createdAtString) {
-                createdAt = parsedDate
-            } else {
-                iso8601Formatter.formatOptions = [.withInternetDateTime]
-                createdAt = iso8601Formatter.date(from: createdAtString)
-            }
+            createdAt = DateDecodingHelper.shared.decodeTimestamp(from: createdAtString)
         } else {
             createdAt = nil
         }
         
         if let updatedAtString = try container.decodeIfPresent(String.self, forKey: .updatedAt) {
-            if let parsedDate = iso8601Formatter.date(from: updatedAtString) {
-                updatedAt = parsedDate
-            } else {
-                iso8601Formatter.formatOptions = [.withInternetDateTime]
-                updatedAt = iso8601Formatter.date(from: updatedAtString)
-            }
+            updatedAt = DateDecodingHelper.shared.decodeTimestamp(from: updatedAtString)
         } else {
             updatedAt = nil
         }
@@ -178,15 +156,9 @@ struct WeightPhoto: Codable, Identifiable {
         mediumUrl = URLHelper.transformPhotoURL(rawMediumUrl)
         fullUrl = URLHelper.transformPhotoURL(rawFullUrl)
         
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        
-        let createdAtString = try container.decode(String.self, forKey: .createdAt)
-        createdAt = dateFormatter.date(from: createdAtString) ?? Date()
-        
-        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
-        updatedAt = dateFormatter.date(from: updatedAtString) ?? Date()
+        // Use DateDecodingHelper for consistent timestamp handling
+        createdAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .createdAt)
+        updatedAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .updatedAt)
         
         // Decode optional metadata fields
         expiresIn = try container.decodeIfPresent(Int.self, forKey: .expiresIn)

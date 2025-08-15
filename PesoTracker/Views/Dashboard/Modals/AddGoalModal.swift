@@ -216,68 +216,48 @@ struct GoalDatePickerPopover: View {
     @Binding var showDatePicker: Bool
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Spacing.lg) {
             Text("Seleccionar Fecha Objetivo")
-                .font(.system(size: 18, weight: .semibold))
+                .font(Typography.title3)
                 .foregroundColor(.primary)
             
-            ZStack {
-                DatePicker("", selection: $targetDate, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .accentColor(.green)
-                    .background(Color.clear)
-                
-                // Overlay to hide any focus rings or outlines
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.clear, lineWidth: 3)
-                    .background(Color.clear)
-                    .allowsHitTesting(false)
-            }
-            .mask(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.black)
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.windowBackgroundColor))
-                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-            )
+            // Use our modern custom calendar
+            CustomCalendar(selectedDate: $targetDate)
             
-            HStack(spacing: 16) {
+            HStack(spacing: Spacing.lg) {
                 CustomButton(action: {
                     showDatePicker = false
                 }) {
-                    Text("Cancelar")
+                    Text(SpanishCalendarLocalization.cancelButtonText)
+                        .font(Typography.modalButton)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color(NSColor.controlBackgroundColor))
                         .foregroundColor(.secondary)
-                        .cornerRadius(8)
+                        .cornerRadius(Spacing.radiusStandard)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: Spacing.radiusStandard)
                                 .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                         )
                 }
                 
-                
                 CustomButton(action: {
                     showDatePicker = false
                 }) {
-                    Text("Seleccionar")
+                    Text(SpanishCalendarLocalization.selectButtonText)
+                        .font(Typography.modalButton)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color(red: 0.2, green: 0.7, blue: 0.3))
+                        .background(ColorTheme.success)
                         .foregroundColor(.white)
-                        .cornerRadius(8)
-                        .shadow(color: Color(red: 0.2, green: 0.7, blue: 0.3).opacity(0.3), radius: 4, x: 0, y: 2)
+                        .cornerRadius(Spacing.radiusStandard)
+                        .shadow(color: ColorTheme.success.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
-                
             }
         }
-        .padding(24)
-        .frame(width: 340)
+        .padding(Spacing.modalPadding)
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(16)
+        .cornerRadius(Spacing.radiusModal)
         .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
     }
 }

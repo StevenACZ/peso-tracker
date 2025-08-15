@@ -199,27 +199,9 @@ struct DashboardGoal: Codable {
         id = try container.decode(Int.self, forKey: .id)
         targetWeight = try container.decode(Double.self, forKey: .targetWeight)
         
-        // Date decoding helper
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        // Decode targetDate
-        let targetDateString = try container.decode(String.self, forKey: .targetDate)
-        if let parsedDate = dateFormatter.date(from: targetDateString) {
-            targetDate = parsedDate
-        } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            targetDate = dateFormatter.date(from: targetDateString) ?? Date()
-        }
-        
-        // Decode createdAt
-        let createdAtString = try container.decode(String.self, forKey: .createdAt)
-        if let parsedDate = dateFormatter.date(from: createdAtString) {
-            createdAt = parsedDate
-        } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            createdAt = dateFormatter.date(from: createdAtString) ?? Date()
-        }
+        // Use DateDecodingHelper for consistent date handling
+        targetDate = try DateDecodingHelper.shared.decodeNormalizedDate(from: container, forKey: .targetDate)
+        createdAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .createdAt)
     }
 }
 
@@ -264,17 +246,8 @@ struct WeightPoint: Codable {
         
         weight = try container.decode(Double.self, forKey: .weight)
         
-        // Handle date parsing
-        let dateString = try container.decode(String.self, forKey: .date)
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        if let parsedDate = formatter.date(from: dateString) {
-            date = parsedDate
-        } else {
-            formatter.formatOptions = [.withInternetDateTime]
-            date = formatter.date(from: dateString) ?? Date()
-        }
+        // Use DateDecodingHelper for consistent date handling
+        date = try DateDecodingHelper.shared.decodeNormalizedDate(from: container, forKey: .date)
     }
 }
 
@@ -356,17 +329,9 @@ struct HealthCheckResponse: Codable {
         database = try container.decodeIfPresent(DatabaseStatus.self, forKey: .database)
         services = try container.decodeIfPresent([String: ServiceStatus].self, forKey: .services)
         
-        // Handle timestamp
+        // Handle timestamp with DateDecodingHelper
         if let timestampString = try? container.decode(String.self, forKey: .timestamp) {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            
-            if let date = formatter.date(from: timestampString) {
-                timestamp = date
-            } else {
-                formatter.formatOptions = [.withInternetDateTime]
-                timestamp = formatter.date(from: timestampString) ?? Date()
-            }
+            timestamp = DateDecodingHelper.shared.decodeTimestamp(from: timestampString)
         } else {
             timestamp = Date()
         }
@@ -486,17 +451,8 @@ struct ProgressResponse: Codable {
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
         photo = try container.decodeIfPresent(ProgressPhoto.self, forKey: .photo)
         
-        // Handle date parsing
-        let dateString = try container.decode(String.self, forKey: .date)
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        if let parsedDate = formatter.date(from: dateString) {
-            date = parsedDate
-        } else {
-            formatter.formatOptions = [.withInternetDateTime]
-            date = formatter.date(from: dateString) ?? Date()
-        }
+        // Use DateDecodingHelper for consistent date handling
+        date = try DateDecodingHelper.shared.decodeNormalizedDate(from: container, forKey: .date)
     }
 }
 
@@ -546,25 +502,9 @@ struct ProgressPhoto: Codable {
         mediumUrl = URLHelper.transformPhotoURL(rawMediumUrl)
         fullUrl = URLHelper.transformPhotoURL(rawFullUrl)
         
-        // Handle date parsing for createdAt and updatedAt
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        let createdAtString = try container.decode(String.self, forKey: .createdAt)
-        if let parsedDate = formatter.date(from: createdAtString) {
-            createdAt = parsedDate
-        } else {
-            formatter.formatOptions = [.withInternetDateTime]
-            createdAt = formatter.date(from: createdAtString) ?? Date()
-        }
-        
-        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
-        if let parsedDate = formatter.date(from: updatedAtString) {
-            updatedAt = parsedDate
-        } else {
-            formatter.formatOptions = [.withInternetDateTime]
-            updatedAt = formatter.date(from: updatedAtString) ?? Date()
-        }
+        // Use DateDecodingHelper for consistent timestamp handling
+        createdAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .createdAt)
+        updatedAt = try DateDecodingHelper.shared.decodeTimestamp(from: container, forKey: .updatedAt)
         
         // Decode optional metadata fields
         expiresIn = try container.decodeIfPresent(Int.self, forKey: .expiresIn)
