@@ -90,16 +90,16 @@ class ServiceRegistry: ObservableObject {
     /// Get all services conforming to CacheableService
     var cacheableServices: [CacheableService] {
         return [
-            // Add services that conform to CacheableService
-            // dashboardService, weightService, etc.
+            dashboardService,  // Manages dashboard, chart, and table cache
         ]
     }
     
     /// Get all services conforming to AuthenticatedService  
     var authenticatedServices: [AuthenticatedService] {
         return [
-            // Add services that conform to AuthenticatedService
-            // dashboardService, weightService, goalService, etc.
+            dashboardService,  // Requires authentication for dashboard data
+            weightService,     // Requires authentication for weight operations
+            goalService       // Requires authentication for goal management
         ]
     }
     

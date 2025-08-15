@@ -8,7 +8,7 @@ struct SimpleGoalRequest: Codable {
 }
 
 // MARK: - Goal Service
-class GoalService: ObservableObject {
+class GoalService: ObservableObject, AuthenticatedService {
     
     // MARK: - Singleton
     static let shared = GoalService()
@@ -135,5 +135,19 @@ class GoalService: ObservableObject {
     // MARK: - Clear Error
     func clearError() {
         error = nil
+    }
+}
+
+// MARK: - Protocol Implementations
+
+extension GoalService {
+    
+    /// Handle authentication failure for goal operations
+    func handleAuthenticationFailure() {
+        Task { @MainActor in
+            self.error = "Sesión expirada. Inicia sesión nuevamente."
+            self.isLoading = false
+        }
+        print("🔐 [GOAL SERVICE] Authentication failure detected")
     }
 }

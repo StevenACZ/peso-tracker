@@ -2,7 +2,7 @@ import Foundation
 import Combine
 
 // MARK: - Dashboard Service (Rewritten)
-class DashboardService: ObservableObject {
+class DashboardService: ObservableObject, CacheableService, AuthenticatedService {
     
     // MARK: - Singleton
     static let shared = DashboardService()
@@ -330,5 +330,34 @@ class DashboardService: ObservableObject {
         clearData()
         CacheService.shared.clearCache()
         AuthService.shared.logout()
+    }
+}
+
+// MARK: - Protocol Implementations
+
+extension DashboardService {
+    
+    /// Cache keys managed by this service
+    var cacheKeys: [String] {
+        return ["dashboard", "chart_data", "table_data", "progress_data"]
+    }
+    
+    /// Clear all dashboard-related cache
+    func clearCache() {
+        CacheService.shared.clearCache()
+        clearData()
+    }
+    
+    /// Refresh dashboard cache data
+    func refreshCache() async {
+        await loadDashboardData()
+    }
+    
+    /// Handle authentication failure
+    func handleAuthenticationFailure() {
+        Task { @MainActor in
+            clearData()
+            self.error = "Sesión expirada. Inicia sesión nuevamente."
+        }
     }
 }

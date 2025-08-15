@@ -2,6 +2,25 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// DashboardViewModel - Simplified view model that delegates data management to DashboardService
+/// 
+/// Key Features:
+/// - Acts as a bridge between UI components and DashboardService
+/// - Provides computed properties for formatted data display
+/// - Handles UI state management (loading, errors, navigation)
+/// - Manages chart and table pagination through service delegation
+/// 
+/// Architecture Pattern:
+/// - Thin ViewModel: Most business logic lives in DashboardService
+/// - Data Binding: Uses Combine to sync service state with UI
+/// - Error Handling: Propagates service errors to UI components
+/// - Pagination: Delegates navigation to service but provides UI-friendly properties
+/// 
+/// Data Flow:
+/// 1. UI calls loadDashboardData() → delegates to service
+/// 2. Service fetches/caches data → publishes updates
+/// 3. ViewModel binds to service updates → UI reacts automatically
+/// 4. User interactions (pagination, filters) → service handles logic
 @MainActor
 class DashboardViewModel: ObservableObject {
     
@@ -37,6 +56,11 @@ class DashboardViewModel: ObservableObject {
     }
     
     // MARK: - Setup Bindings
+    
+    /// Sets up Combine bindings between DashboardService and ViewModel
+    /// - Syncs loading states, errors, and data between service and UI
+    /// - Transforms service data into UI-friendly formats
+    /// - Handles real-time updates when service data changes
     private func setupBindings() {
         // Bind to dashboard service
         dashboardService.$isLoading
@@ -92,11 +116,19 @@ class DashboardViewModel: ObservableObject {
     }
     
     // MARK: - Load Data
+    
+    /// Loads main dashboard data including user info, statistics, and initial chart/table data
+    /// - Delegates to DashboardService for actual data fetching
+    /// - Service handles caching and error management
+    /// - Updates UI automatically through Combine bindings
     func loadDashboardData() async {
         print("📊 [DASHBOARD VM] Loading dashboard data...")
         await dashboardService.loadDashboardData()
     }
     
+    /// Refreshes all dashboard data, bypassing cache
+    /// - Forces fresh data fetch from API
+    /// - Useful for pull-to-refresh or after data changes
     func refreshData() async {
         print("📊 [DASHBOARD VM] Refreshing dashboard data...")
         await dashboardService.refreshData()
@@ -230,6 +262,11 @@ class DashboardViewModel: ObservableObject {
     }
     
     // MARK: - Delete Weight with Smart Navigation
+    
+    /// Handles post-deletion navigation and data refresh
+    /// - Refreshes dashboard data after weight deletion
+    /// - Automatically navigates to previous page if current page becomes empty
+    /// - Ensures user doesn't see empty table with available data
     func handleWeightDeletion() async {
         // Check if current page will be empty after deletion
         let canGoPrevious = dashboardService.canGoPreviousTable

@@ -2,6 +2,20 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// AuthViewModel - Manages authentication state, form validation, and user session
+/// 
+/// Key Features:
+/// - Real-time form validation with visual feedback
+/// - Email/username availability checking with debouncing
+/// - Automatic token validation and session management
+/// - Error handling with user-friendly messages
+/// - Form state management for login and registration
+///
+/// Usage:
+/// - Login: Fill loginEmail/loginPassword → call login()
+/// - Register: Fill all register fields → call register() 
+/// - Session: checkAuthenticationStatus() on app startup
+/// - Logout: call logout() to clear session
 @MainActor
 class AuthViewModel: ObservableObject {
     
@@ -67,6 +81,11 @@ class AuthViewModel: ObservableObject {
     }
     
     // MARK: - Form Validation Setup
+    
+    /// Sets up real-time form validation using Combine publishers
+    /// - Login: validates email format and password length
+    /// - Register: validates all fields + availability checks with debouncing
+    /// - Updates validation states for visual feedback in UI
     private func setupFormValidation() {
         // Login form validation
         Publishers.CombineLatest($loginEmail, $loginPassword)
@@ -313,6 +332,10 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Authentication Methods
     
+    /// Performs user login with email and password
+    /// - Validates form data before making API call
+    /// - Shows error modal on failure
+    /// - Clears form on success and updates authentication state
     func login() async {
         guard isLoginFormValid else {
             showErrorModal(message: "Por favor completa todos los campos correctamente")
@@ -337,6 +360,10 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
+    /// Performs user registration with username, email and password
+    /// - Requires all validations to pass (including availability checks)
+    /// - Creates new user account and logs in automatically
+    /// - Shows error modal on failure
     func register() async {
         guard isRegisterFormValid else {
             showErrorModal(message: "Por favor completa todos los campos correctamente")
@@ -365,6 +392,10 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
+    /// Logs out current user and clears all form data
+    /// - Calls AuthService.logout() to clear tokens
+    /// - Resets all form fields and validation states
+    /// - Updates authentication state to false
     func logout() {
         authService.logout()
         clearAllForms()
@@ -433,6 +464,11 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Authentication Status
     
+    /// Checks and refreshes user authentication status
+    /// - Called on app startup to verify existing session
+    /// - Validates stored JWT token and refreshes if needed
+    /// - Updates isAuthenticated and currentUser properties
+    /// - Should be called before showing main app content
     func checkAuthenticationStatus() async {
         // Refresh authentication status from keychain
         authService.refreshAuthenticationStatus()
