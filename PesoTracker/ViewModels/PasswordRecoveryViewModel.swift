@@ -112,7 +112,7 @@ class PasswordRecoveryViewModel: ObservableObject {
         clearError()
         
         do {
-            let response = try await AuthService.shared.requestPasswordReset(email: email)
+            let _ = try await AuthService.shared.requestPasswordReset(email: email)
             
             // Success - store email and show code modal
             emailPersisted = true
@@ -160,7 +160,7 @@ class PasswordRecoveryViewModel: ObservableObject {
         clearError()
         
         do {
-            let response = try await AuthService.shared.resetPassword(
+            let _ = try await AuthService.shared.resetPassword(
                 token: token, 
                 newPassword: newPassword
             )
