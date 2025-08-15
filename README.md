@@ -6,7 +6,9 @@ Una aplicación macOS elegante y completa para el seguimiento de peso con caract
 
 ### 🔐 **Autenticación Avanzada**
 - Registro e inicio de sesión súper seguro
-- Sistema completo de recuperación de contraseña
+- **Sistema completo de recuperación de contraseña** con verificación por email
+- **Flujo de 3 pasos**: Email → Código de 6 dígitos → Nueva contraseña
+- **Validación en tiempo real** - sin necesidad de espacios o trucos raros
 - Renovación automática de sesión (nunca más "sesión expirada") 
 - Almacenamiento ultra-seguro en el sistema
 
@@ -53,6 +55,8 @@ Una aplicación macOS elegante y completa para el seguimiento de peso con caract
 - Experiencia súper fluida sin esperas ni interrupciones
 
 ### 🚀 **Últimas Mejoras 2024**
+- **Recuperación de contraseña completa**: Sistema de 3 pasos con verificación por email
+- **Input binding perfeccionado**: Validación instantánea sin bugs de espacios
 - **Sesiones que nunca expiran**: Renovación automática invisible
 - **Fotos siempre actualizadas**: Sistema inteligente de actualización
 - **Velocidad mejorada**: Optimización con tecnología Cloudflare  

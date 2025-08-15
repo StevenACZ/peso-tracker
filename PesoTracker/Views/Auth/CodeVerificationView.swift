@@ -16,7 +16,7 @@ struct CodeVerificationView: View {
                 
                 VStack(spacing: 32) {
                     // Header with icon
-                    CodeVerificationHeader(email: passwordRecoveryViewModel.state.email)
+                    CodeVerificationHeader(email: passwordRecoveryViewModel.email)
                     
                     // Code input form
                     CodeVerificationForm(
@@ -44,46 +44,42 @@ struct CodeVerificationView: View {
                 
                 Spacer()
             }
-            .disabled(passwordRecoveryViewModel.state.showError || passwordRecoveryViewModel.state.isLoading)
-            .opacity(passwordRecoveryViewModel.state.showError ? 0.7 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.state.showError)
+            .disabled(passwordRecoveryViewModel.showError || passwordRecoveryViewModel.isLoading)
+            .opacity(passwordRecoveryViewModel.showError ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.showError)
             
-            // Error Modal with Retry Option
-            if passwordRecoveryViewModel.state.showError {
+            // Error Modal
+            if passwordRecoveryViewModel.showError {
                 UniversalErrorModal(
                     title: "Error de Verificación",
-                    message: passwordRecoveryViewModel.state.errorMessage ?? "Ha ocurrido un error inesperado",
-                    isPresented: $passwordRecoveryViewModel.state.showError,
-                    canRetry: passwordRecoveryViewModel.state.canRetry,
+                    message: passwordRecoveryViewModel.errorMessage ?? "Ha ocurrido un error inesperado",
+                    isPresented: $passwordRecoveryViewModel.showError,
+                    canRetry: false,
                     onDismiss: {
                         passwordRecoveryViewModel.dismissError()
                     },
-                    onRetry: {
-                        Task {
-                            await passwordRecoveryViewModel.retryCurrentOperation()
-                        }
-                    }
+                    onRetry: {}
                 )
             }
             
             // Success Modal with Check Animation
-            if passwordRecoveryViewModel.state.showSuccessMessage {
+            if passwordRecoveryViewModel.showSuccessMessage {
                 SuccessCheckModal(
-                    message: passwordRecoveryViewModel.state.successMessage,
-                    isPresented: $passwordRecoveryViewModel.state.showSuccessMessage
+                    message: passwordRecoveryViewModel.successMessage,
+                    isPresented: $passwordRecoveryViewModel.showSuccessMessage
                 )
             }
         }
         .onAppear {
             // Validate that we're in the correct step for this view
-            if passwordRecoveryViewModel.state.currentStep != .verifyCode {
+            if passwordRecoveryViewModel.currentStep != .verifyCode {
                 passwordRecoveryViewModel.resetFlow()
                 switchToLogin()
             }
             // Handle edge cases
-            passwordRecoveryViewModel.handleEdgeCases()
+            passwordRecoveryViewModel.handleNavigationEdgeCase()
         }
-        .onChange(of: passwordRecoveryViewModel.state.currentStep) { oldStep, newStep in
+        .onChange(of: passwordRecoveryViewModel.currentStep) { oldStep, newStep in
             // Handle automatic navigation to reset password view
             if newStep == .resetPassword {
                 switchToResetPassword()
@@ -142,18 +138,18 @@ struct CodeVerificationForm: View {
     var body: some View {
         VStack(spacing: 16) {
             AuthTextField(
-                text: $passwordRecoveryViewModel.state.verificationCode,
+                text: $passwordRecoveryViewModel.verificationCode,
                 placeholder: "Código de 6 dígitos",
                 onSubmit: {
-                    if passwordRecoveryViewModel.state.isCodeValid {
+                    if passwordRecoveryViewModel.canVerifyCode {
                         onSubmit()
                     }
                 },
-                errorMessage: passwordRecoveryViewModel.state.codeValidationError,
-                validationState: passwordRecoveryViewModel.state.codeValidationState
+                errorMessage: nil,
+                validationState: passwordRecoveryViewModel.isCodeValid ? .valid : .none
             )
             
-            if !passwordRecoveryViewModel.state.verificationCode.isEmpty {
+            if !passwordRecoveryViewModel.verificationCode.isEmpty {
                 Text("Ingresa solo los 6 dígitos del código")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
@@ -172,9 +168,9 @@ struct CodeVerificationActions: View {
         VStack(spacing: 20) {
             // Verify button with app color
             AuthButton(
-                title: passwordRecoveryViewModel.state.isLoading ? "Verificando..." : "Verificar",
-                isLoading: passwordRecoveryViewModel.state.isLoading,
-                isEnabled: passwordRecoveryViewModel.state.isCodeValid,
+                title: passwordRecoveryViewModel.isLoading ? "Verificando..." : "Verificar",
+                isLoading: passwordRecoveryViewModel.isLoading,
+                isEnabled: passwordRecoveryViewModel.canVerifyCode,
                 backgroundColor: Color(hex: "34c956")
             ) {
                 onSubmit()
@@ -190,7 +186,7 @@ struct CodeVerificationActions: View {
                     CustomButton(action: {
                         // Request new code
                         Task {
-                            passwordRecoveryViewModel.state.currentStep = .requestCode
+                            passwordRecoveryViewModel.currentStep = .requestCode
                             await passwordRecoveryViewModel.requestPasswordReset()
                         }
                     }) {
@@ -208,7 +204,7 @@ struct CodeVerificationActions: View {
                     
                     CustomButton(action: {
                         // Only allow cancellation if not currently loading
-                        if passwordRecoveryViewModel.state.canNavigateBack {
+                        if !passwordRecoveryViewModel.isLoading {
                             passwordRecoveryViewModel.cancelFlow()
                             switchToLogin()
                         }

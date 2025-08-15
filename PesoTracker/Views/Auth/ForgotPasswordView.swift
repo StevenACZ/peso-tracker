@@ -40,34 +40,30 @@ struct ForgotPasswordView: View {
                 
                 Spacer()
             }
-            .disabled(passwordRecoveryViewModel.state.showError || passwordRecoveryViewModel.state.showSuccessMessage)
-            .opacity(passwordRecoveryViewModel.state.showError ? 0.7 : passwordRecoveryViewModel.state.showSuccessMessage ? 0.8 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.state.showError)
-            .animation(.easeInOut(duration: 0.3), value: passwordRecoveryViewModel.state.showSuccessMessage)
+            .disabled(passwordRecoveryViewModel.showError || passwordRecoveryViewModel.showSuccessMessage)
+            .opacity(passwordRecoveryViewModel.showError ? 0.7 : passwordRecoveryViewModel.showSuccessMessage ? 0.8 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.showError)
+            .animation(.easeInOut(duration: 0.3), value: passwordRecoveryViewModel.showSuccessMessage)
             
-            // Error Modal with Retry Option
-            if passwordRecoveryViewModel.state.showError {
+            // Error Modal
+            if passwordRecoveryViewModel.showError {
                 UniversalErrorModal(
                     title: "Error de Recuperación",
-                    message: passwordRecoveryViewModel.state.errorMessage ?? "Ha ocurrido un error inesperado",
-                    isPresented: $passwordRecoveryViewModel.state.showError,
-                    canRetry: passwordRecoveryViewModel.state.canRetry,
+                    message: passwordRecoveryViewModel.errorMessage ?? "Ha ocurrido un error inesperado",
+                    isPresented: $passwordRecoveryViewModel.showError,
+                    canRetry: false,
                     onDismiss: {
                         passwordRecoveryViewModel.dismissError()
                     },
-                    onRetry: {
-                        Task {
-                            await passwordRecoveryViewModel.retryCurrentOperation()
-                        }
-                    }
+                    onRetry: {}
                 )
             }
             
             // Success Message Modal
-            if passwordRecoveryViewModel.state.showSuccessMessage {
+            if passwordRecoveryViewModel.showSuccessMessage {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
-                    .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.state.showSuccessMessage)
+                    .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.showSuccessMessage)
                 
                 VStack(spacing: 24) {
                     // Success icon with app color
@@ -81,7 +77,7 @@ struct ForgotPasswordView: View {
                             .foregroundColor(.white)
                     }
                     
-                    Text(passwordRecoveryViewModel.state.successMessage)
+                    Text(passwordRecoveryViewModel.successMessage)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
@@ -92,20 +88,20 @@ struct ForgotPasswordView: View {
                         .fill(Color(NSColor.windowBackgroundColor))
                         .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
                 )
-                .scaleEffect(passwordRecoveryViewModel.state.showSuccessMessage ? 1.0 : 0.9)
-                .opacity(passwordRecoveryViewModel.state.showSuccessMessage ? 1.0 : 0.0)
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: passwordRecoveryViewModel.state.showSuccessMessage)
+                .scaleEffect(passwordRecoveryViewModel.showSuccessMessage ? 1.0 : 0.9)
+                .opacity(passwordRecoveryViewModel.showSuccessMessage ? 1.0 : 0.0)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: passwordRecoveryViewModel.showSuccessMessage)
             }
         }
         .onAppear {
             // Validate that we're in the correct step for this view
-            if passwordRecoveryViewModel.state.currentStep != .requestCode {
+            if passwordRecoveryViewModel.currentStep != .requestCode {
                 passwordRecoveryViewModel.resetFlow()
             }
             // Handle edge cases
-            passwordRecoveryViewModel.handleEdgeCases()
+            passwordRecoveryViewModel.handleNavigationEdgeCase()
         }
-        .onChange(of: passwordRecoveryViewModel.state.currentStep) { oldStep, newStep in
+        .onChange(of: passwordRecoveryViewModel.currentStep) { oldStep, newStep in
             // Handle automatic navigation to reset password view
             if newStep == .resetPassword {
                 switchToResetPassword()
@@ -139,15 +135,15 @@ struct ForgotPasswordForm: View {
     var body: some View {
         VStack(spacing: 16) {
             AuthTextField(
-                text: $passwordRecoveryViewModel.state.email,
+                text: $passwordRecoveryViewModel.email,
                 placeholder: "Email",
                 onSubmit: {
-                    if passwordRecoveryViewModel.state.isEmailValid {
+                    if passwordRecoveryViewModel.canSendCode {
                         onSubmit()
                     }
                 },
-                errorMessage: passwordRecoveryViewModel.state.emailValidationError,
-                validationState: passwordRecoveryViewModel.state.emailValidationState
+                errorMessage: nil,
+                validationState: passwordRecoveryViewModel.isEmailValid ? .valid : .none
             )
         }
     }
@@ -163,9 +159,9 @@ struct ForgotPasswordActions: View {
         VStack(spacing: 20) {
             // Send code button
             AuthButton(
-                title: passwordRecoveryViewModel.state.isLoading ? "Enviando..." : "Enviar código",
-                isLoading: passwordRecoveryViewModel.state.isLoading,
-                isEnabled: passwordRecoveryViewModel.state.isEmailValid
+                title: passwordRecoveryViewModel.isLoading ? "Enviando..." : "Enviar código",
+                isLoading: passwordRecoveryViewModel.isLoading,
+                isEnabled: passwordRecoveryViewModel.canSendCode
             ) {
                 onSubmit()
             }
@@ -178,7 +174,7 @@ struct ForgotPasswordActions: View {
                 
                 CustomButton(action: {
                     // Only allow cancellation if not currently loading
-                    if passwordRecoveryViewModel.state.canNavigateBack {
+                    if !passwordRecoveryViewModel.isLoading {
                         passwordRecoveryViewModel.cancelFlow()
                         switchToLogin()
                     }

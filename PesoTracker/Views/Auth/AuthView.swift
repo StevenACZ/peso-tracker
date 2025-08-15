@@ -21,18 +21,7 @@ struct AuthView: View {
             mainContent
         }
         .ignoresSafeArea()
-        .onChange(of: passwordRecoveryViewModel.state.shouldNavigateToResetPassword) { oldValue, newValue in
-            if newValue {
-                // Add a small delay to ensure smooth transition after success message
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentView = .resetPassword
-                    }
-                    passwordRecoveryViewModel.clearNavigationFlags()
-                }
-            }
-        }
-        .onChange(of: passwordRecoveryViewModel.state.shouldNavigateToLogin) { oldValue, newValue in
+        .onChange(of: passwordRecoveryViewModel.shouldNavigateToLogin) { oldValue, newValue in
             if newValue {
                 // Add a small delay to ensure smooth transition after success message
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -40,11 +29,10 @@ struct AuthView: View {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentView = .login
                     }
-                    passwordRecoveryViewModel.clearNavigationFlags()
                 }
             }
         }
-        .onChange(of: passwordRecoveryViewModel.state.currentStep) { oldStep, newStep in
+        .onChange(of: passwordRecoveryViewModel.currentStep) { oldStep, newStep in
             // Validate navigation transitions and handle edge cases
             passwordRecoveryViewModel.handleNavigationEdgeCase()
             

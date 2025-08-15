@@ -5,10 +5,36 @@ import Combine
 @MainActor
 class PasswordRecoveryViewModel: ObservableObject {
     
-    // MARK: - State Management
-    @Published var state = PasswordRecoveryState()
+    // MARK: - Direct Published Properties (Fixed Binding Architecture)
+    @Published var email = ""
+    @Published var verificationCode = ""
+    @Published var newPassword = ""
+    @Published var confirmPassword = ""
     
-    // MARK: - Handlers
+    // MARK: - Validation States (Immediate Response)
+    @Published var isEmailValid = false
+    @Published var isCodeValid = false
+    @Published var isPasswordValid = false
+    @Published var passwordsMatch = false
+    @Published var canSendCode = false
+    @Published var canVerifyCode = false
+    @Published var canResetPassword = false
+    
+    // MARK: - Flow State
+    @Published var currentStep: RecoveryStep = .requestCode
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var showError = false
+    @Published var showCodeModal = false
+    @Published var showSuccessMessage = false
+    @Published var successMessage = ""
+    @Published var shouldNavigateToLogin = false
+    
+    // MARK: - Internal State
+    private var resetToken: String?
+    private var emailPersisted = false
+    
+    // MARK: - Services and Handlers (Keep for API calls)
     private let emailHandler = EmailRecoveryHandler()
     private let codeHandler = CodeVerificationHandler()
     private let passwordHandler = PasswordResetHandler()
@@ -17,192 +43,258 @@ class PasswordRecoveryViewModel: ObservableObject {
     // MARK: - Private Properties
     private var cancellables = Set<AnyCancellable>()
     
+    enum RecoveryStep {
+        case requestCode
+        case verifyCode
+        case resetPassword
+        case completed
+    }
+    
     // MARK: - Initialization
     init() {
         setupFormValidation()
     }
     
-    // MARK: - Form Validation Setup
+    // MARK: - Form Validation Setup (Fixed Architecture - Same as AuthViewModel)
     private func setupFormValidation() {
-        // Email validation
-        state.$email
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .sink { [weak self] email in
-                guard let self = self else { return }
-                self.emailHandler.validateEmail(email, state: self.state)
+        // Email validation - IMMEDIATE response using .assign()
+        $email
+            .map { email in
+                AuthService.shared.validateEmail(email)
             }
-            .store(in: &cancellables)
+            .assign(to: &$isEmailValid)
         
-        // Verification code validation
-        state.$verificationCode
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .sink { [weak self] code in
-                guard let self = self else { return }
-                self.codeHandler.validateVerificationCode(code, state: self.state)
-            }
-            .store(in: &cancellables)
+        // Can send code validation - IMMEDIATE
+        $isEmailValid
+            .map { $0 }
+            .assign(to: &$canSendCode)
         
-        // New password validation
-        state.$newPassword
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .sink { [weak self] password in
-                guard let self = self else { return }
-                self.passwordHandler.validateNewPassword(password, state: self.state)
+        // Verification code validation - IMMEDIATE (6 digits)
+        $verificationCode
+            .map { code in
+                code.count == 6 && code.allSatisfy { $0.isNumber }
             }
-            .store(in: &cancellables)
+            .assign(to: &$isCodeValid)
         
-        // Confirm password validation
-        Publishers.CombineLatest(state.$newPassword, state.$confirmPassword)
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .sink { [weak self] newPassword, confirmPassword in
-                guard let self = self else { return }
-                self.passwordHandler.validateConfirmPassword(
-                    newPassword: newPassword, 
-                    confirmPassword: confirmPassword, 
-                    state: self.state
-                )
+        // Can verify code validation - IMMEDIATE
+        $isCodeValid
+            .map { $0 }
+            .assign(to: &$canVerifyCode)
+        
+        // Password validation - IMMEDIATE
+        $newPassword
+            .map { password in
+                AuthService.shared.validatePassword(password)
             }
-            .store(in: &cancellables)
+            .assign(to: &$isPasswordValid)
+        
+        // Password matching validation - IMMEDIATE
+        Publishers.CombineLatest($newPassword, $confirmPassword)
+            .map { newPassword, confirmPassword in
+                !newPassword.isEmpty && !confirmPassword.isEmpty && newPassword == confirmPassword
+            }
+            .assign(to: &$passwordsMatch)
+        
+        // Can reset password validation - IMMEDIATE
+        Publishers.CombineLatest($isPasswordValid, $passwordsMatch)
+            .map { isValid, match in
+                isValid && match
+            }
+            .assign(to: &$canResetPassword)
     }
     
-    // MARK: - Recovery Process Methods
+    // MARK: - Recovery Process Methods (Updated to use direct properties)
     
     func requestPasswordReset() async {
-        await emailHandler.requestPasswordReset(for: state)
+        guard canSendCode else { return }
+        
+        isLoading = true
+        clearError()
+        
+        do {
+            let response = try await AuthService.shared.requestPasswordReset(email: email)
+            
+            // Success - store email and show code modal
+            emailPersisted = true
+            showCodeModal = true
+            currentStep = .verifyCode
+            
+        } catch {
+            showErrorMessage(error.localizedDescription)
+        }
+        
+        isLoading = false
     }
     
     func verifyResetCode() async {
-        await codeHandler.verifyResetCode(for: state)
+        guard canVerifyCode else { return }
+        
+        isLoading = true
+        clearError()
+        
+        do {
+            let response = try await AuthService.shared.verifyResetCode(email: email, code: verificationCode)
+            
+            // Success - store token and navigate to reset
+            resetToken = response.resetToken
+            showSuccessMessage("Código correcto")
+            
+            // Auto-dismiss after 1.5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.showCodeModal = false
+                self.showSuccessMessage = false
+                self.currentStep = .resetPassword
+            }
+            
+        } catch {
+            showErrorMessage(error.localizedDescription)
+        }
+        
+        isLoading = false
     }
     
     func resetPasswordWithCode() async {
-        await passwordHandler.resetPasswordWithCode(for: state)
+        guard canResetPassword, let token = resetToken else { return }
+        
+        isLoading = true
+        clearError()
+        
+        do {
+            let response = try await AuthService.shared.resetPassword(
+                token: token, 
+                newPassword: newPassword
+            )
+            
+            // Success - show message and navigate to login
+            showSuccessMessage("Contraseña establecida correctamente")
+            currentStep = .completed
+            
+            // Auto-navigate to login after 2 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self.resetFlow()
+                self.shouldNavigateToLogin = true
+            }
+            
+        } catch {
+            showErrorMessage(error.localizedDescription)
+        }
+        
+        isLoading = false
     }
     
     // MARK: - Flow Management
     
     func resetFlow() {
-        state.resetAllState()
+        // Clear all form fields
+        email = ""
+        verificationCode = ""
+        newPassword = ""
+        confirmPassword = ""
+        
+        // Reset flow state
+        currentStep = .requestCode
+        isLoading = false
+        clearError()
+        showCodeModal = false
+        showSuccessMessage = false
+        successMessage = ""
+        
+        // Clear internal state
+        resetToken = nil
+        emailPersisted = false
     }
     
     func cancelFlow() {
-        // Ensure we can cancel from current state
-        if !state.canNavigateBack && state.isLoading {
-            // If we're in the middle of an operation, don't allow cancellation
+        // Don't allow cancellation during loading
+        if isLoading {
             return
         }
         
         resetFlow()
-        state.shouldNavigateToLogin = true
+        shouldNavigateToLogin = true
     }
     
-    // MARK: - Public Interface - Delegates to State
+    // MARK: - Utility Methods
+    
+    func clearError() {
+        errorMessage = nil
+        showError = false
+    }
+    
+    func showErrorMessage(_ message: String) {
+        errorMessage = message
+        showError = true
+    }
     
     func dismissError() {
-        state.dismissError()
+        clearError()
     }
     
+    func showSuccessMessage(_ message: String) {
+        successMessage = message
+        showSuccessMessage = true
+    }
+    
+    // MARK: - Navigation Validation
+    
     func canProceedToNextStep() -> Bool {
-        return state.canProceedToNextStep()
+        switch currentStep {
+        case .requestCode:
+            return canSendCode
+        case .verifyCode:
+            return canVerifyCode
+        case .resetPassword:
+            return canResetPassword
+        case .completed:
+            return false
+        }
     }
     
     func getCurrentStepTitle() -> String {
-        return state.getCurrentStepTitle()
+        switch currentStep {
+        case .requestCode:
+            return "Recuperar Contraseña"
+        case .verifyCode:
+            return "Verificar Código"
+        case .resetPassword:
+            return "Nueva Contraseña"
+        case .completed:
+            return "Completado"
+        }
     }
     
     func getCurrentStepDescription() -> String {
-        return state.getCurrentStepDescription()
-    }
-    
-    // MARK: - Navigation Validation Methods
-    
-    func canProceedFromCurrentStep() -> Bool {
-        return state.canProceedFromCurrentStep()
-    }
-    
-    func canNavigateToStep(_ step: PasswordRecoveryState.RecoveryStep) -> Bool {
-        return state.canNavigateToStep(step)
-    }
-    
-    func validateNavigationTransition(to newStep: PasswordRecoveryState.RecoveryStep) -> Bool {
-        let result = validator.validateNavigationTransition(
-            from: state.currentStep, 
-            to: newStep, 
-            emailPersisted: state.emailPersisted, 
-            resetToken: state.resetToken
-        )
-        
-        if !result.isValid, let errorMessage = result.errorMessage {
-            if errorMessage.contains("reinicia el proceso") {
-                state.resetAllState()
-            }
-            state.showErrorMessage(errorMessage)
+        switch currentStep {
+        case .requestCode:
+            return "Ingresa tu email para recibir un código de recuperación"
+        case .verifyCode:
+            return "Ingresa el código de 6 dígitos enviado a tu email"
+        case .resetPassword:
+            return "Establece tu nueva contraseña"
+        case .completed:
+            return "Contraseña actualizada exitosamente"
         }
-        
-        return result.isValid
+    }
+    
+    // MARK: - Flow Validation
+    
+    func validateFlowIntegrity() -> Bool {
+        switch currentStep {
+        case .requestCode:
+            return true
+        case .verifyCode:
+            return emailPersisted && !email.isEmpty
+        case .resetPassword:
+            return emailPersisted && resetToken != nil
+        case .completed:
+            return true
+        }
     }
     
     func handleNavigationEdgeCase() {
-        // Check for invalid state transitions
-        if state.currentStep == .verifyCode && !state.emailPersisted {
-            state.showErrorMessage("Sesión inválida. Reiniciando proceso...")
-            state.resetAllState()
-            return
+        if !validateFlowIntegrity() {
+            showErrorMessage("Sesión inválida. Reiniciando proceso...")
+            resetFlow()
         }
-        
-        if state.currentStep == .resetPassword && state.resetToken == nil {
-            state.showErrorMessage("Sesión expirada. Reiniciando proceso...")
-            state.resetAllState()
-            return
-        }
-        
-        // Auto-cleanup after completion
-        if state.currentStep == .completed {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.resetFlow()
-            }
-        }
-        
-        // Check for expired sessions
-        if state.currentStep != .requestCode && !state.validateFlowIntegrity() {
-            state.showErrorMessage("La sesión ha expirado. Por favor inicia el proceso nuevamente.")
-            state.resetAllState()
-        }
-    }
-    
-    // MARK: - Navigation State Management
-    
-    func clearNavigationFlags() {
-        state.clearNavigationFlags()
-    }
-    
-    func validateFlowIntegrity() -> Bool {
-        return state.validateFlowIntegrity()
-    }
-    
-    // MARK: - Retry Functionality
-    
-    func retryCurrentOperation() async {
-        guard let step = state.retryStep else { return }
-        
-        state.disableRetry()
-        state.clearError()
-        
-        switch step {
-        case .requestCode:
-            await emailHandler.retryEmailRequest(for: state)
-        case .verifyCode:
-            await codeHandler.retryCodeVerification(for: state)
-        case .resetPassword:
-            await passwordHandler.retryPasswordReset(for: state)
-        case .completed:
-            break
-        }
-    }
-    
-    // MARK: - Edge Case Handling
-    
-    func handleEdgeCases() {
-        handleNavigationEdgeCase()
     }
 }

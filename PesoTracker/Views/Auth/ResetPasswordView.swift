@@ -39,33 +39,29 @@ struct ResetPasswordView: View {
                 
                 Spacer()
             }
-            .disabled(passwordRecoveryViewModel.state.showError || passwordRecoveryViewModel.state.showSuccessMessage)
-            .opacity(passwordRecoveryViewModel.state.showError || passwordRecoveryViewModel.state.showSuccessMessage ? 0.7 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.state.showError)
-            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.state.showSuccessMessage)
+            .disabled(passwordRecoveryViewModel.showError || passwordRecoveryViewModel.showSuccessMessage)
+            .opacity(passwordRecoveryViewModel.showError || passwordRecoveryViewModel.showSuccessMessage ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.showError)
+            .animation(.easeInOut(duration: 0.2), value: passwordRecoveryViewModel.showSuccessMessage)
             
-            // Error Modal with Retry Option
-            if passwordRecoveryViewModel.state.showError {
+            // Error Modal
+            if passwordRecoveryViewModel.showError {
                 UniversalErrorModal(
                     title: "Error al Cambiar Contraseña",
-                    message: passwordRecoveryViewModel.state.errorMessage ?? "Ha ocurrido un error inesperado",
-                    isPresented: $passwordRecoveryViewModel.state.showError,
-                    canRetry: passwordRecoveryViewModel.state.canRetry,
+                    message: passwordRecoveryViewModel.errorMessage ?? "Ha ocurrido un error inesperado",
+                    isPresented: $passwordRecoveryViewModel.showError,
+                    canRetry: false,
                     onDismiss: {
                         passwordRecoveryViewModel.dismissError()
                     },
-                    onRetry: {
-                        Task {
-                            await passwordRecoveryViewModel.retryCurrentOperation()
-                        }
-                    }
+                    onRetry: {}
                 )
             }
             
             // Success Message
-            if passwordRecoveryViewModel.state.showSuccessMessage {
+            if passwordRecoveryViewModel.showSuccessMessage {
                 SuccessMessageOverlay(
-                    message: passwordRecoveryViewModel.state.successMessage,
+                    message: passwordRecoveryViewModel.successMessage,
                     onComplete: {
                         // Auto-navigate to login after success message
                         switchToLogin()
@@ -75,13 +71,13 @@ struct ResetPasswordView: View {
         }
         .onAppear {
             // Validate that we're in the correct step and have required data
-            if passwordRecoveryViewModel.state.currentStep != .resetPassword || !passwordRecoveryViewModel.validateFlowIntegrity() {
+            if passwordRecoveryViewModel.currentStep != .resetPassword || !passwordRecoveryViewModel.validateFlowIntegrity() {
                 // Invalid state, return to login and reset
                 passwordRecoveryViewModel.resetFlow()
                 switchToLogin()
             }
             // Handle edge cases
-            passwordRecoveryViewModel.handleEdgeCases()
+            passwordRecoveryViewModel.handleNavigationEdgeCase()
         }
     }
 }
@@ -111,31 +107,31 @@ struct ResetPasswordForm: View {
         VStack(spacing: 16) {
             // New Password Field
             AuthTextField(
-                text: $passwordRecoveryViewModel.state.newPassword,
+                text: $passwordRecoveryViewModel.newPassword,
                 placeholder: "Nueva contraseña",
                 isSecure: true,
                 onSubmit: {
                     // Move focus to confirm password or submit if valid
-                    if passwordRecoveryViewModel.state.isPasswordValid && passwordRecoveryViewModel.state.passwordsMatch {
+                    if passwordRecoveryViewModel.canResetPassword {
                         onSubmit()
                     }
                 },
-                errorMessage: passwordRecoveryViewModel.state.passwordValidationError,
-                validationState: passwordRecoveryViewModel.state.passwordValidationState
+                errorMessage: nil,
+                validationState: passwordRecoveryViewModel.isPasswordValid ? .valid : .none
             )
             
             // Confirm Password Field
             AuthTextField(
-                text: $passwordRecoveryViewModel.state.confirmPassword,
+                text: $passwordRecoveryViewModel.confirmPassword,
                 placeholder: "Repetir contraseña",
                 isSecure: true,
                 onSubmit: {
-                    if passwordRecoveryViewModel.state.isPasswordValid && passwordRecoveryViewModel.state.passwordsMatch {
+                    if passwordRecoveryViewModel.canResetPassword {
                         onSubmit()
                     }
                 },
-                errorMessage: passwordRecoveryViewModel.state.confirmPasswordError,
-                validationState: passwordRecoveryViewModel.state.confirmPasswordValidationState
+                errorMessage: passwordRecoveryViewModel.passwordsMatch ? nil : "Las contraseñas no coinciden",
+                validationState: passwordRecoveryViewModel.passwordsMatch && !passwordRecoveryViewModel.confirmPassword.isEmpty ? .valid : .none
             )
         }
     }
@@ -151,9 +147,9 @@ struct ResetPasswordActions: View {
         VStack(spacing: 20) {
             // Reset password button
             AuthButton(
-                title: passwordRecoveryViewModel.state.isLoading ? "Cambiando contraseña..." : "Cambiar contraseña",
-                isLoading: passwordRecoveryViewModel.state.isLoading,
-                isEnabled: passwordRecoveryViewModel.state.isPasswordValid && passwordRecoveryViewModel.state.passwordsMatch
+                title: passwordRecoveryViewModel.isLoading ? "Cambiando contraseña..." : "Cambiar contraseña",
+                isLoading: passwordRecoveryViewModel.isLoading,
+                isEnabled: passwordRecoveryViewModel.canResetPassword
             ) {
                 onSubmit()
             }
@@ -166,7 +162,7 @@ struct ResetPasswordActions: View {
                 
                 CustomButton(action: {
                     // Only allow cancellation if not currently loading
-                    if passwordRecoveryViewModel.state.canNavigateBack {
+                    if !passwordRecoveryViewModel.isLoading {
                         passwordRecoveryViewModel.cancelFlow()
                         switchToLogin()
                     }
