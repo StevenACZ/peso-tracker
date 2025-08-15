@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class WeightService {
+class WeightService: AuthenticatedService {
     private let apiService = APIService.shared
     private let cacheService = CacheService.shared
     
@@ -223,4 +223,16 @@ class WeightService {
 
 struct DeleteResponse: Codable {
     let message: String
+}
+
+// MARK: - Protocol Implementations
+
+extension WeightService {
+    
+    /// Handle authentication failure for weight operations
+    func handleAuthenticationFailure() {
+        print("🔐 [WEIGHT SERVICE] Authentication failure detected")
+        // Weight service doesn't store local state, so just log the event
+        // The actual logout will be handled by the auth system
+    }
 }

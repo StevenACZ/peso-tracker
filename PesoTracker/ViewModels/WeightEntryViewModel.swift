@@ -3,6 +3,25 @@ import SwiftUI
 import AppKit
 import Combine
 
+/// WeightEntryViewModel - Manages weight entry form data, validation, and image handling
+/// 
+/// Key Features:
+/// - Form validation with real-time feedback for weight and date inputs
+/// - Date normalization and consistency validation between picker and display
+/// - Image handling through WeightEntryImageManager (drag & drop, selection, existing photos)
+/// - Edit mode support for updating existing weight entries
+/// - Proper error handling with user-friendly messages
+/// 
+/// Data Flow:
+/// 1. User fills form → validates inputs in real-time → enables/disables save button
+/// 2. Save action → validates again → calls WeightService → updates UI state
+/// 3. Edit mode → loads existing data → pre-fills form → allows updates
+/// 4. Image handling → delegates to WeightEntryImageManager → syncs with form state
+///
+/// Date Handling:
+/// - All dates normalized to midnight local time for consistent storage
+/// - Date picker changes trigger boundary validation and normalization
+/// - Display dates formatted consistently across the app
 @MainActor
 class WeightEntryViewModel: ObservableObject {
     // MARK: - Published Properties
@@ -53,6 +72,10 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - Setup Methods
     
+    /// Sets up real-time form validation using Combine publishers
+    /// - Validates weight format and range
+    /// - Validates date consistency and normalization
+    /// - Updates isValid property for UI binding
     private func setupValidation() {
         // Validate form in real-time
         Publishers.CombineLatest($weight, $date)
@@ -66,6 +89,10 @@ class WeightEntryViewModel: ObservableObject {
         
     }
     
+    /// Binds WeightEntryImageManager properties to ViewModel published properties
+    /// - Syncs image selection state between components
+    /// - Handles error propagation from image operations
+    /// - Maintains separation of concerns while providing unified interface
     private func setupImageBindings() {
         // Bind image manager properties to published properties
         imageManager.$selectedImage
@@ -208,6 +235,12 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - Save Methods
     
+    /// Saves weight entry (create new or update existing)
+    /// - Validates form data and date picker consistency
+    /// - Creates new entry if not in edit mode, updates if editing
+    /// - Handles image upload through WeightService
+    /// - Shows error modal on API failures
+    /// - Resets form on successful save
     func saveWeight() async {
         // Mark that user has attempted to save (for error display)
         hasAttemptedSave = true
@@ -278,6 +311,11 @@ class WeightEntryViewModel: ObservableObject {
         imageManager.resetAll()
     }
     
+    /// Loads existing weight data for editing
+    /// - Sets edit mode and pre-fills form with existing data
+    /// - Normalizes date from API to local timezone
+    /// - Handles existing photos with full URL information
+    /// - Shows loading state only if data not in cache
     func loadExistingWeightSimple(_ weight: Weight) async {
         // Check if weight data is in cache to determine loading behavior
         let isInCache = CacheService.shared.hasWeight(weight.id)

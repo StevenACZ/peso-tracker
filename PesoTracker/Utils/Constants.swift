@@ -112,12 +112,11 @@ struct Constants {
     
     // MARK: - Validation
     struct Validation {
+        // Authentication Validation
         static let minPasswordLength = 6
         static let maxPasswordLength = 128
         static let minUsernameLength = 3
         static let maxUsernameLength = 50
-        static let minWeight: Double = 1.0
-        static let maxWeight: Double = 1000.0
         static let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         
         // Password Recovery Validation
@@ -126,6 +125,11 @@ struct Constants {
         static let passwordResetTimeoutMinutes = 15
         static let codeExpirationMinutes = 10
         static let rateLimitWaitMinutes = 5
+        
+        // Weight Entry Validation (references WeightTracking constants)
+        static let minWeight: Double = WeightTracking.minWeight
+        static let maxWeight: Double = WeightTracking.maxWeight
+        static let maxNotesLength = WeightTracking.maxNotesLength
     }
     
     // MARK: - Date Formats
@@ -135,14 +139,89 @@ struct Constants {
         static let displayWithTime = "dd/MM/yyyy HH:mm"
     }
     
+    // MARK: - Weight Tracking Configuration
+    struct WeightTracking {
+        static let minWeight: Double = 1.0
+        static let maxWeight: Double = 1000.0
+        static let defaultWeightUnit = "kg"
+        static let maxPhotosPerEntry = 5
+        static let maxNotesLength = 500
+        static let maxPhotoNotesLength = 200
+    }
+    
     // MARK: - Image Configuration
     struct Images {
         static let maxImageSize: CGFloat = 1024.0
         static let compressionQuality: CGFloat = 0.8
         static let allowedImageTypes = ["jpg", "jpeg", "png"]
+        static let maxImageSizeMB: Double = 10.0
     }
     
-    // MARK: - Error Messages
+    // MARK: - User Messages
+    struct UserMessages {
+        
+        // Success Messages
+        struct Success {
+            static let weightSaved = "Peso guardado correctamente"
+            static let weightUpdated = "Peso actualizado exitosamente"
+            static let weightDeleted = "Peso eliminado correctamente"
+            static let goalCreated = "Meta establecida correctamente"
+            static let goalUpdated = "Meta actualizada exitosamente"
+            static let photoUploaded = "Foto subida exitosamente"
+            static let dataExported = "Datos exportados correctamente"
+            static let loginSuccess = "Bienvenido de vuelta"
+            static let logoutSuccess = "Sesión cerrada"
+            static let passwordChanged = "Contraseña cambiada exitosamente"
+        }
+        
+        // Error Messages
+        struct Errors {
+            // Weight Entry Errors
+            static let weightRequired = "El peso es obligatorio"
+            static let weightInvalid = "Ingresa un peso válido entre \(WeightTracking.minWeight) y \(WeightTracking.maxWeight) kg"
+            static let dateRequired = "La fecha es obligatoria"
+            static let dateInvalid = "Fecha inválida"
+            static let photoTooLarge = "La foto es demasiado grande (máximo \(Images.maxImageSizeMB)MB)"
+            static let photoInvalidFormat = "Formato de foto no válido. Usa JPG, PNG o HEIC"
+            static let notesTooLong = "Las notas son demasiado largas (máximo \(WeightTracking.maxNotesLength) caracteres)"
+            
+            // Authentication Errors
+            static let emailRequired = "El email es obligatorio"
+            static let emailInvalid = "Formato de email inválido"
+            static let passwordRequired = "La contraseña es obligatoria"
+            static let passwordTooShort = "La contraseña debe tener al menos \(Validation.minPasswordLength) caracteres"
+            static let loginFailed = "Email o contraseña incorrectos"
+            static let sessionExpired = "Tu sesión ha expirado. Inicia sesión nuevamente"
+            
+            // General Errors
+            static let connectionError = "Sin conexión a internet"
+            static let serverError = "Error del servidor. Intenta nuevamente"
+            static let unexpectedError = "Error inesperado. Contacta soporte"
+            static let invalidData = "Datos inválidos"
+            static let operationFailed = "La operación no pudo completarse"
+        }
+        
+        // Loading Messages
+        struct Loading {
+            static let savingWeight = "Guardando peso..."
+            static let loadingData = "Cargando datos..."
+            static let uploadingPhoto = "Subiendo foto..."
+            static let deletingWeight = "Eliminando peso..."
+            static let loggingIn = "Iniciando sesión..."
+            static let loggingOut = "Cerrando sesión..."
+            static let exportingData = "Exportando datos..."
+        }
+        
+        // Confirmation Messages
+        struct Confirmations {
+            static let deleteWeight = "¿Estás seguro que deseas eliminar este peso?"
+            static let logout = "¿Deseas cerrar sesión?"
+            static let deleteAccount = "¿Estás seguro que deseas eliminar tu cuenta?"
+            static let discardChanges = "¿Deseas descartar los cambios?"
+        }
+    }
+    
+    // MARK: - Error Messages (Legacy)
     struct ErrorMessages {
         // Password Recovery Errors
         struct PasswordRecovery {
