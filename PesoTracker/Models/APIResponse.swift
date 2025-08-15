@@ -203,16 +203,23 @@ struct DashboardGoal: Codable {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         
-        // Decode targetDate
+        // Decode targetDate with proper normalization
         let targetDateString = try container.decode(String.self, forKey: .targetDate)
+        let rawTargetDate: Date
         if let parsedDate = dateFormatter.date(from: targetDateString) {
-            targetDate = parsedDate
+            rawTargetDate = parsedDate
         } else {
             dateFormatter.formatOptions = [.withInternetDateTime]
-            targetDate = dateFormatter.date(from: targetDateString) ?? Date()
+            rawTargetDate = dateFormatter.date(from: targetDateString) ?? Date()
         }
+        // Apply DateNormalizer to ensure consistent display like WeightService
+        targetDate = DateNormalizer.shared.normalizeFromAPI(rawTargetDate)
         
-        // Decode createdAt
+        print("🎯 [DASHBOARD GOAL] Decoding goal targetDate:")
+        print("   Raw API date: \(DateNormalizer.shared.debugDescription(for: rawTargetDate))")
+        print("   Normalized date: \(DateNormalizer.shared.debugDescription(for: targetDate))")
+        
+        // Decode createdAt (keep as UTC timestamp for metadata)
         let createdAtString = try container.decode(String.self, forKey: .createdAt)
         if let parsedDate = dateFormatter.date(from: createdAtString) {
             createdAt = parsedDate

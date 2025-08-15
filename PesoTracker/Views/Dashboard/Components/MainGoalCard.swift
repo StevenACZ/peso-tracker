@@ -104,10 +104,7 @@ struct MainGoalCard: View {
     
     private var goalDateText: String {
         guard let goalDate = viewModel.goalDate else { return "Sin fecha" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter.string(from: goalDate)
+        return DateFormatterFactory.shared.formatForDisplay(goalDate)
     }
     
     private var progressPercentage: CGFloat {

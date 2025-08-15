@@ -31,10 +31,24 @@ class GoalService: ObservableObject {
         error = nil
         
         do {
+            // Normalize the date and create a simple date string to avoid timezone issues
+            let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(targetDate)
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day], from: normalizedDate)
+            let dateString = String(format: "%04d-%02d-%02d", 
+                                   components.year ?? 2024, 
+                                   components.month ?? 1, 
+                                   components.day ?? 1)
+            
+            print("🎯 [GOAL SERVICE] Creating goal with date:")
+            print("   Original: \(DateNormalizer.shared.debugDescription(for: targetDate))")
+            print("   Normalized: \(DateNormalizer.shared.debugDescription(for: normalizedDate))")
+            print("   API String: \(dateString)")
+            
             // Create a simple request matching the API format
             let request = SimpleGoalRequest(
                 targetWeight: targetWeight,
-                targetDate: DateFormatterFactory.shared.apiDateFormatter().string(from: targetDate)
+                targetDate: dateString
             )
             
             let goal = try await apiService.post(
@@ -62,10 +76,24 @@ class GoalService: ObservableObject {
         error = nil
         
         do {
+            // Normalize the date and create a simple date string to avoid timezone issues
+            let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(targetDate)
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day], from: normalizedDate)
+            let dateString = String(format: "%04d-%02d-%02d", 
+                                   components.year ?? 2024, 
+                                   components.month ?? 1, 
+                                   components.day ?? 1)
+            
+            print("🎯 [GOAL SERVICE] Updating goal with date:")
+            print("   Original: \(DateNormalizer.shared.debugDescription(for: targetDate))")
+            print("   Normalized: \(DateNormalizer.shared.debugDescription(for: normalizedDate))")
+            print("   API String: \(dateString)")
+            
             // Create a simple request matching the API format
             let request = SimpleGoalRequest(
                 targetWeight: targetWeight,
-                targetDate: DateFormatterFactory.shared.apiDateFormatter().string(from: targetDate)
+                targetDate: dateString
             )
             
             let goal = try await apiService.patch(
