@@ -78,6 +78,22 @@ class DateFormatterFactory {
         return formatter
     }
     
+    /// Local date-only formatter for weight entries: "yyyy-MM-dd" in local timezone
+    /// This prevents timezone conversion issues by treating dates as local calendar days
+    func localDateOnlyFormatter() -> DateFormatter {
+        let formatter = spanishFormatter
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }
+    
+    /// API local date formatter: sends date-only format without timezone conversion
+    /// Used for weight entry dates to preserve user-intended calendar day
+    func apiLocalDateFormatter() -> DateFormatter {
+        let formatter = englishFormatter
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }
+    
     /// Full display format with time: "dd/MM/yyyy HH:mm" (e.g., "15/03/2024 14:30")
     func fullDisplayFormatter() -> DateFormatter {
         let formatter = spanishFormatter
@@ -159,6 +175,16 @@ class DateFormatterFactory {
         return apiDateFormatter().string(from: date)
     }
     
+    /// Format date for local API (yyyy-MM-dd) - preserves local date intent
+    func formatForLocalAPI(_ date: Date) -> String {
+        return apiLocalDateFormatter().string(from: date)
+    }
+    
+    /// Format date as local date-only (yyyy-MM-dd) in local timezone
+    func formatAsLocalDateOnly(_ date: Date) -> String {
+        return localDateOnlyFormatter().string(from: date)
+    }
+    
     /// Format date for filename (yyyy-MM-dd_HH-mm)
     func formatForFilename(_ date: Date) -> String {
         return filenameFormatter().string(from: date)
@@ -172,6 +198,16 @@ class DateFormatterFactory {
     /// Parse date from API string (yyyy-MM-dd)
     func parseAPIDate(_ string: String) -> Date? {
         return apiDateFormatter().date(from: string)
+    }
+    
+    /// Parse date from local API string (yyyy-MM-dd) - preserves local date intent
+    func parseLocalAPIDate(_ string: String) -> Date? {
+        return apiLocalDateFormatter().date(from: string)
+    }
+    
+    /// Parse local date-only string (yyyy-MM-dd) in local timezone
+    func parseLocalDateOnly(_ string: String) -> Date? {
+        return localDateOnlyFormatter().date(from: string)
     }
     
     // MARK: - Relative Formatting
@@ -223,6 +259,16 @@ extension Date {
         return DateFormatterFactory.shared.formatForAPI(self)
     }
     
+    /// Local API format (yyyy-MM-dd) - preserves local date intent
+    var localAPIFormat: String {
+        return DateFormatterFactory.shared.formatForLocalAPI(self)
+    }
+    
+    /// Local date-only format (yyyy-MM-dd) in local timezone
+    var localDateOnlyFormat: String {
+        return DateFormatterFactory.shared.formatAsLocalDateOnly(self)
+    }
+    
     /// Filename format (yyyy-MM-dd_HH-mm)
     var filenameFormat: String {
         return DateFormatterFactory.shared.formatForFilename(self)
@@ -243,6 +289,16 @@ extension String {
     /// Parse API date (yyyy-MM-dd)  
     var asAPIDate: Date? {
         return DateFormatterFactory.shared.parseAPIDate(self)
+    }
+    
+    /// Parse local API date (yyyy-MM-dd) - preserves local date intent
+    var asLocalAPIDate: Date? {
+        return DateFormatterFactory.shared.parseLocalAPIDate(self)
+    }
+    
+    /// Parse local date-only (yyyy-MM-dd) in local timezone
+    var asLocalDateOnly: Date? {
+        return DateFormatterFactory.shared.parseLocalDateOnly(self)
     }
     
     /// Parse ISO 8601 date

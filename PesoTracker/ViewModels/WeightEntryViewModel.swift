@@ -44,6 +44,8 @@ class WeightEntryViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        // Normalize the initial date to midnight in local timezone
+        date = DateNormalizer.shared.normalizeForWeightEntry(Date())
         setupValidation()
         setupImageBindings()
         updateDateString()
@@ -105,11 +107,36 @@ class WeightEntryViewModel: ObservableObject {
     private func validateDate(_ date: Date) -> Bool {
         dateError = nil
         
-        let isValid = validationService.validateDate(date)
+        // First validate with the existing service
+        let isBasicValid = validationService.validateDate(date)
+        
+        // Additional date consistency validation
+        let isNormalized = DateNormalizer.shared.isNormalized(date)
+        let isBoundaryValid = DateNormalizer.shared.isSameLocalDay(
+            date, 
+            DateNormalizer.shared.handleBoundaryEdgeCases(date)
+        )
+        
+        let isValid = isBasicValid && isNormalized && isBoundaryValid
         
         // Set error message only if validation failed and user has attempted to save
         if !isValid && hasAttemptedSave {
-            dateError = validationService.getDateValidationError(date)
+            if !isBasicValid {
+                dateError = validationService.getDateValidationError(date)
+            } else if !isNormalized {
+                dateError = "La fecha debe estar normalizada a medianoche"
+            } else if !isBoundaryValid {
+                dateError = "Fecha inválida para el mes/año seleccionado"
+            }
+        }
+        
+        // Log validation results for debugging
+        if !isValid {
+            print("🚨 [DATE VALIDATION] Date validation failed:")
+            print("   Date: \(DateNormalizer.shared.debugDescription(for: date))")
+            print("   Basic Valid: \(isBasicValid)")
+            print("   Normalized: \(isNormalized)")
+            print("   Boundary Valid: \(isBoundaryValid)")
         }
         
         return isValid
@@ -131,13 +158,48 @@ class WeightEntryViewModel: ObservableObject {
     
     // MARK: - Date Handling Methods
     
+    /// Updates the date property with proper normalization
+    /// This method should be called when the date picker changes
+    func updateDate(_ newDate: Date) {
+        // Handle boundary edge cases first
+        let boundaryHandledDate = DateNormalizer.shared.handleBoundaryEdgeCases(newDate)
+        let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(boundaryHandledDate)
+        
+        DateNormalizer.shared.logNormalization(
+            originalDate: newDate,
+            normalizedDate: normalizedDate,
+            operation: "updateDate - date picker change with boundary handling"
+        )
+        
+        date = normalizedDate
+        updateDateString()
+    }
+    
     func updateDateString() {
+        // Ensure date is normalized before formatting
+        let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(date)
+        if !DateNormalizer.shared.isSameLocalDay(date, normalizedDate) {
+            date = normalizedDate
+            DateNormalizer.shared.logNormalization(
+                originalDate: date,
+                normalizedDate: normalizedDate,
+                operation: "updateDateString normalization"
+            )
+        }
         dateString = DateFormatterFactory.shared.weightEntryFormatter().string(from: date)
     }
     
     func parseDateString() {
         if let parsedDate = DateFormatterFactory.shared.weightEntryFormatter().date(from: dateString) {
-            date = parsedDate
+            // Normalize the parsed date to ensure consistency
+            let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(parsedDate)
+            date = normalizedDate
+            
+            DateNormalizer.shared.logNormalization(
+                originalDate: parsedDate,
+                normalizedDate: normalizedDate,
+                operation: "parseDateString normalization"
+            )
         }
     }
     
@@ -149,6 +211,12 @@ class WeightEntryViewModel: ObservableObject {
     func saveWeight() async {
         // Mark that user has attempted to save (for error display)
         hasAttemptedSave = true
+        
+        // Validate date picker consistency before proceeding
+        if !validateDatePickerConsistency() {
+            showErrorModal(message: "Error de sincronización de fecha. Por favor, selecciona la fecha nuevamente.")
+            return
+        }
         
         guard isValid else { return }
         
@@ -194,7 +262,8 @@ class WeightEntryViewModel: ObservableObject {
     
     func resetForm() {
         weight = ""
-        date = Date()
+        // Normalize the reset date to ensure consistency
+        date = DateNormalizer.shared.normalizeForWeightEntry(Date())
         dateString = ""
         notes = ""
         errorMessage = nil
@@ -222,7 +291,17 @@ class WeightEntryViewModel: ObservableObject {
         editingWeightId = weight.id
         self.weight = String(format: "%.2f", weight.weight)
         self.notes = weight.notes ?? ""
-        self.date = weight.date
+        
+        // Normalize the date from API to preserve local date intent
+        let normalizedDate = DateNormalizer.shared.normalizeFromAPI(weight.date)
+        self.date = normalizedDate
+        
+        DateNormalizer.shared.logNormalization(
+            originalDate: weight.date,
+            normalizedDate: normalizedDate,
+            operation: "loadExistingWeightSimple - API date normalization"
+        )
+        
         updateDateString()
         
         // Handle photo data from the new API structure
@@ -274,7 +353,16 @@ class WeightEntryViewModel: ObservableObject {
         formatter.timeStyle = .none
         formatter.timeZone = TimeZone.current
         if let parsedDate = formatter.date(from: weightRecord.date) {
-            date = parsedDate
+            // Normalize the parsed date to ensure consistency
+            let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(parsedDate)
+            date = normalizedDate
+            
+            DateNormalizer.shared.logNormalization(
+                originalDate: parsedDate,
+                normalizedDate: normalizedDate,
+                operation: "loadExistingWeight - WeightRecord date normalization"
+            )
+            
             updateDateString()
         }
         
@@ -310,6 +398,25 @@ class WeightEntryViewModel: ObservableObject {
     
     var hasAnyImage: Bool {
         return imageManager.hasAnyImage
+    }
+    
+    // MARK: - Date Consistency Validation
+    
+    /// Validates that the date picker and display are synchronized
+    func validateDatePickerConsistency() -> Bool {
+        let pickerDate = date
+        let displayDate = DateFormatterFactory.shared.parseWeightEntryDate(dateString) ?? Date()
+        
+        let isConsistent = DateNormalizer.shared.isSameLocalDay(pickerDate, displayDate)
+        
+        if !isConsistent {
+            print("🚨 [DATE CONSISTENCY] Picker and display dates are not synchronized:")
+            print("   Picker Date: \(DateNormalizer.shared.debugDescription(for: pickerDate))")
+            print("   Display Date: \(DateNormalizer.shared.debugDescription(for: displayDate))")
+            print("   Date String: \(dateString)")
+        }
+        
+        return isConsistent
     }
     
     // MARK: - Error Modal Methods

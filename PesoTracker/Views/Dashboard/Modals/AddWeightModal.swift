@@ -67,13 +67,22 @@ struct AddWeightModal: View {
                     // Use the new simplified method with photo endpoint
                     Task {
                         await viewModel.loadExistingWeightSimple(weight)
+                        print("🗓️ [ADD WEIGHT MODAL] Loaded existing weight for editing:")
+                        print("   Date: \(viewModel.date.weightEntryFormat)")
+                        print("   Date String: \(viewModel.dateString)")
                     }
                 } else if let record = record {
                     // Fallback to WeightRecord (limited photo info)
                     viewModel.loadExistingWeight(record)
+                    print("🗓️ [ADD WEIGHT MODAL] Loaded existing record for editing:")
+                    print("   Date: \(viewModel.date.weightEntryFormat)")
+                    print("   Date String: \(viewModel.dateString)")
                 }
             } else {
                 viewModel.resetForm()
+                print("🗓️ [ADD WEIGHT MODAL] Reset form for new weight:")
+                print("   Date: \(viewModel.date.weightEntryFormat)")
+                print("   Date String: \(viewModel.dateString)")
             }
         }
     }

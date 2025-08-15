@@ -14,8 +14,21 @@ class WeightService {
         imageData: Data? = nil
     ) async throws -> Weight {
         
+        // Normalize the date and create a simple date string
+        let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(date)
         
-        let dateString = DateFormatterFactory.shared.apiDateFormatter().string(from: date)
+        // Create date string directly from components to avoid timezone issues
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day], from: normalizedDate)
+        let dateString = String(format: "%04d-%02d-%02d", 
+                               components.year ?? 2024, 
+                               components.month ?? 1, 
+                               components.day ?? 1)
+        
+        print("🗓️ [WEIGHT SERVICE] Creating weight with date:")
+        print("   Original: \(DateNormalizer.shared.debugDescription(for: date))")
+        print("   Normalized: \(DateNormalizer.shared.debugDescription(for: normalizedDate))")
+        print("   API String: \(dateString)")
         
         var parameters: [String: String] = [
             "weight": String(weight),
@@ -56,7 +69,21 @@ class WeightService {
         imageData: Data? = nil
     ) async throws -> Weight {
         
-        let dateString = DateFormatterFactory.shared.apiDateFormatter().string(from: date)
+        // Normalize the date and create a simple date string
+        let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(date)
+        
+        // Create date string directly from components to avoid timezone issues
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day], from: normalizedDate)
+        let dateString = String(format: "%04d-%02d-%02d", 
+                               components.year ?? 2024, 
+                               components.month ?? 1, 
+                               components.day ?? 1)
+        
+        print("🗓️ [WEIGHT SERVICE] Updating weight with date:")
+        print("   Original: \(DateNormalizer.shared.debugDescription(for: date))")
+        print("   Normalized: \(DateNormalizer.shared.debugDescription(for: normalizedDate))")
+        print("   API String: \(dateString)")
         
         var parameters: [String: String] = [
             "weight": String(weight),

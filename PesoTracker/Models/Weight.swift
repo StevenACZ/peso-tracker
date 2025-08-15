@@ -54,38 +54,53 @@ struct Weight: Codable, Identifiable {
         // API metadata
         userId = try container.decodeIfPresent(Int.self, forKey: .userId)
         
-        // Date decoding helper
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        
-        // Decode date (required)
+        // Date decoding helper - preserve local date intent
         let dateString = try container.decode(String.self, forKey: .date)
-        if let parsedDate = dateFormatter.date(from: dateString) {
-            date = parsedDate
-        } else {
-            dateFormatter.formatOptions = [.withInternetDateTime]
-            date = dateFormatter.date(from: dateString) ?? Date()
-        }
         
-        // Decode optional dates
-        if let createdAtString = try container.decodeIfPresent(String.self, forKey: .createdAt) {
-            if let parsedDate = dateFormatter.date(from: createdAtString) {
-                createdAt = parsedDate
+        // First try to parse as a simple date string (YYYY-MM-DD)
+        if let directDate = DateNormalizer.shared.dateFromAPIString(dateString) {
+            date = directDate
+            print("🗓️ [WEIGHT MODEL] Parsed date directly from string: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: directDate))")
+        } else {
+            // Fallback to ISO8601 parsing for backward compatibility
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
+            
+            if let parsedDate = dateFormatter.date(from: dateString) {
+                // Use the new API normalization method
+                date = DateNormalizer.shared.normalizeFromAPI(parsedDate)
+                print("🗓️ [WEIGHT MODEL] Parsed date from ISO8601: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: date))")
             } else {
                 dateFormatter.formatOptions = [.withInternetDateTime]
-                createdAt = dateFormatter.date(from: createdAtString)
+                let fallbackDate = dateFormatter.date(from: dateString) ?? Date()
+                date = DateNormalizer.shared.normalizeFromAPI(fallbackDate)
+                print("⚠️ [WEIGHT MODEL] Used fallback date parsing: \(dateString) -> \(DateNormalizer.shared.debugDescription(for: date))")
+            }
+        }
+        
+        // Decode optional dates using ISO8601 formatter
+        let iso8601Formatter = ISO8601DateFormatter()
+        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        iso8601Formatter.timeZone = TimeZone(identifier: "UTC")
+        
+        if let createdAtString = try container.decodeIfPresent(String.self, forKey: .createdAt) {
+            if let parsedDate = iso8601Formatter.date(from: createdAtString) {
+                createdAt = parsedDate
+            } else {
+                iso8601Formatter.formatOptions = [.withInternetDateTime]
+                createdAt = iso8601Formatter.date(from: createdAtString)
             }
         } else {
             createdAt = nil
         }
         
         if let updatedAtString = try container.decodeIfPresent(String.self, forKey: .updatedAt) {
-            if let parsedDate = dateFormatter.date(from: updatedAtString) {
+            if let parsedDate = iso8601Formatter.date(from: updatedAtString) {
                 updatedAt = parsedDate
             } else {
-                dateFormatter.formatOptions = [.withInternetDateTime]
-                updatedAt = dateFormatter.date(from: updatedAtString)
+                iso8601Formatter.formatOptions = [.withInternetDateTime]
+                updatedAt = iso8601Formatter.date(from: updatedAtString)
             }
         } else {
             updatedAt = nil
@@ -191,16 +206,24 @@ extension Weight {
         return notes != nil && !notes!.isEmpty
     }
     
+    /// Debug description for date handling
+    var dateDebugDescription: String {
+        return DateNormalizer.shared.debugDescription(for: date)
+    }
+    
     var formattedWeight: String {
         return String(format: "%.2f kg", weight)
     }
     
     var formattedDate: String {
+        // Ensure the date is properly normalized before formatting
+        let normalizedDate = DateNormalizer.shared.normalizeForWeightEntry(date)
+        
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
+        return formatter.string(from: normalizedDate)
     }
 }
 

@@ -50,10 +50,12 @@ struct DatePickerPopover: View {
                 .foregroundColor(.primary)
             
             // Use our custom calendar instead of native DatePicker
-            CustomCalendar(selectedDate: $viewModel.date)
-                .onChange(of: viewModel.date) { _, _ in
-                    viewModel.updateDateString()
+            CustomCalendar(selectedDate: Binding(
+                get: { viewModel.date },
+                set: { newDate in
+                    viewModel.updateDate(newDate)
                 }
+            ))
             
             HStack(spacing: Spacing.lg) {
                 CustomButton(action: {
