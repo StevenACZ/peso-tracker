@@ -15,7 +15,9 @@ class DataExportService: ObservableObject {
     private let photoDownloader = ExportPhotoDownloader()
     private let metadataGenerator = ExportMetadataGenerator()
     
-    private let config = ExportConfiguration.default
+    private var config: ExportConfiguration {
+        return ExportConfiguration.create(basePath: lastExportPath ?? "")
+    }
     
     private init() {
         self.lastExportPath = UserDefaults.standard.string(forKey: Constants.UserDefaults.lastExportPath)
