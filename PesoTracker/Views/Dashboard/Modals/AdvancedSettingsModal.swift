@@ -170,7 +170,7 @@ struct AdvancedSettingsModal: View {
                             }
                         }
                         
-                        Text("Estructura: Peso Steven → 1 - DD MMMM YYYY (peso) → Foto")
+                        Text("Estructura: \(ExportConfiguration.generateExportFolderName()) → 1 - DD MMMM YYYY (peso) → Foto")
                             .font(.system(size: 10))
                             .foregroundColor(.secondary)
                             .italic()

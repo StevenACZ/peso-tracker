@@ -15,7 +15,25 @@ struct ExportConfiguration {
     
     static let `default` = ExportConfiguration(
         basePath: "",
-        exportFolderName: "Peso Steven",
+        exportFolderName: generateExportFolderName(),
         totalSteps: 5
     )
+    
+    static func generateExportFolderName() -> String {
+        // Get username from authenticated user
+        if let currentUser = AuthService.shared.currentUser {
+            return "Peso \(currentUser.username)"
+        }
+        
+        // Fallback if no user is authenticated
+        return "Peso Usuario"
+    }
+    
+    static func create(basePath: String) -> ExportConfiguration {
+        return ExportConfiguration(
+            basePath: basePath,
+            exportFolderName: generateExportFolderName(),
+            totalSteps: 5
+        )
+    }
 }
